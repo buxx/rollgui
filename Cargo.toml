@@ -1,0 +1,9 @@
+[package]
+name = "rollgui"
+version = "0.1.0"
+authors = ["Bastien Sevajol <sevajol.bastien@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+doryen-fov = "0.1.1"
+doryen-rs = "1.2.1"
