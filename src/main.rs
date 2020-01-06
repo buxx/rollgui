@@ -33,7 +33,6 @@ fn main() {
         eprintln!("Error while creating zone: {}", e);
         exit(1);
     });
-    dbg!(&gui);
     app.set_engine(Box::new(gui));
     app.run();
 }

@@ -1,4 +1,5 @@
 use doryen_rs::{DoryenApi, Engine, UpdateEvent, TextAlign};
+use doryen_ui as ui;
 
 use std::path::Path;
 use crate::color;
@@ -9,10 +10,10 @@ use crate::tile::{Tiles};
 use std::error::Error;
 
 
-#[derive(Debug)]
 pub struct RollingGui {
     player: Player,
     level: Level,
+    ctx: ui::Context,
     width: u32,
     height: u32,
     tiles: Tiles,
@@ -46,6 +47,7 @@ impl RollingGui {
             Self {
                 player: Player::new((player_row_i, player_col_i)),
                 level,
+                ctx: ui::Context::new(),
                 width: width as u32,
                 height: height as u32,
                 tiles,
@@ -64,6 +66,9 @@ impl RollingGui {
     pub fn can_move(&self, position: (i32, i32)) -> bool {
         let tile = self.level.tile(position);
         self.tiles.browseable(&tile)
+    }
+    fn build_ui(&mut self) {
+
     }
 }
 
@@ -92,6 +97,10 @@ impl Engine for RollingGui {
         self.start_display_map_col_i = self.player.position.1 as i32 - (self.width as i32 / 2);
 
         self.mouse_pos = api.input().mouse_pos();
+
+        ui::update_doryen_input_data(api, &mut self.ctx);
+        self.build_ui();
+
         None
     }
     fn render(&mut self, api: &mut dyn DoryenApi) {
@@ -108,6 +117,7 @@ impl Engine for RollingGui {
             None,
         );
         api.con().back(self.mouse_pos.0 as i32, self.mouse_pos.1 as i32, (255, 255, 255, 255));
+        ui::render_doryen(api.con(), &mut self.ctx);
     }
     fn resize(&mut self, api: &mut dyn DoryenApi) {
         self.width = api.get_screen_size().0 / 8;
