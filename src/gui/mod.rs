@@ -1,30 +1,42 @@
-use doryen_rs::{DoryenApi, Engine, UpdateEvent, TextAlign};
+use doryen_rs::{DoryenApi, Engine, UpdateEvent};
 
 use std::path::Path;
 use crate::color;
-use crate::entity::player::{Player};
-use crate::zone::level::{Level};
 use crate::util;
-use crate::tile::{Tiles};
 use std::error::Error;
+use crate::tile::{Tiles};
+use crate::zone::level::{Level};
+use crate::entity::player::{Player};
+use crate::gui::engine::{Engine as RollingEngine};
+use crate::gui::engine::zone::{ZoneEngine};
+use crate::gui::engine::startup::{StartupEngine};
+use crate::zone::socket::{ZoneSocket};
 
+pub mod engine;
 
-#[derive(Debug)]
 pub struct RollingGui {
-    player: Player,
-    level: Level,
-    width: u32,
-    height: u32,
-    tiles: Tiles,
-    mouse_pos: (f32, f32),
-    // Map coordinates where start to display it
-    start_display_map_row_i: i32,
-    start_display_map_col_i: i32,
+    engine: Box<dyn RollingEngine>,
+    pub width: i32,
+    pub height: i32,
 }
 
 impl RollingGui {
-    pub fn new(width: i32, height: i32) -> Result<Self, Box<dyn Error>> {
+    pub fn new(width: i32, height: i32) -> Self {
+        Self {
+            engine: Box::new(StartupEngine::new()),
+            width,
+            height,
+        }
+    }
+
+    pub fn setup_startup(&mut self) {
+        self.engine = Box::new(StartupEngine::new());
+    }
+
+    pub fn setup_zone(&mut self, world_row_i: i32, world_col_i: i32) -> Result<(), Box<dyn Error>> {
+        // TODO: from server
         let tiles= Tiles::new();
+        // TODO: from server
         let zone_file_content = util::get_file_content(
             Path::new("static/zone_test.txt")
         )?;
@@ -39,31 +51,33 @@ impl RollingGui {
         let player_col_i = 1;
 
         // Compute display positions (player at center of display)
-        let start_display_map_row_i: i32 = player_row_i - (height / 2);
-        let start_display_map_col_i: i32 = player_col_i - (width / 2);
+        let start_display_map_row_i = player_row_i - (self.height / 2);
+        let start_display_map_col_i = player_col_i - (self.width / 2);
 
-        Ok(
-            Self {
-                player: Player::new((player_row_i, player_col_i)),
+        let player = Player::new((player_row_i, player_col_i));
+
+        // TODO: https
+        let mut socket = ZoneSocket::new(
+            format!(
+                "http://{}/zones/{}/{}/events",
+                "127.0.0.1",
+                world_row_i,
+                world_col_i,
+            )
+        );
+        socket.connect();
+
+        self.engine = Box::new(
+            ZoneEngine::new(
+                player,
+                socket,
                 level,
-                width: width as u32,
-                height: height as u32,
                 tiles,
                 start_display_map_row_i,
                 start_display_map_col_i,
-                mouse_pos: (0.0, 0.0),
-            }
-        )
-    }
-
-    pub fn clear_con(&self, api: &mut dyn DoryenApi) {
-        let con = api.con();
-        con.clear(Some(color::BLACK), Some(color::BLACK), Some(' ' as u16));
-    }
-
-    pub fn can_move(&self, position: (i32, i32)) -> bool {
-        let tile = self.level.tile(position);
-        self.tiles.browseable(&tile)
+            )
+        );
+        Ok(())
     }
 }
 
@@ -72,46 +86,30 @@ impl Engine for RollingGui {
         api.con().register_color("white", color::WHITE);
     }
     fn update(&mut self, api: &mut dyn DoryenApi) -> Option<UpdateEvent> {
+        api.con().clear(Some(color::BLACK), Some(color::BLACK), Some(' ' as u16));
         let input = api.input();
 
-        let mut mov = self.player.move_from_input(api);
-        let mut coef = 1.0 / std::f32::consts::SQRT_2;
-
-        if !self.can_move(self.player.next_position((mov.0, 0))) {
-            mov.0 = 0;
-            coef = 1.0;
+        if input.key("Enter") && self.engine.as_ref().get_name() != "ZONE" {
+            // TODO: manage setup zone fail (with gui message)
+            self.setup_zone(0, 0).unwrap();
         }
-        if !self.can_move(self.player.next_position((0, mov.1))) {
-            mov.1 = 0;
-            coef = 1.0;
+
+        if input.key("Escape") && self.engine.as_ref().get_name() == "ZONE" {
+            self.engine.teardown();
+            self.setup_startup();
         }
-        self.player.move_by(mov, coef);
-        dbg!(self.player.position);
 
-        self.start_display_map_row_i = self.player.position.0 as i32 - (self.height as i32 / 2);
-        self.start_display_map_col_i = self.player.position.1 as i32 - (self.width as i32 / 2);
-
-        self.mouse_pos = api.input().mouse_pos();
+        self.engine.as_mut().update(api, self.width, self.height);
         None
     }
     fn render(&mut self, api: &mut dyn DoryenApi) {
-        self.clear_con(api);
-        self.level.render(api, &self.tiles, self.start_display_map_row_i, self.start_display_map_col_i, self.width, self.height);
-        self.player.render(api, self.width as i32, self.height as i32);
-
-        let fps = api.fps();
-        api.con().print_color(
-            1,
-            20,
-            &format!("row {} / col {} {}fps", self.mouse_pos.1 as i32, self.mouse_pos.0 as i32, fps),
-            TextAlign::Left,
-            None,
-        );
-        api.con().back(self.mouse_pos.0 as i32, self.mouse_pos.1 as i32, (255, 255, 255, 255));
+        self.engine.as_mut().render(api, self.width, self.height);
     }
     fn resize(&mut self, api: &mut dyn DoryenApi) {
-        self.width = api.get_screen_size().0 / 8;
-        self.height = api.get_screen_size().1 / 8;
-        api.con().resize(self.width, self.height);
+        self.engine.as_mut().resize(api);
+
+        self.width = (api.get_screen_size().0 / 8) as i32;
+        self.height = (api.get_screen_size().1 / 8) as i32;
+        api.con().resize(self.width as u32, self.height as u32);
     }
 }

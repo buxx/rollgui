@@ -43,7 +43,7 @@ impl Player {
         let old_col_i = self.position.1 as i32;
         self.position.0 += self.speed * mov.0 as f32 * coef;
         self.position.1 += self.speed * mov.1 as f32 * coef;
-        old_row_i == self.position.0 as i32 && old_col_i == self.position.1 as i32
+        old_row_i != self.position.0 as i32 || old_col_i != self.position.1 as i32
     }
 
     pub fn next_position(&self, mov: (i32, i32)) -> (i32, i32) {

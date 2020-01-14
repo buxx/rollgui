@@ -53,11 +53,11 @@ impl Level {
         )
     }
 
-    pub fn render(&mut self, api: &mut dyn DoryenApi, tiles: &Tiles, start_display_map_row_i: i32, start_display_map_col_i: i32, display_width: u32, display_height: u32) {
+    pub fn render(&mut self, api: &mut dyn DoryenApi, tiles: &Tiles, start_display_map_row_i: i32, start_display_map_col_i: i32, display_width: i32, display_height: i32) {
         let con = api.con();
 
-        for row_i in 0..display_height as i32 {
-            for col_i in 0..display_width as i32 {
+        for row_i in 0..display_height {
+            for col_i in 0..display_width {
                 let map_row_i = row_i + start_display_map_row_i;
                 let map_col_i = col_i + start_display_map_col_i;
 
@@ -76,10 +76,10 @@ impl Level {
                 let tile = row.cols[map_col_i as usize];
                 let appearance = tiles.appearance(&tile);
 
-                con.back(col_i as i32, row_i as i32 as i32, appearance.back);
-                con.fore(col_i as i32, row_i as i32 as i32, appearance.fore);
+                con.back(col_i as i32, row_i, appearance.back);
+                con.fore(col_i as i32, row_i, appearance.fore);
                 if appearance.ascii.is_some() {
-                    con.ascii(col_i as i32, row_i as i32 as i32, appearance.ascii.unwrap() as u16);
+                    con.ascii(col_i as i32, row_i, appearance.ascii.unwrap() as u16);
                 }
             }
         }
