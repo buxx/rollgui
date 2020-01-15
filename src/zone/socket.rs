@@ -11,7 +11,7 @@ use std::sync::Mutex;
 use std::io::Error;
 use std::thread::JoinHandle;
 use std::time::Duration;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime};
 
 use crate::event;
 
@@ -116,7 +116,7 @@ impl ZoneSocket {
                 let message_json_str = serde_json::to_string(&received).unwrap();
                 let message = Message::text(message_json_str);
                 ws_writer.send_message(&message).unwrap();
-;
+
                 if let event::ZoneEventType::ClientWantClose = received.event_type {
                     // Get out for loop (and finish thread)
                     break

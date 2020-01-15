@@ -1,4 +1,6 @@
 use doryen_rs::{DoryenApi, Engine, UpdateEvent};
+use pickledb::{PickleDb, PickleDbDumpPolicy};
+use reqwest::Client;
 
 use std::path::Path;
 use crate::color;
@@ -11,19 +13,26 @@ use crate::gui::engine::{Engine as RollingEngine};
 use crate::gui::engine::zone::{ZoneEngine};
 use crate::gui::engine::startup::{StartupEngine};
 use crate::zone::socket::{ZoneSocket};
+use crate::config;
+use std::collections::HashMap;
 
 pub mod engine;
 
 pub struct RollingGui {
     engine: Box<dyn RollingEngine>,
+    db: PickleDb,
     pub width: i32,
     pub height: i32,
 }
 
 impl RollingGui {
     pub fn new(width: i32, height: i32) -> Self {
+        // TODO: client.db in home
+        let db = PickleDb::new_json("client.db", PickleDbDumpPolicy::AutoDump);
+
         Self {
             engine: Box::new(StartupEngine::new()),
+            db,
             width,
             height,
         }
@@ -79,6 +88,31 @@ impl RollingGui {
         );
         Ok(())
     }
+
+    fn create_or_grab_character(&self, server_ip: String, server_port: u16) {
+        let server_config = self.db.get::<config::ServerConfig>(
+            format!("server_{}", server_ip.as_str()).as_str()
+        );
+
+        if server_config.is_some() {
+            dbg!(&server_config);
+        } else {
+            println!("Character must be created");
+
+
+            let mut map = HashMap::new();
+            map.insert("lang", "rust");
+            map.insert("body", "json");
+
+            let client = reqwest::blocking::Client::new();
+            let res = client.post("http://httpbin.org/post")
+                .body("the exact body that is sent")
+                .send()
+                .unwrap();
+
+            dbg!(res);
+        }
+    }
 }
 
 impl Engine for RollingGui {
@@ -91,6 +125,9 @@ impl Engine for RollingGui {
 
         if input.key("Enter") && self.engine.as_ref().get_name() != "ZONE" {
             // TODO: manage setup zone fail (with gui message)
+            let server_ip = String::from("127.0.0.1");
+            let server_port: u16 = 5000;
+            let character = self.create_or_grab_character(server_ip, server_port);
             self.setup_zone(0, 0).unwrap();
         }
 
