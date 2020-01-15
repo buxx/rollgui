@@ -4,15 +4,19 @@ use crate::color;
 
 #[derive(Debug)]
 pub struct Player {
+    pub id: String,
     // row_i, col_i
     pub position: (f32, f32),
+    pub world_position: (i32, i32),
     speed: f32,
 }
 
 impl Player {
-    pub fn new(position: (i32, i32)) -> Self {
+    pub fn new(id: &str, position: (i32, i32), world_position: (i32, i32)) -> Self {
         Self {
-           position: (position.0 as f32, position.1 as f32),
+            id: id.to_string(),
+            position: (position.0 as f32, position.1 as f32),
+            world_position: (world_position.0, world_position.1),
             speed: 0.2
         }
     }

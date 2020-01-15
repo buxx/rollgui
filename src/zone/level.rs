@@ -2,12 +2,12 @@ use doryen_rs::{DoryenApi};
 
 use crate::util;
 use crate::error::RollingError;
-use crate::tile::{Tile, Tiles};
+use crate::tile::{Tiles};
 
 
 #[derive(Debug)]
 struct LevelRow {
-    cols: Vec<Tile>,
+    cols: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -33,11 +33,11 @@ impl Level {
         let mut rows: Vec<LevelRow> = Vec::new();
 
         for line in zone_raw.lines() {
-            let mut cols: Vec<Tile> = Vec::new();
+            let mut cols: Vec<String> = Vec::new();
 
             for tile_char in line.chars() {
-                let tile = tiles.tile(tile_char);
-                cols.push(tile);
+                let tile_id = tiles.tile_id(tile_char);
+                cols.push(tile_id);
             }
 
             let level_row = LevelRow{ cols };
@@ -73,8 +73,8 @@ impl Level {
                     continue
                 }
 
-                let tile = row.cols[map_col_i as usize];
-                let appearance = tiles.appearance(&tile);
+                let tile_id = &row.cols[map_col_i as usize];
+                let appearance = tiles.appearance(&tile_id);
 
                 con.back(col_i as i32, row_i, appearance.back);
                 con.fore(col_i as i32, row_i, appearance.fore);
@@ -86,19 +86,20 @@ impl Level {
     }
 
     // row_i, col_i
-    pub fn tile(&self, position: (i32, i32)) -> Tile {
+    pub fn tile_id
+    (&self, position: (i32, i32)) -> String {
         if position.1 < 0 || position.0 < 0 {
-            return Tile::Empty
+            return String::from("NOTHING")
         }
 
         if position.0 >= self.rows.len() as i32 {
-            return Tile::Empty
+            return String::from("NOTHING")
         }
         
         let row = &self.rows[position.0 as usize];
 
         if position.1 >= row.cols.len() as i32 {
-            return Tile::Empty
+            return String::from("NOTHING")
         }
 
         row.cols[position.1 as usize].clone()

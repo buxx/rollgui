@@ -11,13 +11,13 @@ use std::sync::Mutex;
 use std::io::Error;
 use std::thread::JoinHandle;
 use std::time::Duration;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{SystemTime};
 
 use crate::event;
 
 
 pub struct ZoneSocket {
-    _ws_address: String,
+    ws_address: String,
     from_main_sender: mpsc::Sender<event::ZoneEvent>,
     from_main_receiver: Arc<Mutex<mpsc::Receiver<event::ZoneEvent>>>,
     from_websocket_sender: Arc<Mutex<mpsc::Sender<event::ZoneEvent>>>,
@@ -30,7 +30,7 @@ pub struct ZoneSocket {
 }
 
 impl ZoneSocket {
-    pub fn new(_ws_address: String) -> Self {
+    pub fn new(ws_address: String) -> Self {
         let (from_main_sender, from_main_receiver) = mpsc::channel();
         let (from_websocket_sender, from_websocket_receiver) = mpsc::channel();
         let from_main_receiver = Arc::new(Mutex::new(from_main_receiver));
@@ -39,7 +39,7 @@ impl ZoneSocket {
         let ws_sender_closed = Arc::new(Mutex::new(false));
 
         Self {
-            _ws_address,
+            ws_address,
             from_main_sender,
             from_main_receiver,
             ws_reader_handle: None,
@@ -58,7 +58,7 @@ impl ZoneSocket {
         let ws_reader_closed = Arc::clone(&self.ws_reader_closed);
         let ws_sender_closed = Arc::clone(&self.ws_sender_closed);
 
-        let ws_client = ClientBuilder::new("ws://demos.kaazing.com/echo")
+        let ws_client = ClientBuilder::new(self.ws_address.as_str())
             .unwrap()
             .connect_insecure()
             .unwrap();
@@ -78,7 +78,7 @@ impl ZoneSocket {
                             break_ = true;
                         }
 
-                        if let Err(SendError(e)) = from_websocket_sender.send(event) {
+                        if let Err(SendError(_e)) = from_websocket_sender.send(event) {
                             eprintln!("WebSocket(receiver): Something went wrong during process of received event");
                         }
 
@@ -116,9 +116,10 @@ impl ZoneSocket {
                 let message_json_str = serde_json::to_string(&received).unwrap();
                 let message = Message::text(message_json_str);
                 ws_writer.send_message(&message).unwrap();
-;
+
                 if let event::ZoneEventType::ClientWantClose = received.event_type {
                     // Get out for loop (and finish thread)
+                    println!("WebSocket(sender): Closing ...");
                     break
                 }
             }

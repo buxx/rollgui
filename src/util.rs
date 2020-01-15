@@ -9,7 +9,7 @@ pub const BLOCK_LEGEND: &str = "LEGEND";
 
 pub fn extract_block_from_source(
     block_name: &str,
-    source: &String,
+    source: &str,
 ) -> Result<String, RollingError> {
     let mut block_found = false;
     let mut block_lines: Vec<&str> = Vec::new();

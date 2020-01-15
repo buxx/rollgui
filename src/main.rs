@@ -10,6 +10,8 @@ pub mod zone;
 pub mod util;
 pub mod tile;
 pub mod event;
+pub mod config;
+pub mod server;
 
 const CONSOLE_WIDTH: u32 = 80;
 const CONSOLE_HEIGHT: u32 = 45;
