@@ -3,7 +3,6 @@ use doryen_rs::{DoryenApi, UpdateEvent};
 pub mod startup;
 pub mod zone;
 
-
 pub trait Engine {
     fn get_name(&self) -> &str;
     fn update(&mut self, api: &mut dyn DoryenApi, width: i32, height: i32) -> Option<UpdateEvent>;

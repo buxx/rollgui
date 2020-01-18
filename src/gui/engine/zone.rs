@@ -1,18 +1,17 @@
-use doryen_rs::{DoryenApi, UpdateEvent, TextAlign};
+use doryen_rs::{DoryenApi, TextAlign, UpdateEvent};
 use std::collections::HashMap;
 
-use crate::entity::player::{Player};
-use crate::entity::character::{Character};
-use crate::zone::level::{Level};
-use crate::tile::{Tiles};
-use crate::gui::engine::{Engine};
-use crate::zone::socket::{ZoneSocket};
-use crate::event;
-use crate::server;
 use crate::color;
-use std::any::Any;
+use crate::entity::character::Character;
+use crate::entity::player::Player;
+use crate::event;
 use crate::event::ZoneEventType;
-
+use crate::gui::engine::Engine;
+use crate::server;
+use crate::tile::Tiles;
+use crate::zone::level::Level;
+use crate::zone::socket::ZoneSocket;
+use std::any::Any;
 
 pub struct ZoneEngine {
     _server: server::Server,
@@ -69,15 +68,19 @@ impl Engine for ZoneEngine {
             // TODO Move code ailleurs
             match event.event_type {
                 ZoneEventType::PlayerMove {
-                    to_row_i, to_col_i, character_id
+                    to_row_i,
+                    to_col_i,
+                    character_id,
                 } => {
-                    if let Some(mut moved_character) = self.characters.get_mut(character_id.as_str()) {
+                    if let Some(mut moved_character) =
+                        self.characters.get_mut(character_id.as_str())
+                    {
                         moved_character.zone_row_i = to_row_i;
                         moved_character.zone_col_i = to_col_i;
                     } else if character_id != self.player.id {
                         eprintln!("Unknown character {}", character_id)
                     }
-                },
+                }
                 _ => {}
             }
         }
@@ -94,9 +97,9 @@ impl Engine for ZoneEngine {
             coef = 1.0;
         }
         if self.player.move_by(mov, coef) {
-            self.socket.send(event::ZoneEvent{
+            self.socket.send(event::ZoneEvent {
                 event_type_name: String::from(event::PLAYER_MOVE),
-                event_type: event::ZoneEventType::PlayerMove{
+                event_type: event::ZoneEventType::PlayerMove {
                     to_row_i: self.player.position.0 as i32,
                     to_col_i: self.player.position.1 as i32,
                     character_id: String::from(self.player.id.as_str()),
@@ -111,24 +114,46 @@ impl Engine for ZoneEngine {
         None
     }
     fn render(&mut self, api: &mut dyn DoryenApi, width: i32, height: i32) {
-        self.level.render(api, &self.tiles, self.start_display_map_row_i, self.start_display_map_col_i, width, height);
+        self.level.render(
+            api,
+            &self.tiles,
+            self.start_display_map_row_i,
+            self.start_display_map_col_i,
+            width,
+            height,
+        );
         self.player.render(api, width as i32, height as i32);
 
         let con = api.con();
         for (character_id, character) in self.characters.iter() {
-            con.ascii(character.zone_col_i - self.start_display_map_col_i, character.zone_row_i - self.start_display_map_row_i, '%' as u16);
-            con.fore(character.zone_col_i - self.start_display_map_col_i, character.zone_row_i - self.start_display_map_row_i, color::WHITE);
+            con.ascii(
+                character.zone_col_i - self.start_display_map_col_i,
+                character.zone_row_i - self.start_display_map_row_i,
+                '%' as u16,
+            );
+            con.fore(
+                character.zone_col_i - self.start_display_map_col_i,
+                character.zone_row_i - self.start_display_map_row_i,
+                color::WHITE,
+            );
         }
 
         let fps = api.fps();
         api.con().print_color(
             1,
             20,
-            &format!("row {} / col {} {}fps", self.mouse_pos.1 as i32, self.mouse_pos.0 as i32, fps),
+            &format!(
+                "row {} / col {} {}fps",
+                self.mouse_pos.1 as i32, self.mouse_pos.0 as i32, fps
+            ),
             TextAlign::Left,
             None,
         );
-        api.con().back(self.mouse_pos.0 as i32, self.mouse_pos.1 as i32, (255, 255, 255, 255));
+        api.con().back(
+            self.mouse_pos.0 as i32,
+            self.mouse_pos.1 as i32,
+            (255, 255, 255, 255),
+        );
     }
     fn resize(&mut self, _api: &mut dyn DoryenApi) {}
 

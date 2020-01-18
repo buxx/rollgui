@@ -12,9 +12,7 @@ impl RollingError {
     }
 }
 
-impl Error for RollingError {
-
-}
+impl Error for RollingError {}
 
 impl fmt::Display for RollingError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

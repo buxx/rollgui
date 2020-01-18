@@ -2,20 +2,19 @@ extern crate doryen_rs;
 
 use doryen_rs::{App, AppOptions};
 
-pub mod error;
-pub mod gui;
 pub mod color;
-pub mod entity;
-pub mod zone;
-pub mod util;
-pub mod tile;
-pub mod event;
 pub mod config;
+pub mod entity;
+pub mod error;
+pub mod event;
+pub mod gui;
 pub mod server;
+pub mod tile;
+pub mod util;
+pub mod zone;
 
 const CONSOLE_WIDTH: u32 = 80;
 const CONSOLE_HEIGHT: u32 = 45;
-
 
 fn main() {
     let mut app = App::new(AppOptions {

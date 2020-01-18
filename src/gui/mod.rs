@@ -3,19 +3,19 @@ use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
 
 use crate::color;
-use crate::util;
-use std::error::Error;
-use crate::tile::{Tiles};
-use crate::zone::level::{Level};
-use crate::entity::player::{Player};
-use crate::entity::character::{Character};
-use crate::gui::engine::{Engine as RollingEngine};
-use crate::gui::engine::zone::{ZoneEngine};
-use crate::gui::engine::startup::{StartupEngine};
-use crate::zone::socket::{ZoneSocket};
 use crate::config;
-use crate::server;
+use crate::entity::character::Character;
+use crate::entity::player::Player;
 use crate::error::RollingError;
+use crate::gui::engine::startup::StartupEngine;
+use crate::gui::engine::zone::ZoneEngine;
+use crate::gui::engine::Engine as RollingEngine;
+use crate::server;
+use crate::tile::Tiles;
+use crate::util;
+use crate::zone::level::Level;
+use crate::zone::socket::ZoneSocket;
+use std::error::Error;
 
 pub mod engine;
 
@@ -28,7 +28,7 @@ pub struct RollingGui {
 
 fn get_db(db_file_path: &str) -> PickleDb {
     if let Ok(db) = PickleDb::load_json(&db_file_path, PickleDbDumpPolicy::AutoDump) {
-        return db
+        return db;
     }
 
     PickleDb::new_json(&db_file_path, PickleDbDumpPolicy::AutoDump)
@@ -48,21 +48,22 @@ impl RollingGui {
         self.engine = Box::new(StartupEngine::new());
     }
 
-    pub fn setup_zone(&mut self, server: server::Server, player: Player) -> Result<(), Box<dyn Error>> {
+    pub fn setup_zone(
+        &mut self,
+        server: server::Server,
+        player: Player,
+    ) -> Result<(), Box<dyn Error>> {
         // TODO: manage error
         let server_tiles_data = server.client.get_tiles_data().unwrap();
         let tiles = Tiles::new(server_tiles_data);
         // TODO: manage error
-        let zone_data = server.client.get_zone_data(
-            player.world_position.0,
-            player.world_position.1,
-        ).unwrap();
+        let zone_data = server
+            .client
+            .get_zone_data(player.world_position.0, player.world_position.1)
+            .unwrap();
         // TODO: manage error
         let zone_raw = zone_data["raw_source"].as_str().unwrap();
-        let zone_raw = util::extract_block_from_source(
-            util::BLOCK_GEO,
-            zone_raw,
-        )?;
+        let zone_raw = util::extract_block_from_source(util::BLOCK_GEO, zone_raw)?;
 
         let level = Level::new(&zone_raw, &tiles)?;
 
@@ -70,10 +71,9 @@ impl RollingGui {
         let start_display_map_row_i = player.position.0 as i32 - (self.height / 2);
         let start_display_map_col_i = player.position.1 as i32 - (self.width / 2);
 
-        let all_characters = server.client.get_zone_characters(
-            player.world_position.0,
-            player.world_position.1,
-        )?;
+        let all_characters = server
+            .client
+            .get_zone_characters(player.world_position.0, player.world_position.1)?;
         let mut characters: HashMap<String, Character> = HashMap::new();
         for character in all_characters.into_iter() {
             if player.id != character.id {
@@ -82,55 +82,55 @@ impl RollingGui {
         }
 
         // TODO: https
-        let mut socket = ZoneSocket::new(
-            format!(
-                "http://{}:{}/zones/{}/{}/events",
-                server.config.ip,
-                server.config.port,
-                player.world_position.0,
-                player.world_position.1,
-            )
-        );
+        let mut socket = ZoneSocket::new(format!(
+            "http://{}:{}/zones/{}/{}/events",
+            server.config.ip, server.config.port, player.world_position.0, player.world_position.1,
+        ));
         socket.connect();
 
-        self.engine = Box::new(
-            ZoneEngine::new(
-                server,
-                player,
-                characters,
-                socket,
-                level,
-                tiles,
-                start_display_map_row_i,
-                start_display_map_col_i,
-            )
-        );
+        self.engine = Box::new(ZoneEngine::new(
+            server,
+            player,
+            characters,
+            socket,
+            level,
+            tiles,
+            start_display_map_row_i,
+            start_display_map_col_i,
+        ));
         Ok(())
     }
 
     fn get_server_config(&self, server_ip: &str, server_port: u16) -> config::ServerConfig {
-        if let Some(server_config) = self.db.get::<config::ServerConfig>(
-            format!("server_{}_{}", server_ip, server_port).as_str()
-        ) {
-            return server_config
+        if let Some(server_config) = self
+            .db
+            .get::<config::ServerConfig>(format!("server_{}_{}", server_ip, server_port).as_str())
+        {
+            return server_config;
         }
 
-
-        config::ServerConfig{
+        config::ServerConfig {
             ip: server_ip.to_string(),
             port: server_port,
             character_id: None,
         }
     }
 
-    fn create_server(&mut self, server_ip: &str, server_port: u16) -> Result<server::Server, Box<dyn Error>> {
+    fn create_server(
+        &mut self,
+        server_ip: &str,
+        server_port: u16,
+    ) -> Result<server::Server, Box<dyn Error>> {
         let server_config = self.get_server_config(server_ip, server_port);
         let client = server::client::Client::new(server_ip, server_port);
 
         Ok(server::Server::new(client, server_config)?)
     }
 
-    fn create_or_grab_player(&mut self, server: &mut server::Server) -> Result<Player, Box<dyn Error>> {
+    fn create_or_grab_player(
+        &mut self,
+        server: &mut server::Server,
+    ) -> Result<Player, Box<dyn Error>> {
         println!("Create or grab character");
 
         if let Some(character_id) = &server.config.character_id {
@@ -139,14 +139,12 @@ impl RollingGui {
             match server.client.get_player(character_id) {
                 Ok(player) => {
                     println!("Player found on server");
-                    return Ok(player)
-                },
+                    return Ok(player);
+                }
                 Err(server::client::ClientError::PlayerNotFound) => {
                     println!("Player NOT found on server");
-                },
-                Err(client_error) => {
-                    return Err(Box::new(client_error))
-                },
+                }
+                Err(client_error) => return Err(Box::new(client_error)),
             }
         }
 
@@ -156,15 +154,15 @@ impl RollingGui {
                 let character_id = String::from(&player.id);
                 println!("Player created with id '{}'", &player.id);
                 server.config.character_id = Some(String::from(&player.id));
-                self.db.set(
-                    format!("server_{}_{}", server.config.ip, server.config.port).as_str(),
-                    &server.config
-                ).unwrap();
+                self.db
+                    .set(
+                        format!("server_{}_{}", server.config.ip, server.config.port).as_str(),
+                        &server.config,
+                    )
+                    .unwrap();
                 return Ok(player);
-            },
-            Err(client_error) => {
-                return Err(Box::new(client_error))
-            },
+            }
+            Err(client_error) => return Err(Box::new(client_error)),
         }
     }
 }
@@ -174,7 +172,8 @@ impl Engine for RollingGui {
         api.con().register_color("white", color::WHITE);
     }
     fn update(&mut self, api: &mut dyn DoryenApi) -> Option<UpdateEvent> {
-        api.con().clear(Some(color::BLACK), Some(color::BLACK), Some(' ' as u16));
+        api.con()
+            .clear(Some(color::BLACK), Some(color::BLACK), Some(' ' as u16));
         let input = api.input();
 
         if input.key("Enter") && self.engine.as_ref().get_name() != "ZONE" {

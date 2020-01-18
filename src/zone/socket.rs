@@ -1,20 +1,19 @@
 extern crate websocket;
 
-use websocket::{ClientBuilder, Message, WebSocketError};
-use serde_json::{Value};
-use mpsc::SendError;
 use self::websocket::OwnedMessage;
-use std::thread;
+use mpsc::SendError;
+use serde_json::Value;
+use std::io::Error;
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::io::Error;
+use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
-use std::time::{SystemTime};
+use std::time::SystemTime;
+use websocket::{ClientBuilder, Message, WebSocketError};
 
 use crate::event;
-
 
 pub struct ZoneSocket {
     ws_address: String,
@@ -84,22 +83,21 @@ impl ZoneSocket {
 
                         if break_ {
                             println!("WebSocket(receiver): Receive close event");
-                            break
+                            break;
                         }
-
                     }
                     Ok(OwnedMessage::Close(_)) => {
                         println!("WebSocket(receiver): Close");
-                        break
-                    },
+                        break;
+                    }
                     Err(WebSocketError::NoDataAvailable) => {
                         println!("WebSocket(receiver): WebSocketError: NoDataAvailable");
-                        break
-                    },
-                    _ => {
-                        eprintln!("WebSocket(receiver): Unknown websocket message received: {:?}", message)
+                        break;
                     }
-                    // TODO add ping/pong (OwnedMessage::ping|pong)
+                    _ => eprintln!(
+                        "WebSocket(receiver): Unknown websocket message received: {:?}",
+                        message
+                    ), // TODO add ping/pong (OwnedMessage::ping|pong)
                 }
             }
 
@@ -120,7 +118,7 @@ impl ZoneSocket {
                 if let event::ZoneEventType::ClientWantClose = received.event_type {
                     // Get out for loop (and finish thread)
                     println!("WebSocket(sender): Closing ...");
-                    break
+                    break;
                 }
             }
 
@@ -147,7 +145,7 @@ impl ZoneSocket {
 
     pub fn close(&mut self) -> Result<(), Error> {
         self.closing = true;
-        self.send(event::ZoneEvent{
+        self.send(event::ZoneEvent {
             event_type: event::ZoneEventType::ClientWantClose,
             event_type_name: String::from(event::CLIENT_WANT_CLOSE),
         });
@@ -175,5 +173,4 @@ impl ZoneSocket {
 
         Ok(())
     }
-
 }

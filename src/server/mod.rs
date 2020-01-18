@@ -1,8 +1,8 @@
 use crate::config;
 use std::error::Error;
 
-pub mod model;
 pub mod client;
+pub mod model;
 
 pub struct Server {
     pub config: config::ServerConfig,
@@ -11,14 +11,12 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(client: client::Client, config: config::ServerConfig) -> Result<Self, Box<dyn Error>> {
+    pub fn new(
+        client: client::Client,
+        config: config::ServerConfig,
+    ) -> Result<Self, Box<dyn Error>> {
         // TODO grab tiles, possible moves, etc from server
 
-        Ok(
-            Self {
-                config,
-                client,
-            }
-        )
+        Ok(Self { config, client })
     }
 }

@@ -1,7 +1,7 @@
-use serde::ser::{Serialize, Serializer, SerializeStruct};
-use serde_derive::{Serialize as SerializeDerive, Deserialize as DeserializeDerive};
-use serde_json::{Value};
 use crate::error::RollingError;
+use serde::ser::{Serialize, SerializeStruct, Serializer};
+use serde_derive::{Deserialize as DeserializeDerive, Serialize as SerializeDerive};
+use serde_json::Value;
 
 pub const PLAYER_MOVE: &str = "PLAYER_MOVE";
 pub const CLIENT_WANT_CLOSE: &str = "CLIENT_WANT_CLOSE";
@@ -14,7 +14,11 @@ pub enum ZoneEventType {
     ClientWantClose,
     // FIXME rename into ClientClosingAcknowledge
     ServerPermitClose,
-    PlayerMove {to_row_i: i32, to_col_i: i32, character_id: String},
+    PlayerMove {
+        to_row_i: i32,
+        to_col_i: i32,
+        character_id: String,
+    },
 }
 
 #[derive(Debug)]
@@ -30,35 +34,25 @@ impl ZoneEvent {
         let data = value.get("data").unwrap();
 
         match &type_ {
-            &PLAYER_MOVE => {
-                Ok(
-                    ZoneEvent{
-                        event_type_name: String::from(PLAYER_MOVE),
-                        event_type: ZoneEventType::PlayerMove {
-                            to_row_i: data["to_row_i"].as_i64().unwrap() as i32,
-                            to_col_i: data["to_col_i"].as_i64().unwrap() as i32,
-                            character_id: String::from(data["character_id"].as_str().unwrap()),
-                        }
-                    }
-                )
-            },
-            &CLIENT_WANT_CLOSE => {
-                Ok(
-                    ZoneEvent{
-                        event_type_name: String::from(CLIENT_WANT_CLOSE),
-                        event_type: ZoneEventType::ClientWantClose,
-                    }
-                )
-            }
-            &SERVER_PERMIT_CLOSE => {
-                Ok(
-                    ZoneEvent{
-                        event_type_name: String::from(SERVER_PERMIT_CLOSE),
-                        event_type: ZoneEventType::ServerPermitClose,
-                    }
-                )
-            }
-            _ => {Err(RollingError{message: format!("Unknown event {}", &type_)})}
+            &PLAYER_MOVE => Ok(ZoneEvent {
+                event_type_name: String::from(PLAYER_MOVE),
+                event_type: ZoneEventType::PlayerMove {
+                    to_row_i: data["to_row_i"].as_i64().unwrap() as i32,
+                    to_col_i: data["to_col_i"].as_i64().unwrap() as i32,
+                    character_id: String::from(data["character_id"].as_str().unwrap()),
+                },
+            }),
+            &CLIENT_WANT_CLOSE => Ok(ZoneEvent {
+                event_type_name: String::from(CLIENT_WANT_CLOSE),
+                event_type: ZoneEventType::ClientWantClose,
+            }),
+            &SERVER_PERMIT_CLOSE => Ok(ZoneEvent {
+                event_type_name: String::from(SERVER_PERMIT_CLOSE),
+                event_type: ZoneEventType::ServerPermitClose,
+            }),
+            _ => Err(RollingError {
+                message: format!("Unknown event {}", &type_),
+            }),
         }
     }
 }

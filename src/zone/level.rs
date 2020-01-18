@@ -1,9 +1,8 @@
-use doryen_rs::{DoryenApi};
+use doryen_rs::DoryenApi;
 
-use crate::util;
 use crate::error::RollingError;
-use crate::tile::{Tiles};
-
+use crate::tile::Tiles;
+use crate::util;
 
 #[derive(Debug)]
 struct LevelRow {
@@ -18,15 +17,13 @@ pub struct Level {
 }
 
 impl Level {
-    pub fn new(zone_raw: & str, tiles: & Tiles) -> Result<Self, RollingError> {
+    pub fn new(zone_raw: &str, tiles: &Tiles) -> Result<Self, RollingError> {
         let height = zone_raw.lines().count() as i32;
         let longest_line = util::longest_line(zone_raw);
         if !longest_line.is_some() {
-            return Err(
-                RollingError{
-                    message: String::from("There is no line in given zone source")
-                }
-            )
+            return Err(RollingError {
+                message: String::from("There is no line in given zone source"),
+            });
         }
         // FIXME utf-8 compat here (chars not utf-8 char hm ?)
         let width = longest_line.unwrap().chars().count() as i32;
@@ -40,20 +37,26 @@ impl Level {
                 cols.push(tile_id);
             }
 
-            let level_row = LevelRow{ cols };
+            let level_row = LevelRow { cols };
             rows.push(level_row);
         }
 
-        Ok(
-            Self {
-                width,
-                height,
-                rows,
-            }
-        )
+        Ok(Self {
+            width,
+            height,
+            rows,
+        })
     }
 
-    pub fn render(&mut self, api: &mut dyn DoryenApi, tiles: &Tiles, start_display_map_row_i: i32, start_display_map_col_i: i32, display_width: i32, display_height: i32) {
+    pub fn render(
+        &mut self,
+        api: &mut dyn DoryenApi,
+        tiles: &Tiles,
+        start_display_map_row_i: i32,
+        start_display_map_col_i: i32,
+        display_width: i32,
+        display_height: i32,
+    ) {
         let con = api.con();
 
         for row_i in 0..display_height {
@@ -64,13 +67,13 @@ impl Level {
                 // Pick map tile only is coordinate exist in map (can't pre-check height because
                 // row can finish before end of complete width)
                 if map_row_i < 0 || map_col_i < 0 || map_row_i >= self.height {
-                    continue
+                    continue;
                 }
                 let row = &self.rows[map_row_i as usize];
 
                 // Can't pick tile if outside
                 if map_col_i as usize >= row.cols.len() {
-                    continue
+                    continue;
                 }
 
                 let tile_id = &row.cols[map_col_i as usize];
@@ -86,20 +89,19 @@ impl Level {
     }
 
     // row_i, col_i
-    pub fn tile_id
-    (&self, position: (i32, i32)) -> String {
+    pub fn tile_id(&self, position: (i32, i32)) -> String {
         if position.1 < 0 || position.0 < 0 {
-            return String::from("NOTHING")
+            return String::from("NOTHING");
         }
 
         if position.0 >= self.rows.len() as i32 {
-            return String::from("NOTHING")
+            return String::from("NOTHING");
         }
-        
+
         let row = &self.rows[position.0 as usize];
 
         if position.1 >= row.cols.len() as i32 {
-            return String::from("NOTHING")
+            return String::from("NOTHING");
         }
 
         row.cols[position.1 as usize].clone()

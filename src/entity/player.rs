@@ -1,4 +1,4 @@
-use doryen_rs::{DoryenApi};
+use doryen_rs::DoryenApi;
 
 use crate::color;
 
@@ -17,7 +17,7 @@ impl Player {
             id: id.to_string(),
             position: (position.0 as f32, position.1 as f32),
             world_position: (world_position.0, world_position.1),
-            speed: 0.2
+            speed: 0.2,
         }
     }
 
@@ -51,7 +51,10 @@ impl Player {
     }
 
     pub fn next_position(&self, mov: (i32, i32)) -> (i32, i32) {
-        (self.position.0 as i32 + mov.0, self.position.1 as i32 + mov.1)
+        (
+            self.position.0 as i32 + mov.0,
+            self.position.1 as i32 + mov.1,
+        )
     }
 
     pub fn render(&self, api: &mut dyn DoryenApi, width: i32, height: i32) {
@@ -61,7 +64,5 @@ impl Player {
 
         con.ascii(col_i, row_i, '@' as u16);
         con.fore(col_i, row_i, color::WHITE);
-
     }
-
 }

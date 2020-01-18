@@ -1,4 +1,4 @@
-use doryen_rs::{Color};
+use doryen_rs::Color;
 
 pub const BLACK: Color = (0, 0, 0, 255);
 pub const OLIVE: Color = (128, 128, 0, 255);
