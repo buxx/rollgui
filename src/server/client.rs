@@ -2,6 +2,8 @@ use reqwest;
 use reqwest::blocking::Response;
 
 use crate::entity::character::Character;
+use crate::entity::stuff::Stuff;
+use crate::entity::build::Build;
 use crate::entity::player::Player;
 use serde_json::{Map, Number, Value};
 use std::error::Error;
@@ -9,8 +11,8 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum ClientError {
-    NotFound,
-    PlayerNotFound,
+    NotFound { response: String },
+    PlayerNotFound { response: String },
     ClientSideError { response: String },
     ServerSideError { response: String },
     UnknownError { response: String },
@@ -21,11 +23,11 @@ impl Error for ClientError {}
 impl ClientError {
     fn get_message(&self, client_error: &ClientError) -> String {
         return match client_error {
-            ClientError::NotFound => "Not found".to_string(),
-            ClientError::PlayerNotFound => "Player not found".to_string(),
-            ClientError::ClientSideError { response } => response.to_string(),
-            ClientError::ServerSideError { response } => response.to_string(),
-            ClientError::UnknownError { response } => response.to_string(),
+            ClientError::NotFound { response }  => format!("Not found: {}", response.to_string()).to_string(),
+            ClientError::PlayerNotFound { response }  => format!("Player not found: {}", response.to_string()).to_string(),
+            ClientError::ClientSideError { response } => format!("Client side error: {}", response.to_string()).to_string(),
+            ClientError::ServerSideError { response } => format!("Server side error: {}", response.to_string()).to_string(),
+            ClientError::UnknownError { response } => format!("Unknown error: {}", response.to_string()).to_string(),
         };
     }
 }
@@ -59,7 +61,9 @@ impl Client {
 
     fn check_response(&self, response: Response) -> Result<Response, ClientError> {
         if response.status().as_u16() == 404 {
-            return Err(ClientError::PlayerNotFound);
+            return Err(ClientError::NotFound{
+                response: response.text().unwrap(),
+            });
         }
 
         if response.status().is_client_error() {
@@ -84,7 +88,7 @@ impl Client {
         let mut response: Response = self.client.get(url.as_str()).send().unwrap();
 
         match self.check_response(response) {
-            Err(ClientError::NotFound) => return Err(ClientError::PlayerNotFound),
+            Err(ClientError::NotFound{response}) => return Err(ClientError::PlayerNotFound{response}),
             Err(client_error) => return Err(client_error),
             Ok(resp) => response = resp,
         }
@@ -170,7 +174,7 @@ impl Client {
         world_row_i: i32,
         world_col_i: i32,
     ) -> Result<Vec<Character>, ClientError> {
-        println!("Retrieve zone from server");
+        println!("Retrieve characters from server");
         let url = format!(
             "{}/zones/{}/{}/characters",
             self.get_base_path(),
@@ -181,5 +185,50 @@ impl Client {
             self.check_response(self.client.get(url.as_str()).send().unwrap())?;
 
         Ok(response.json::<Vec<Character>>().unwrap())
+    }
+
+    pub fn get_zone_stuffs(
+        &self,
+        world_row_i: i32,
+        world_col_i: i32,
+    ) -> Result<Vec<Stuff>, ClientError> {
+        println!("Retrieve stuffs from server");
+        let url = format!(
+            "{}/zones/{}/{}/stuff",
+            self.get_base_path(),
+            world_row_i,
+            world_col_i
+        );
+        let response: Response =
+            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+
+        Ok(response.json::<Vec<Stuff>>().unwrap())
+    }
+
+    pub fn get_zone_builds(
+        &self,
+        world_row_i: i32,
+        world_col_i: i32,
+    ) -> Result<Vec<Build>, ClientError> {
+        println!("Retrieve builds from server");
+        let url = format!(
+            "{}/zones/{}/{}/builds",
+            self.get_base_path(),
+            world_row_i,
+            world_col_i
+        );
+        let response: Response =
+            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+
+        Ok(response.json::<Vec<Build>>().unwrap())
+    }
+
+    pub fn get_world_source(&self) -> Result<String, ClientError> {
+        println!("Retrieve world source from server");
+        let url = format!("{}/world/source", self.get_base_path());
+        let response: Response =
+            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+
+        Ok(response.text().unwrap().to_string())
     }
 }

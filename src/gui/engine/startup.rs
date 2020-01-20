@@ -1,15 +1,15 @@
-use doryen_rs::{DoryenApi, UpdateEvent};
+use doryen_rs::{DoryenApi, UpdateEvent, Image};
 
 use crate::gui::engine::Engine;
 
 pub struct StartupEngine {
-    _mouse_pos: (f32, f32),
+    image: Image,
 }
 
 impl StartupEngine {
     pub fn new() -> Self {
         Self {
-            _mouse_pos: (0.0, 0.0),
+            image: Image::new("island.png"),
         }
     }
 }
@@ -28,7 +28,9 @@ impl Engine for StartupEngine {
         None
     }
 
-    fn render(&mut self, _api: &mut dyn DoryenApi, _width: i32, _height: i32) {}
+    fn render(&mut self, api: &mut dyn DoryenApi, _width: i32, _height: i32) {
+        self.image.blit_2x(api.con(), 0, 0, 0, 0, None, None, None);
+    }
 
     fn resize(&mut self, _api: &mut dyn DoryenApi) {}
 

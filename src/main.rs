@@ -11,7 +11,7 @@ pub mod gui;
 pub mod server;
 pub mod tile;
 pub mod util;
-pub mod zone;
+pub mod world;
 
 const CONSOLE_WIDTH: u32 = 60;
 const CONSOLE_HEIGHT: u32 = 45;

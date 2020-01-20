@@ -1,8 +1,9 @@
 use doryen_rs::DoryenApi;
 
 use crate::color;
+use crate::gui;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Player {
     pub id: String,
     // row_i, col_i
@@ -62,7 +63,7 @@ impl Player {
         let row_i = height / 2;
         let col_i = width / 2;
 
-        con.ascii(col_i, row_i, '@' as u16);
+        con.ascii(col_i, row_i, gui::CHAR_PLAYER);
         con.fore(col_i, row_i, color::WHITE);
     }
 }

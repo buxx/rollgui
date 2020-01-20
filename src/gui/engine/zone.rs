@@ -3,20 +3,22 @@ use std::collections::HashMap;
 
 use crate::color;
 use crate::entity::character::Character;
+use crate::entity::stuff::Stuff;
+use crate::entity::build::Build;
 use crate::entity::player::Player;
 use crate::event;
 use crate::event::ZoneEventType;
 use crate::gui::engine::Engine;
-use crate::server;
-use crate::tile::Tiles;
-use crate::zone::level::Level;
-use crate::zone::socket::ZoneSocket;
-use std::any::Any;
+use crate::gui;
+use crate::tile::zone::Tiles;
+use crate::world::level::Level;
+use crate::world::socket::ZoneSocket;
 
 pub struct ZoneEngine {
-    _server: server::Server,
     player: Player,
     characters: HashMap<String, Character>,
+    stuffs: HashMap<String, Stuff>,
+    builds: HashMap<String, Build>,
     socket: ZoneSocket,
     level: Level,
     tiles: Tiles,
@@ -28,9 +30,10 @@ pub struct ZoneEngine {
 
 impl ZoneEngine {
     pub fn new(
-        server: server::Server,
         player: Player,
         characters: HashMap<String, Character>,
+        stuffs: HashMap<String, Stuff>,
+        builds: HashMap<String, Build>,
         socket: ZoneSocket,
         level: Level,
         tiles: Tiles,
@@ -38,9 +41,10 @@ impl ZoneEngine {
         start_display_map_col_i: i32,
     ) -> Self {
         Self {
-            _server: server,
             player,
             characters,
+            stuffs,
+            builds,
             socket,
             level,
             tiles,
@@ -125,15 +129,45 @@ impl Engine for ZoneEngine {
         self.player.render(api, width as i32, height as i32);
 
         let con = api.con();
-        for (character_id, character) in self.characters.iter() {
+
+        // CHARACTERS
+        for (_character_id, character) in self.characters.iter() {
             con.ascii(
                 character.zone_col_i - self.start_display_map_col_i,
                 character.zone_row_i - self.start_display_map_row_i,
-                '%' as u16,
+                gui::CHAR_CHARACTER,
             );
             con.fore(
                 character.zone_col_i - self.start_display_map_col_i,
                 character.zone_row_i - self.start_display_map_row_i,
+                color::WHITE,
+            );
+        }
+
+        // STUFFS
+        for (_stuff_id, stuff) in self.stuffs.iter() {
+            con.ascii(
+                stuff.zone_col_i - self.start_display_map_col_i,
+                stuff.zone_row_i - self.start_display_map_row_i,
+                gui::CHAR_TRUNK,
+            );
+            con.fore(
+                stuff.zone_col_i - self.start_display_map_col_i,
+                stuff.zone_row_i - self.start_display_map_row_i,
+                color::WHITE,
+            );
+        }
+
+        // BUILDS
+        for (_build_id, build) in self.builds.iter() {
+            con.ascii(
+                build.col_i - self.start_display_map_col_i,
+                build.row_i - self.start_display_map_row_i,
+                gui::CHAR_GEARS,
+            );
+            con.fore(
+                build.col_i - self.start_display_map_col_i,
+                build.row_i - self.start_display_map_row_i,
                 color::WHITE,
             );
         }

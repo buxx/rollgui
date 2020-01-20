@@ -1,7 +1,7 @@
 use doryen_rs::DoryenApi;
 
 use crate::error::RollingError;
-use crate::tile::Tiles;
+use crate::tile::zone::Tiles;
 use crate::util;
 
 #[derive(Debug)]
@@ -25,7 +25,7 @@ impl Level {
                 message: String::from("There is no line in given zone source"),
             });
         }
-        // FIXME utf-8 compat here (chars not utf-8 char hm ?)
+
         let width = longest_line.unwrap().chars().count() as i32;
         let mut rows: Vec<LevelRow> = Vec::new();
 
@@ -33,7 +33,7 @@ impl Level {
             let mut cols: Vec<String> = Vec::new();
 
             for tile_char in line.chars() {
-                let tile_id = tiles.tile_id(tile_char);
+                let tile_id = tiles.tile_id(tile_char as u16);
                 cols.push(tile_id);
             }
 

@@ -2,6 +2,7 @@ use doryen_rs::{DoryenApi, UpdateEvent};
 
 pub mod startup;
 pub mod zone;
+pub mod world;
 
 pub trait Engine {
     fn get_name(&self) -> &str;
