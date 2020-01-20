@@ -13,17 +13,17 @@ pub mod tile;
 pub mod util;
 pub mod zone;
 
-const CONSOLE_WIDTH: u32 = 80;
+const CONSOLE_WIDTH: u32 = 60;
 const CONSOLE_HEIGHT: u32 = 45;
 
 fn main() {
     let mut app = App::new(AppOptions {
         console_width: CONSOLE_WIDTH,
         console_height: CONSOLE_HEIGHT,
-        screen_width: CONSOLE_WIDTH * 8,
-        screen_height: CONSOLE_HEIGHT * 8,
-        window_title: "my roguelike".to_owned(),
-        font_path: "terminal_8x8.png".to_owned(),
+        screen_width: CONSOLE_WIDTH * 18,
+        screen_height: CONSOLE_HEIGHT * 18,
+        window_title: "Rolling".to_owned(),
+        font_path: "Teeto_K_18x18.png".to_owned(),
         vsync: true,
         fullscreen: false,
         show_cursor: true,
