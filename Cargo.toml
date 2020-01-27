@@ -5,5 +5,13 @@ authors = ["Bastien Sevajol <sevajol.bastien@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-doryen-rs = "1.2.2"
+doryen-fov = "0.1.1"
+doryen-rs = "1.2.3"
+websocket = "0.24.0"
+serde = "1.0.104"
+serde_derive = "1.0.104"
+serde_json = "1.0.44"
+pickledb = "0.4.0"
+reqwest = { version = "0.10.1", features = ["blocking", "json"] }
+colors-transform = "0.2.11"
 doryen-ui = { git = "https://github.com/jice-nospam/doryen-ui.git", rev = "101edb85669df791b484aa4d802b32665352734c" }

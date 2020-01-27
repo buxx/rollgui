@@ -7,10 +7,7 @@ use std::path::Path;
 pub const BLOCK_GEO: &str = "GEO";
 pub const BLOCK_LEGEND: &str = "LEGEND";
 
-pub fn extract_block_from_source(
-    block_name: &str,
-    source: &String,
-) -> Result<String, RollingError> {
+pub fn extract_block_from_source(block_name: &str, source: &str) -> Result<String, RollingError> {
     let mut block_found = false;
     let mut block_lines: Vec<&str> = Vec::new();
 
@@ -93,7 +90,7 @@ pub fn top_chars_contains(searched_char: char, chars: &Vec<Vec<char>>) -> bool {
 
 pub fn longest_line(text: &str) -> Option<&str> {
     let mut max_length = 0;
-    let mut longest_line : Option<&str> = None;
+    let mut longest_line: Option<&str> = None;
 
     for line in text.lines() {
         let contents = line.trim_end();

@@ -1,19 +1,24 @@
-use doryen_rs::{DoryenApi};
+use doryen_rs::DoryenApi;
 
 use crate::color;
+use crate::gui;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Player {
+    pub id: String,
     // row_i, col_i
     pub position: (f32, f32),
+    pub world_position: (i32, i32),
     speed: f32,
 }
 
 impl Player {
-    pub fn new(position: (i32, i32)) -> Self {
+    pub fn new(id: &str, position: (i32, i32), world_position: (i32, i32)) -> Self {
         Self {
-           position: (position.0 as f32, position.1 as f32),
-            speed: 0.2
+            id: id.to_string(),
+            position: (position.0 as f32, position.1 as f32),
+            world_position: (world_position.0, world_position.1),
+            speed: 0.2,
         }
     }
 
@@ -43,11 +48,14 @@ impl Player {
         let old_col_i = self.position.1 as i32;
         self.position.0 += self.speed * mov.0 as f32 * coef;
         self.position.1 += self.speed * mov.1 as f32 * coef;
-        old_row_i == self.position.0 as i32 && old_col_i == self.position.1 as i32
+        old_row_i != self.position.0 as i32 || old_col_i != self.position.1 as i32
     }
 
     pub fn next_position(&self, mov: (i32, i32)) -> (i32, i32) {
-        (self.position.0 as i32 + mov.0, self.position.1 as i32 + mov.1)
+        (
+            self.position.0 as i32 + mov.0,
+            self.position.1 as i32 + mov.1,
+        )
     }
 
     pub fn render(&self, api: &mut dyn DoryenApi, width: i32, height: i32) {
@@ -55,9 +63,7 @@ impl Player {
         let row_i = height / 2;
         let col_i = width / 2;
 
-        con.ascii(col_i, row_i, '@' as u16);
+        con.ascii(col_i, row_i, gui::CHAR_PLAYER);
         con.fore(col_i, row_i, color::WHITE);
-
     }
-
 }
