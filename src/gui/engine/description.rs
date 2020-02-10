@@ -19,7 +19,6 @@ pub struct DescriptionEngine {
 
 impl DescriptionEngine {
     pub fn new(description: Description, server: Server) -> Self {
-        dbg!(&description);
         Self {
             description,
             server,
@@ -38,7 +37,7 @@ impl Engine for DescriptionEngine {
         _api: &mut dyn DoryenApi,
         _width: i32,
         _height: i32,
-    ) -> Option<UpdateEvent> {
+    ) -> Option<action::Action> {
         None
     }
 

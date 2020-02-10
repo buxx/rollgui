@@ -12,7 +12,7 @@ pub struct TileAppearance {
     pub ascii: Option<u16>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Tiles {
     appearances: HashMap<String, TileAppearance>,
     codes: HashMap<u16, String>,

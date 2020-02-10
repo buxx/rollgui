@@ -5,11 +5,12 @@ use crate::util;
 pub mod level;
 pub mod socket;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WorldRow {
     pub cols: Vec<String>,
 }
 
+#[derive(Clone)]
 pub struct World {
     pub width: i32,
     pub height: i32,
@@ -46,5 +47,21 @@ impl World {
             height,
             rows,
         })
+    }
+
+    pub fn tile_id(&self, row_i: i32, col_i: i32) -> Option<String> {
+        if row_i < 0 || col_i < 0 {
+            return None
+        }
+
+        if let Some(row) = self.rows.get(row_i as usize) {
+            if col_i as usize > row.cols.len() {
+                return None
+            }
+
+            return Some(row.cols[col_i as usize].clone())
+        }
+
+        None
     }
 }

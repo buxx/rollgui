@@ -6,10 +6,10 @@ use crate::gui::action;
 use crate::gui::engine::Engine;
 use crate::tile;
 use crate::world;
+use crate::server::Server;
 
 pub struct WorldEngine {
-    tiles: tile::world::Tiles,
-    world: world::World,
+    server: Server,
     player: Player,
     // Map coordinates where start to display it
     start_display_map_row_i: i32,
@@ -19,15 +19,13 @@ pub struct WorldEngine {
 
 impl WorldEngine {
     pub fn new(
-        tiles: tile::world::Tiles,
-        world: world::World,
+        server: Server,
         player: Player,
         start_display_map_row_i: i32,
         start_display_map_col_i: i32,
     ) -> Self {
         Self {
-            tiles,
-            world,
+            server,
             player,
             start_display_map_row_i,
             start_display_map_col_i,
@@ -46,7 +44,7 @@ impl Engine for WorldEngine {
         api: &mut dyn DoryenApi,
         _width: i32,
         _height: i32,
-    ) -> Option<UpdateEvent> {
+    ) -> Option<action::Action> {
         self.mouse_pos = api.input().mouse_pos();
         None
     }
@@ -61,9 +59,9 @@ impl Engine for WorldEngine {
 
                 // Pick map tile only is coordinate exist in map (can't pre-check height because
                 // row can finish before end of complete width)
-                if map_row_i < 0 || map_col_i < 0 || map_row_i >= self.world.height {
-                    if let Some(default_id) = &self.tiles.default {
-                        let default_appearance = self.tiles.appearance(default_id);
+                if map_row_i < 0 || map_col_i < 0 || map_row_i >= self.server.world.height {
+                    if let Some(default_id) = &self.server.world_tiles.default {
+                        let default_appearance = self.server.world_tiles.appearance(default_id);
                         con.back(col_i as i32, row_i, default_appearance.back);
                         con.fore(col_i as i32, row_i, default_appearance.fore);
                         if default_appearance.ascii.is_some() {
@@ -76,12 +74,12 @@ impl Engine for WorldEngine {
                     }
                     continue;
                 }
-                let row = &self.world.rows[map_row_i as usize];
+                let row = &self.server.world.rows[map_row_i as usize];
 
                 // Can't pick tile if outside
                 if map_col_i as usize >= row.cols.len() {
-                    if let Some(default_id) = &self.tiles.default {
-                        let default_appearance = self.tiles.appearance(default_id);
+                    if let Some(default_id) = &self.server.world_tiles.default {
+                        let default_appearance = self.server.world_tiles.appearance(default_id);
                         con.back(col_i as i32, row_i, default_appearance.back);
                         con.fore(col_i as i32, row_i, default_appearance.fore);
                         if default_appearance.ascii.is_some() {
@@ -96,7 +94,7 @@ impl Engine for WorldEngine {
                 }
 
                 let tile_id = &row.cols[map_col_i as usize];
-                let appearance = self.tiles.appearance(&tile_id);
+                let appearance = self.server.world_tiles.appearance(&tile_id);
 
                 con.back(col_i as i32, row_i, appearance.back);
                 con.fore(col_i as i32, row_i, appearance.fore);

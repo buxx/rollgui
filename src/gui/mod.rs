@@ -175,6 +175,7 @@ impl RollingGui {
         let resume_text = server.client.get_character_resume_texts(&player.id)?;
 
         Ok(Box::new(ZoneEngine::new(
+            server.clone(),
             player,
             characters,
             stuffs,
@@ -189,12 +190,6 @@ impl RollingGui {
     }
 
     fn setup_world(&self, server: &server::Server) -> Result<Box<dyn RollingEngine>, RollingError> {
-        let world_source = server.client.get_world_source()?;
-        let legend = util::extract_block_from_source("LEGEND", world_source.as_str())?;
-        let world_raw = util::extract_block_from_source("GEO", world_source.as_str())?;
-
-        let tiles = WorldTiles::new(legend.as_str())?;
-        let world = World::new(world_raw.as_str(), &tiles)?;
         let player = self.create_or_grab_player(server).unwrap().unwrap();
 
         // Compute display positions (player at center of display)
@@ -202,8 +197,7 @@ impl RollingGui {
         let start_display_map_col_i = player.world_position.1 as i32 - (self.width / 2);
 
         Ok(Box::new(WorldEngine::new(
-            tiles,
-            world,
+            server.clone(),
             player,
             start_display_map_row_i,
             start_display_map_col_i,
@@ -277,17 +271,22 @@ impl Engine for RollingGui {
         self.ctx.begin();
         let mut action = None;
         let gui_action = self.build_ui();
-        let engine_action = self
+        let engine_ui_action = self
             .engine
             .as_mut()
             .build_ui(&mut self.ctx, self.width, self.height);
         self.ctx.end();
+        let engine_upd_action = self.engine.as_mut().update(api, self.width, self.height);
+
 
         if action.is_none() && gui_action.is_some() {
             action = gui_action;
         }
-        if action.is_none() && engine_action.is_some() {
-            action = engine_action;
+        if action.is_none() && engine_ui_action.is_some() {
+            action = engine_ui_action;
+        }
+        if action.is_none() && engine_upd_action.is_some() {
+            action = engine_upd_action;
         }
         if action.is_none() {
             action = self
@@ -420,8 +419,6 @@ impl Engine for RollingGui {
             }
             None => {}
         }
-
-        self.engine.as_mut().update(api, self.width, self.height);
 
         None
     }

@@ -26,7 +26,7 @@ impl Engine for StartupEngine {
         _api: &mut dyn DoryenApi,
         _width: i32,
         _height: i32,
-    ) -> Option<UpdateEvent> {
+    ) -> Option<action::Action> {
         None
     }
 

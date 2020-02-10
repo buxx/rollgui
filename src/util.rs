@@ -231,6 +231,71 @@ pub fn overflow(text: &str, width: i32) -> Vec<String> {
     lines
 }
 
+
+#[derive(Debug)]
+pub enum CornerEnum {
+    Top,
+    TopRight,
+    Right,
+    BottomRight,
+    Bottom,
+    BottomLeft,
+    Left,
+    TopLeft,
+}
+
+pub fn get_corner(width: i32, height: i32, new_row_i: i32, new_col_i: i32) -> Option<CornerEnum> {
+    let left_col_i_end = width / 3;
+    let right_col_i_start = (width / 3) * 2;
+    let top_row_i_end = height / 3;
+    let bottom_row_i_start = (height / 3) * 2;
+    let mut more = if new_row_i >= 0 { new_row_i } else { 0 };
+    let mut right_col_i = 0;
+    let mut left_col_i = 0;
+
+    if new_row_i < top_row_i_end {
+        right_col_i = right_col_i_start + more;
+        left_col_i = left_col_i_end - more;
+    } else {
+        if new_row_i >= bottom_row_i_start {
+            more = (height / 3) - (new_row_i - bottom_row_i_start + 1);
+            more = if more >= 0 { more } else { 0 };
+            right_col_i = right_col_i_start + more;
+            left_col_i = left_col_i_end - more;
+        } else {
+            left_col_i = left_col_i_end;
+            right_col_i = right_col_i_start;
+        }
+    }
+
+    if new_col_i < left_col_i && new_row_i < top_row_i_end {
+        return Some(CornerEnum::TopLeft);
+    }
+    if new_row_i < 0 && left_col_i <= new_col_i {
+        return Some(CornerEnum::Top);
+    }
+    if new_col_i >= right_col_i && new_row_i < top_row_i_end {
+        return Some(CornerEnum::TopRight);
+    }
+    if new_col_i > width - 1 && top_row_i_end <= new_row_i {
+        return Some(CornerEnum::Right);
+    }
+    if new_col_i >= right_col_i && new_row_i >= bottom_row_i_start {
+        return Some(CornerEnum::BottomRight);
+    }
+    if new_row_i > height - 1 && left_col_i_end <= new_col_i {
+        return Some(CornerEnum::Bottom);
+    }
+    if new_col_i < left_col_i && new_row_i >= bottom_row_i_start {
+        return Some(CornerEnum::BottomLeft);
+    }
+    if new_col_i < 0 && top_row_i_end <= new_row_i {
+        return Some(CornerEnum::Left);
+    }
+
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
