@@ -4,26 +4,32 @@ use std::collections::HashMap;
 
 use crate::color;
 use crate::config;
-use crate::entity::character::Character;
-use crate::entity::stuff::Stuff;
 use crate::entity::build::Build;
+use crate::entity::character::Character;
 use crate::entity::player::Player;
-use crate::server::Server;
+use crate::entity::stuff::Stuff;
+use crate::error::RollingError;
+use crate::gui::action::{Action, ActionCondition};
+use crate::gui::engine::description::DescriptionEngine;
 use crate::gui::engine::startup::StartupEngine;
+use crate::gui::engine::world::WorldEngine;
 use crate::gui::engine::zone::ZoneEngine;
 use crate::gui::engine::Engine as RollingEngine;
-use crate::gui::engine::world::WorldEngine;
 use crate::server;
-use crate::tile::zone::Tiles as ZoneTiles;
+use crate::server::Server;
 use crate::tile::world::Tiles as WorldTiles;
+use crate::tile::zone::Tiles as ZoneTiles;
 use crate::util;
 use crate::world::level::Level;
-use crate::world::World;
 use crate::world::socket::ZoneSocket;
+use crate::world::World;
+use doryen_ui as ui;
+use serde_json::Map;
 use std::error::Error;
-use crate::error::RollingError;
 
+pub mod action;
 pub mod engine;
+pub mod lang;
 
 pub const CHAR_PLAYER: u16 = 64;
 pub const CHAR_CHARACTER: u16 = 1;
@@ -44,6 +50,8 @@ pub struct RollingGui {
     engine: Box<dyn RollingEngine>,
     db: PickleDb,
     server: Option<Server>,
+    ctx: ui::Context,
+    action: action::ActionManager,
     pub width: i32,
     pub height: i32,
 }
@@ -58,11 +66,45 @@ fn get_db(db_file_path: &str) -> PickleDb {
 
 impl RollingGui {
     pub fn new(width: i32, height: i32) -> Self {
+        let action_conditions: Vec<action::ActionCondition> = vec![
+            action::ActionCondition {
+                keys: vec!["Enter".to_string()],
+                engine_id: "STARTUP".to_string(),
+                to: action::Action::StartupToZone {
+                    server_ip: "127.0.0.1".to_string(),
+                    server_port: 5000,
+                },
+            },
+            action::ActionCondition {
+                keys: vec!["Space".to_string()],
+                engine_id: "ZONE".to_string(),
+                to: action::Action::ZoneToWorld,
+            },
+            action::ActionCondition {
+                keys: vec!["Escape".to_string()],
+                engine_id: "WORLD".to_string(),
+                to: action::Action::WorldToZone,
+            },
+            action::ActionCondition {
+                keys: vec!["Escape".to_string()],
+                engine_id: "ZONE".to_string(),
+                to: action::Action::ZoneToStartup,
+            },
+            action::ActionCondition {
+                keys: vec!["Escape".to_string()],
+                engine_id: "DESCRIPTION".to_string(),
+                to: action::Action::DescriptionToZone,
+            },
+        ];
+        let action = action::ActionManager::new(action_conditions);
+
         Self {
             engine: Box::new(StartupEngine::new()),
             db: get_db("client.db"),
+            ctx: ui::Context::new(),
             width,
             height,
+            action,
             server: None,
         }
     }
@@ -106,18 +148,18 @@ impl RollingGui {
         }
 
         // STUFFS
-        let stuffs_list = server.client.get_zone_stuffs(
-            player.world_position.0, player.world_position.1
-        )?;
+        let stuffs_list = server
+            .client
+            .get_zone_stuffs(player.world_position.0, player.world_position.1)?;
         let mut stuffs: HashMap<String, Stuff> = HashMap::new();
         for stuff in stuffs_list.into_iter() {
             stuffs.insert(stuff.id.to_string().clone(), stuff);
         }
 
         // BUILDS
-        let builds_list = server.client.get_zone_builds(
-            player.world_position.0, player.world_position.1
-        )?;
+        let builds_list = server
+            .client
+            .get_zone_builds(player.world_position.0, player.world_position.1)?;
         let mut builds: HashMap<String, Build> = HashMap::new();
         for build in builds_list.into_iter() {
             builds.insert(build.id.to_string().clone(), build);
@@ -130,21 +172,20 @@ impl RollingGui {
         ));
         socket.connect();
 
-        Ok(
-            Box::new(
-                ZoneEngine::new(
-                    player,
-                    characters,
-                    stuffs,
-                    builds,
-                    socket,
-                    level,
-                    tiles,
-                    start_display_map_row_i,
-                    start_display_map_col_i,
-                )
-            )
-        )
+        let resume_text = server.client.get_character_resume_texts(&player.id)?;
+
+        Ok(Box::new(ZoneEngine::new(
+            player,
+            characters,
+            stuffs,
+            builds,
+            socket,
+            level,
+            tiles,
+            start_display_map_row_i,
+            start_display_map_col_i,
+            resume_text,
+        )))
     }
 
     fn setup_world(&self, server: &server::Server) -> Result<Box<dyn RollingEngine>, RollingError> {
@@ -154,23 +195,19 @@ impl RollingGui {
 
         let tiles = WorldTiles::new(legend.as_str())?;
         let world = World::new(world_raw.as_str(), &tiles)?;
-        let player = self.create_or_grab_player(server).unwrap();
+        let player = self.create_or_grab_player(server).unwrap().unwrap();
 
         // Compute display positions (player at center of display)
         let start_display_map_row_i = player.world_position.0 as i32 - (self.height / 2);
         let start_display_map_col_i = player.world_position.1 as i32 - (self.width / 2);
 
-        Ok(
-            Box::new(
-                WorldEngine::new(
-                    tiles,
-                    world,
-                    player,
-                    start_display_map_row_i,
-                    start_display_map_col_i,
-                )
-            )
-        )
+        Ok(Box::new(WorldEngine::new(
+            tiles,
+            world,
+            player,
+            start_display_map_row_i,
+            start_display_map_col_i,
+        )))
     }
 
     fn get_server_config(&self, server_ip: &str, server_port: u16) -> config::ServerConfig {
@@ -202,8 +239,8 @@ impl RollingGui {
     fn create_or_grab_player(
         &self,
         server: &server::Server,
-    ) -> Result<Player, Box<dyn Error>> {
-        println!("Create or grab character");
+    ) -> Result<Option<Player>, Box<dyn Error>> {
+        println!("Create or grab character ?");
 
         if let Some(character_id) = &server.config.character_id {
             println!("Character '{}' locally found", character_id);
@@ -211,81 +248,188 @@ impl RollingGui {
             match server.client.get_player(character_id) {
                 Ok(player) => {
                     println!("Player found on server");
-                    return Ok(player);
+                    return Ok(Some(player));
                 }
-                Err(server::client::ClientError::PlayerNotFound{ response }) => {
+                Err(server::client::ClientError::PlayerNotFound { response }) => {
                     println!("Player NOT found on server");
+                    return Ok(None);
                 }
                 Err(client_error) => return Err(Box::new(client_error)),
             }
         }
 
-        println!("Character must be created");
-        match server.client.create_player("test") {
-            Ok(player) => {
-                let _character_id = String::from(&player.id);
-                println!("Player created with id '{}'", &player.id);
-                return Ok(player);
-            }
-            Err(client_error) => return Err(Box::new(client_error)),
-        }
+        println!("No local player found");
+        return Ok(None);
+    }
+    fn build_ui(&mut self) -> Option<action::Action> {
+        None
     }
 }
 
 impl Engine for RollingGui {
     fn init(&mut self, api: &mut dyn DoryenApi) {
         api.con().register_color("white", color::WHITE);
+        api.con().register_color("error", color::RED);
     }
     fn update(&mut self, api: &mut dyn DoryenApi) -> Option<UpdateEvent> {
-        api.con()
-            .clear(Some(color::BLACK), Some(color::BLACK), Some(' ' as u16));
-        let input = api.input();
+        // ui
+        ui::update_doryen_input_data(api, &mut self.ctx);
+        self.ctx.begin();
+        let mut action = None;
+        let gui_action = self.build_ui();
+        let engine_action = self
+            .engine
+            .as_mut()
+            .build_ui(&mut self.ctx, self.width, self.height);
+        self.ctx.end();
 
-        if input.key("Enter") && self.engine.as_ref().get_name() != "ZONE" {
-            // TODO: manage setup zone fail (with gui message)
-            let server_ip = "127.0.0.1";
-            let server_port: u16 = 5000;
-            println!("Server selected ({}:{})", &server_ip, server_port);
-            // TODO: manage error cases
-            self.server = Some(self.create_server(server_ip, server_port).unwrap());
-            // TODO: manage error cases
-            let player = self.create_or_grab_player(self.server.as_ref().unwrap()).unwrap();
-            // TODO: manage error cases
-            self.engine = self.setup_zone(&self.server.as_ref().unwrap(), player).unwrap();
+        if action.is_none() && gui_action.is_some() {
+            action = gui_action;
+        }
+        if action.is_none() && engine_action.is_some() {
+            action = engine_action;
+        }
+        if action.is_none() {
+            action = self
+                .action
+                .resolve(api.input(), self.engine.as_ref().get_name())
         }
 
-        if input.key("Escape") && self.engine.as_ref().get_name() == "ZONE" {
-            println!("Exit zone");
-            self.engine.teardown();
-            self.engine = self.setup_startup();
-        }
-
-        if input.key("Space") && self.engine.as_ref().get_name() == "ZONE" {
-            println!("Display world map");
-            self.engine.teardown();
-            // TODO manage error
-            self.engine = self.setup_world(&self.server.as_ref().unwrap()).unwrap();
-        }
-
-        if input.key("Escape") && self.engine.as_ref().get_name() == "WORLD" {
-            println!("Exit world map");
-            self.engine.teardown();
-            let player = self.create_or_grab_player(&self.server.as_ref().unwrap()).unwrap();
-            self.server.as_mut().unwrap().config.character_id = Some(String::from(&player.id));
-            self.db
-                .set(
-                    format!("server_{}_{}", self.server.as_ref().unwrap().config.ip, self.server.as_ref().unwrap().config.port).as_str(),
-                    &self.server.as_ref().unwrap().config,
-                )
-                .unwrap();
-            self.engine = self.setup_zone(&self.server.as_ref().unwrap(), player).unwrap();
+        match action {
+            Some(action::Action::StartupToZone {
+                server_ip,
+                server_port,
+            }) => {
+                println!("Server selected ({}:{})", &server_ip, server_port);
+                // TODO: manage error cases
+                self.server = Some(self.create_server(&server_ip, server_port).unwrap());
+                // TODO: manage error cases
+                let player = self
+                    .create_or_grab_player(self.server.as_ref().unwrap())
+                    .unwrap();
+                if let Some(player) = player {
+                    // TODO: manage error cases
+                    self.engine = self
+                        .setup_zone(&self.server.as_ref().unwrap(), player)
+                        .unwrap();
+                } else {
+                    self.engine = Box::new(DescriptionEngine::new(
+                        // TODO: manage error cases
+                        self.server
+                            .as_ref()
+                            .unwrap()
+                            .client
+                            .describe("/_describe/character/create", None, None)
+                            .unwrap(),
+                        self.server.as_ref().unwrap().clone(),
+                    ));
+                }
+            }
+            Some(Action::ZoneToWorld) => {
+                println!("Display world map");
+                self.engine.teardown();
+                // TODO manage error
+                self.engine = self.setup_world(&self.server.as_ref().unwrap()).unwrap();
+            }
+            Some(Action::WorldToZone) => {
+                println!("Exit world map");
+                self.engine.teardown();
+                let player = self
+                    .create_or_grab_player(&self.server.as_ref().unwrap())
+                    .unwrap()
+                    .unwrap();
+                self.engine = self
+                    .setup_zone(&self.server.as_ref().unwrap(), player)
+                    .unwrap();
+            }
+            Some(Action::DescriptionToZone) => {
+                println!("Exit description");
+                self.engine.teardown();
+                let player = self
+                    .create_or_grab_player(&self.server.as_ref().unwrap())
+                    .unwrap()
+                    .unwrap();
+                self.engine = self
+                    .setup_zone(&self.server.as_ref().unwrap(), player)
+                    .unwrap();
+            }
+            Some(Action::ZoneToStartup) => {
+                println!("Exit zone");
+                self.engine.teardown();
+                self.engine = self.setup_startup();
+            }
+            Some(Action::ExitGame) => return Some(UpdateEvent::Exit),
+            Some(Action::NewCharacterId { character_id }) => {
+                println!("New character {}", &character_id);
+                self.server.as_mut().unwrap().config.character_id = Some(character_id);
+                self.db
+                    .set(
+                        format!(
+                            "server_{}_{}",
+                            self.server.as_ref().unwrap().config.ip,
+                            self.server.as_ref().unwrap().config.port
+                        )
+                        .as_str(),
+                        &self.server.as_ref().unwrap().config,
+                    )
+                    .unwrap();
+                let player = self
+                    .create_or_grab_player(&self.server.as_ref().unwrap())
+                    .unwrap()
+                    .unwrap();
+                self.engine = self
+                    .setup_zone(&self.server.as_ref().unwrap(), player)
+                    .unwrap();
+            }
+            Some(Action::DescriptionToDescription { description }) => {
+                println!("Switch description");
+                self.engine = Box::new(DescriptionEngine::new(
+                    description,
+                    self.server.as_ref().unwrap().clone(),
+                ));
+            }
+            Some(Action::ZoneToDescription { url }) => {
+                println!("To description");
+                // TODO manage error
+                let description = self
+                    .server
+                    .as_ref()
+                    .unwrap()
+                    .client
+                    .describe(url.as_ref(), None, None)
+                    .unwrap();
+                self.engine = Box::new(DescriptionEngine::new(
+                    description,
+                    self.server.as_ref().unwrap().clone(),
+                ));
+            }
+            Some(Action::DescriptionToDescriptionGet { url }) => {
+                println!("To description");
+                // TODO manage error
+                let description = self
+                    .server
+                    .as_ref()
+                    .unwrap()
+                    .client
+                    .describe(url.as_ref(), None, None)
+                    .unwrap();
+                self.engine = Box::new(DescriptionEngine::new(
+                    description,
+                    self.server.as_ref().unwrap().clone(),
+                ));
+            }
+            None => {}
         }
 
         self.engine.as_mut().update(api, self.width, self.height);
+
         None
     }
     fn render(&mut self, api: &mut dyn DoryenApi) {
+        api.con()
+            .clear(Some((0, 0, 0, 255)), Some((0, 0, 0, 255)), Some(' ' as u16));
         self.engine.as_mut().render(api, self.width, self.height);
+        ui::render_doryen(api.con(), &mut self.ctx);
     }
     fn resize(&mut self, api: &mut dyn DoryenApi) {
         self.engine.as_mut().resize(api);

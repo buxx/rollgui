@@ -26,11 +26,11 @@ impl fmt::Display for RollingError {
 impl From<ClientError> for RollingError {
     fn from(error: ClientError) -> Self {
         return match error {
-            ClientError::NotFound { response } => {Self{ message: response }},
-            ClientError::PlayerNotFound { response } => {Self{ message: response }},
-            ClientError::ClientSideError { response } => {Self{ message: response }},
-            ClientError::ServerSideError { response } => {Self{ message: response }},
-            ClientError::UnknownError { response } => {Self{ message: response }},
-        }
+            ClientError::NotFound { response } => Self { message: response },
+            ClientError::PlayerNotFound { response } => Self { message: response },
+            ClientError::ClientSideError { response } => Self { message: response },
+            ClientError::ServerSideError { response } => Self { message: response },
+            ClientError::UnknownError { response } => Self { message: response },
+        };
     }
 }

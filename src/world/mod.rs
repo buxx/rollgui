@@ -1,16 +1,14 @@
 use crate::error::RollingError;
-use crate::util;
 use crate::tile::world::Tiles;
+use crate::util;
 
 pub mod level;
 pub mod socket;
-
 
 #[derive(Debug)]
 pub struct WorldRow {
     pub cols: Vec<String>,
 }
-
 
 pub struct World {
     pub width: i32,
@@ -43,12 +41,10 @@ impl World {
             rows.push(world_row);
         }
 
-        Ok(
-            Self {
-                width,
-                height,
-                rows,
-            }
-        )
+        Ok(Self {
+            width,
+            height,
+            rows,
+        })
     }
 }

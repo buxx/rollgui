@@ -3,6 +3,7 @@ use std::error::Error;
 use std::fs;
 use std::io::Read;
 use std::path::Path;
+use websocket::url::form_urlencoded::Target;
 
 pub const BLOCK_GEO: &str = "GEO";
 pub const BLOCK_LEGEND: &str = "LEGEND";
@@ -194,5 +195,55 @@ mod test {
         assert!(!top_chars_contains('a', &chars));
         assert!(!top_chars_contains('b', &chars));
         assert!(top_chars_contains('c', &chars));
+    }
+}
+
+pub fn bool_to_str(bool_value: bool) -> &'static str {
+    if bool_value {
+        return "Oui";
+    }
+    return "Non";
+}
+
+pub fn overflow(text: &str, width: i32) -> Vec<String> {
+    let mut lines: Vec<String> = vec![String::new()];
+
+    for word in text.split(" ").collect::<Vec<&str>>() {
+        let mut last_line = lines.last_mut().unwrap();
+        if last_line.len() + word.len() > width as usize {
+            lines.push(String::new());
+            last_line = lines.last_mut().unwrap();
+        }
+
+        if last_line.len() != 0 {
+            last_line.push_str(" ");
+        }
+
+        last_line.push_str(word);
+    }
+
+    // remove empty line produced by oversize words
+    let lines = lines
+        .into_iter()
+        .filter(|s| s.len() != 0)
+        .collect::<Vec<_>>();
+
+    lines
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_overflow() {
+        assert_eq!(
+            overflow("I'm a pingoo with an apple", 15),
+            vec!["I'm a pingoo".to_string(), "with an apple".to_string()],
+        );
+        assert_eq!(
+            overflow("I'm a pingoo with an apple", 32),
+            vec!["I'm a pingoo with an apple".to_string()],
+        );
     }
 }

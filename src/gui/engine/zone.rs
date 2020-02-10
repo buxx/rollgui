@@ -1,18 +1,24 @@
 use doryen_rs::{DoryenApi, TextAlign, UpdateEvent};
+use doryen_ui as ui;
 use std::collections::HashMap;
 
 use crate::color;
-use crate::entity::character::Character;
-use crate::entity::stuff::Stuff;
 use crate::entity::build::Build;
+use crate::entity::character::Character;
 use crate::entity::player::Player;
+use crate::entity::stuff::Stuff;
 use crate::event;
 use crate::event::ZoneEventType;
-use crate::gui::engine::Engine;
 use crate::gui;
+use crate::gui::action;
+use crate::gui::engine::Engine;
 use crate::tile::zone::Tiles;
+use crate::util;
 use crate::world::level::Level;
 use crate::world::socket::ZoneSocket;
+
+const UI_WIDTH: i32 = 20;
+const UI_HEIGHT: i32 = 50;
 
 pub struct ZoneEngine {
     player: Player,
@@ -26,6 +32,7 @@ pub struct ZoneEngine {
     start_display_map_row_i: i32,
     start_display_map_col_i: i32,
     mouse_pos: (f32, f32),
+    resume_text: Vec<String>,
 }
 
 impl ZoneEngine {
@@ -39,6 +46,7 @@ impl ZoneEngine {
         tiles: Tiles,
         start_display_map_row_i: i32,
         start_display_map_col_i: i32,
+        resume_text: Vec<String>,
     ) -> Self {
         Self {
             player,
@@ -51,6 +59,7 @@ impl ZoneEngine {
             start_display_map_row_i,
             start_display_map_col_i,
             mouse_pos: (0.0, 0.0),
+            resume_text,
         }
     }
 
@@ -125,21 +134,21 @@ impl Engine for ZoneEngine {
             self.start_display_map_col_i,
             width,
             height,
+            0,
+            UI_WIDTH / 2,
         );
-        self.player.render(api, width as i32, height as i32);
-
         let con = api.con();
 
         // CHARACTERS
         for (_character_id, character) in self.characters.iter() {
             con.ascii(
-                character.zone_col_i - self.start_display_map_col_i,
-                character.zone_row_i - self.start_display_map_row_i,
+                (character.zone_col_i - self.start_display_map_col_i) + 0,
+                (character.zone_row_i - self.start_display_map_row_i) + (UI_WIDTH / 2),
                 gui::CHAR_CHARACTER,
             );
             con.fore(
-                character.zone_col_i - self.start_display_map_col_i,
-                character.zone_row_i - self.start_display_map_row_i,
+                (character.zone_col_i - self.start_display_map_col_i) + 0,
+                (character.zone_row_i - self.start_display_map_row_i) + (UI_WIDTH / 2),
                 color::WHITE,
             );
         }
@@ -147,13 +156,13 @@ impl Engine for ZoneEngine {
         // STUFFS
         for (_stuff_id, stuff) in self.stuffs.iter() {
             con.ascii(
-                stuff.zone_col_i - self.start_display_map_col_i,
-                stuff.zone_row_i - self.start_display_map_row_i,
+                (stuff.zone_col_i - self.start_display_map_col_i) + (UI_WIDTH / 2),
+                (stuff.zone_row_i - self.start_display_map_row_i) + 0,
                 gui::CHAR_TRUNK,
             );
             con.fore(
-                stuff.zone_col_i - self.start_display_map_col_i,
-                stuff.zone_row_i - self.start_display_map_row_i,
+                (stuff.zone_col_i - self.start_display_map_col_i) + (UI_WIDTH / 2),
+                (stuff.zone_row_i - self.start_display_map_row_i) + 0,
                 color::WHITE,
             );
         }
@@ -161,16 +170,18 @@ impl Engine for ZoneEngine {
         // BUILDS
         for (_build_id, build) in self.builds.iter() {
             con.ascii(
-                build.col_i - self.start_display_map_col_i,
-                build.row_i - self.start_display_map_row_i,
+                (build.col_i - self.start_display_map_col_i) + (UI_WIDTH / 2),
+                (build.row_i - self.start_display_map_row_i) + 0,
                 gui::CHAR_GEARS,
             );
             con.fore(
-                build.col_i - self.start_display_map_col_i,
-                build.row_i - self.start_display_map_row_i,
+                (build.col_i - self.start_display_map_col_i) + (UI_WIDTH / 2),
+                (build.row_i - self.start_display_map_row_i) + 0,
                 color::WHITE,
             );
         }
+        self.player
+            .render(api, width as i32, height as i32, 0, UI_WIDTH / 2);
 
         let fps = api.fps();
         api.con().print_color(
@@ -194,5 +205,82 @@ impl Engine for ZoneEngine {
     fn teardown(&mut self) {
         // TODO: manage case where fail to close
         self.socket.close().unwrap();
+    }
+
+    fn build_ui(
+        &mut self,
+        ctx: &mut ui::Context,
+        width: i32,
+        height: i32,
+    ) -> Option<gui::action::Action> {
+        ctx.window_begin("main_windows", 0, 0, UI_WIDTH, UI_HEIGHT);
+        ctx.frame_begin("margin", "margin", UI_WIDTH, UI_HEIGHT);
+
+        if ctx
+            .button("worldmap_button", "Carte du monde")
+            .align(ui::TextAlign::Center)
+            .pressed()
+        {
+            return Some(action::Action::ZoneToWorld);
+        }
+
+        if ctx
+            .button("card_button", "Fiche")
+            .align(ui::TextAlign::Center)
+            .pressed()
+        {
+            return Some(action::Action::ZoneToDescription {
+                url: format!("/_describe/character/{}/card", self.player.id).to_string(),
+            });
+        }
+
+        if ctx
+            .button("inventory_button", "Evenements")
+            .align(ui::TextAlign::Center)
+            .pressed()
+        {
+            return Some(action::Action::ZoneToDescription {
+                url: format!("/_describe/character/{}/events", self.player.id).to_string(),
+            });
+        }
+
+        if ctx
+            .button("inventory_button", "Inventaire")
+            .align(ui::TextAlign::Center)
+            .pressed()
+        {
+            return Some(action::Action::ZoneToDescription {
+                url: format!("/_describe/character/{}/inventory", self.player.id).to_string(),
+            });
+        }
+
+        if ctx
+            .button("inventory_button", "Actions")
+            .align(ui::TextAlign::Center)
+            .pressed()
+        {
+            return Some(action::Action::ZoneToDescription {
+                url: format!("/_describe/character/{}/on_place_actions", self.player.id)
+                    .to_string(),
+            });
+        }
+
+        if ctx
+            .button("inventory_button", "Construire")
+            .align(ui::TextAlign::Center)
+            .pressed()
+        {
+            return Some(action::Action::ZoneToDescription {
+                url: format!("/_describe/character/{}/build_actions", self.player.id).to_string(),
+            });
+        }
+
+        ctx.label("");
+
+        for resume_text in self.resume_text.iter() {
+            ctx.label(resume_text);
+        }
+
+        None
     }
 }

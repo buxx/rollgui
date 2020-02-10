@@ -13,8 +13,8 @@ pub mod tile;
 pub mod util;
 pub mod world;
 
-const CONSOLE_WIDTH: u32 = 60;
-const CONSOLE_HEIGHT: u32 = 45;
+const CONSOLE_WIDTH: u32 = 50;
+const CONSOLE_HEIGHT: u32 = 40;
 
 fn main() {
     let mut app = App::new(AppOptions {

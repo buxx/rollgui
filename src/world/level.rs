@@ -56,6 +56,8 @@ impl Level {
         start_display_map_col_i: i32,
         display_width: i32,
         display_height: i32,
+        row_offset: i32,
+        col_offset: i32,
     ) {
         let con = api.con();
 
@@ -79,10 +81,22 @@ impl Level {
                 let tile_id = &row.cols[map_col_i as usize];
                 let appearance = tiles.appearance(&tile_id);
 
-                con.back(col_i as i32, row_i, appearance.back);
-                con.fore(col_i as i32, row_i, appearance.fore);
+                con.back(
+                    col_i as i32 + col_offset,
+                    row_i + row_offset,
+                    appearance.back,
+                );
+                con.fore(
+                    col_i as i32 + col_offset,
+                    row_i + row_offset,
+                    appearance.fore,
+                );
                 if appearance.ascii.is_some() {
-                    con.ascii(col_i as i32, row_i, appearance.ascii.unwrap() as u16);
+                    con.ascii(
+                        col_i as i32 + col_offset,
+                        row_i + row_offset,
+                        appearance.ascii.unwrap() as u16,
+                    );
                 }
             }
         }

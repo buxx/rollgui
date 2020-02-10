@@ -1,9 +1,11 @@
 use doryen_rs::{DoryenApi, UpdateEvent};
+use doryen_ui as ui;
 
+use crate::entity::player::Player;
+use crate::gui::action;
 use crate::gui::engine::Engine;
 use crate::tile;
 use crate::world;
-use crate::entity::player::Player;
 
 pub struct WorldEngine {
     tiles: tile::world::Tiles,
@@ -65,7 +67,11 @@ impl Engine for WorldEngine {
                         con.back(col_i as i32, row_i, default_appearance.back);
                         con.fore(col_i as i32, row_i, default_appearance.fore);
                         if default_appearance.ascii.is_some() {
-                            con.ascii(col_i as i32, row_i, default_appearance.ascii.unwrap() as u16);
+                            con.ascii(
+                                col_i as i32,
+                                row_i,
+                                default_appearance.ascii.unwrap() as u16,
+                            );
                         }
                     }
                     continue;
@@ -79,7 +85,11 @@ impl Engine for WorldEngine {
                         con.back(col_i as i32, row_i, default_appearance.back);
                         con.fore(col_i as i32, row_i, default_appearance.fore);
                         if default_appearance.ascii.is_some() {
-                            con.ascii(col_i as i32, row_i, default_appearance.ascii.unwrap() as u16);
+                            con.ascii(
+                                col_i as i32,
+                                row_i,
+                                default_appearance.ascii.unwrap() as u16,
+                            );
                         }
                     }
                     continue;
@@ -106,4 +116,13 @@ impl Engine for WorldEngine {
     fn resize(&mut self, _api: &mut dyn DoryenApi) {}
 
     fn teardown(&mut self) {}
+
+    fn build_ui(
+        &mut self,
+        ctx: &mut ui::Context,
+        width: i32,
+        height: i32,
+    ) -> Option<action::Action> {
+        None
+    }
 }

@@ -1,10 +1,13 @@
 use reqwest;
 use reqwest::blocking::Response;
+use url::Url;
 
-use crate::entity::character::Character;
-use crate::entity::stuff::Stuff;
 use crate::entity::build::Build;
-use crate::entity::player::Player;
+use crate::entity::character::Character;
+use crate::entity::player::{ApiCharacter, Player};
+use crate::entity::stuff::Stuff;
+use crate::gui::lang::model::Description;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
 use std::error::Error;
 use std::fmt;
@@ -21,13 +24,23 @@ pub enum ClientError {
 impl Error for ClientError {}
 
 impl ClientError {
-    fn get_message(&self, client_error: &ClientError) -> String {
+    pub fn get_message(client_error: &ClientError) -> String {
         return match client_error {
-            ClientError::NotFound { response }  => format!("Not found: {}", response.to_string()).to_string(),
-            ClientError::PlayerNotFound { response }  => format!("Player not found: {}", response.to_string()).to_string(),
-            ClientError::ClientSideError { response } => format!("Client side error: {}", response.to_string()).to_string(),
-            ClientError::ServerSideError { response } => format!("Server side error: {}", response.to_string()).to_string(),
-            ClientError::UnknownError { response } => format!("Unknown error: {}", response.to_string()).to_string(),
+            ClientError::NotFound { response } => {
+                format!("Not found: {}", response.to_string()).to_string()
+            }
+            ClientError::PlayerNotFound { response } => {
+                format!("Player not found: {}", response.to_string()).to_string()
+            }
+            ClientError::ClientSideError { response } => {
+                format!("Client side error: {}", response.to_string()).to_string()
+            }
+            ClientError::ServerSideError { response } => {
+                format!("Server side error: {}", response.to_string()).to_string()
+            }
+            ClientError::UnknownError { response } => {
+                format!("Unknown error: {}", response.to_string()).to_string()
+            }
         };
     }
 }
@@ -35,10 +48,16 @@ impl ClientError {
 impl fmt::Display for ClientError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Use `self.number` to refer to each positional data point.
-        write!(f, "{}", self.get_message(self))
+        write!(f, "{}", ClientError::get_message(&self))
     }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct ListOfStrModel {
+    pub items: Vec<String>,
+}
+
+#[derive(Clone)]
 pub struct Client {
     server_ip: String,
     server_port: u16,
@@ -61,7 +80,7 @@ impl Client {
 
     fn check_response(&self, response: Response) -> Result<Response, ClientError> {
         if response.status().as_u16() == 404 {
-            return Err(ClientError::NotFound{
+            return Err(ClientError::NotFound {
                 response: response.text().unwrap(),
             });
         }
@@ -88,23 +107,26 @@ impl Client {
         let mut response: Response = self.client.get(url.as_str()).send().unwrap();
 
         match self.check_response(response) {
-            Err(ClientError::NotFound{response}) => return Err(ClientError::PlayerNotFound{response}),
+            Err(ClientError::NotFound { response }) => {
+                return Err(ClientError::PlayerNotFound { response })
+            }
             Err(client_error) => return Err(client_error),
             Ok(resp) => response = resp,
         }
 
-        let player_value: Value = response.json::<Value>().unwrap();
-
-        let player_zone_row_i = player_value["zone_row_i"].as_i64().unwrap() as i32;
-        let player_zone_col_i = player_value["zone_col_i"].as_i64().unwrap() as i32;
-        let player_world_row_i = player_value["world_row_i"].as_i64().unwrap() as i32;
-        let player_world_col_i = player_value["world_col_i"].as_i64().unwrap() as i32;
-        let player_id = player_value["id"].as_str().unwrap();
+        let character: ApiCharacter = response.json::<ApiCharacter>().unwrap();
 
         Ok(Player::new(
-            player_id,
-            (player_zone_row_i, player_zone_col_i),
-            (player_world_row_i, player_world_col_i),
+            character.id.as_str(),
+            (character.zone_row_i, character.zone_col_i),
+            (character.world_row_i, character.world_col_i),
+            character.max_life_comp,
+            character.life_points,
+            character.action_points,
+            character.feel_thirsty,
+            character.feel_hungry,
+            character.weight_overcharge,
+            character.clutter_overcharge,
         ))
     }
 
@@ -132,17 +154,19 @@ impl Client {
         let response: Response =
             self.check_response(self.client.post(url.as_str()).json(&data).send().unwrap())?;
 
-        let player_value = response.json::<Value>().unwrap();
-        let player_zone_row_i = player_value["zone_row_i"].as_i64().unwrap() as i32;
-        let player_zone_col_i = player_value["zone_col_i"].as_i64().unwrap() as i32;
-        let player_world_row_i = player_value["world_row_i"].as_i64().unwrap() as i32;
-        let player_world_col_i = player_value["world_col_i"].as_i64().unwrap() as i32;
-        let player_id = player_value["id"].as_str().unwrap();
+        let character: ApiCharacter = response.json::<ApiCharacter>().unwrap();
 
         Ok(Player::new(
-            player_id,
-            (player_zone_row_i, player_zone_col_i),
-            (player_world_row_i, player_world_col_i),
+            character.id.as_str(),
+            (character.zone_row_i, character.zone_col_i),
+            (character.world_row_i, character.world_col_i),
+            character.max_life_comp,
+            character.life_points,
+            character.action_points,
+            character.feel_thirsty,
+            character.feel_hungry,
+            character.weight_overcharge,
+            character.clutter_overcharge,
         ))
     }
 
@@ -230,5 +254,67 @@ impl Client {
             self.check_response(self.client.get(url.as_str()).send().unwrap())?;
 
         Ok(response.text().unwrap().to_string())
+    }
+
+    pub fn describe(
+        &self,
+        url: &str,
+        data: Option<Map<String, Value>>,
+        query: Option<Map<String, Value>>,
+    ) -> Result<Description, ClientError> {
+        println!("Describe with url {}", url);
+        let url = format!("{}{}", self.get_base_path(), url);
+        let url = self.url_with_query(url, query);
+
+        let mut request = self.client.post(url.as_str());
+        if let Some(data_) = data {
+            request = request.json(&data_);
+        }
+
+        let response: Response = self.check_response(request.send().unwrap())?;
+
+        Ok(response.json::<Description>().unwrap())
+    }
+
+    pub fn get_character_resume_texts(
+        &self,
+        character_id: &str,
+    ) -> Result<Vec<String>, ClientError> {
+        let url = format!(
+            "{}/character/{}/resume_texts",
+            self.get_base_path(),
+            character_id
+        );
+        let response: Response =
+            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+
+        Ok(response.json::<ListOfStrModel>().unwrap().items)
+    }
+
+    fn url_with_query(&self, url: String, query: Option<Map<String, Value>>) -> String {
+        match query {
+            Some(query_) => {
+                let mut params: Vec<(String, String)> = Vec::new();
+                for (key, value) in query_.iter() {
+                    match value {
+                        Value::Number(number) => {
+                            params.push((key.to_string(), number.to_string()));
+                        }
+                        Value::String(str_) => {
+                            params.push((key.to_string(), str_.to_string()));
+                        }
+                        Value::Bool(bool_) => {
+                            params.push((key.to_string(), bool_.to_string()));
+                        }
+                        Value::Null => {}
+                        _ => {}
+                    }
+                }
+
+                let url = Url::parse_with_params(url.as_str(), &params).unwrap();
+                return url.into_string();
+            }
+            None => return url,
+        }
     }
 }

@@ -2,8 +2,8 @@ use crate::config;
 use std::error::Error;
 
 pub mod client;
-pub mod model;
 
+#[derive(Clone)]
 pub struct Server {
     pub config: config::ServerConfig,
     pub client: client::Client,
