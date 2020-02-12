@@ -68,32 +68,28 @@ impl RollingGui {
     pub fn new(width: i32, height: i32) -> Self {
         let action_conditions: Vec<action::ActionCondition> = vec![
             action::ActionCondition {
-                keys: vec!["Enter".to_string()],
-                engine_id: "STARTUP".to_string(),
-                to: action::Action::StartupToZone {
-                    server_ip: "127.0.0.1".to_string(),
-                    server_port: 5000,
-                },
-            },
-            action::ActionCondition {
                 keys: vec!["Space".to_string()],
                 engine_id: "ZONE".to_string(),
                 to: action::Action::ZoneToWorld,
+                wait_while_key: None,
             },
             action::ActionCondition {
                 keys: vec!["Escape".to_string()],
                 engine_id: "WORLD".to_string(),
                 to: action::Action::WorldToZone,
+                wait_while_key: Some("Escape".to_string()),
             },
             action::ActionCondition {
                 keys: vec!["Escape".to_string()],
                 engine_id: "ZONE".to_string(),
                 to: action::Action::ZoneToStartup,
+                wait_while_key: None,
             },
             action::ActionCondition {
                 keys: vec!["Escape".to_string()],
                 engine_id: "DESCRIPTION".to_string(),
                 to: action::Action::DescriptionToZone,
+                wait_while_key: Some("Escape".to_string()),
             },
         ];
         let action = action::ActionManager::new(action_conditions);
