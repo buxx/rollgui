@@ -4,9 +4,9 @@ use doryen_ui as ui;
 use crate::entity::player::Player;
 use crate::gui::action;
 use crate::gui::engine::Engine;
+use crate::server::Server;
 use crate::tile;
 use crate::world;
-use crate::server::Server;
 
 pub struct WorldEngine {
     server: Server,

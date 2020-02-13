@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Stuff {
-    pub id: String,
+    pub id: i32,
     pub zone_row_i: i32,
     pub zone_col_i: i32,
 }

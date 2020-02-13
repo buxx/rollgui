@@ -93,24 +93,26 @@ impl Engine for DescriptionEngine {
                         label = text.to_string();
                     }
                 }
-            }
 
-            if item.is_link && item.form_action.is_some() {
-                let url = item.form_action.as_ref().unwrap();
-                for label_line in util::overflow(label.as_str(), width - UI_WIDTH_MARGIN).iter() {
-                    if ctx
-                        .button("link", label_line.as_str())
-                        .align(ui::TextAlign::Left)
-                        .pressed()
+                if item.is_link && item.form_action.is_some() {
+                    let url = item.form_action.as_ref().unwrap();
+                    for label_line in util::overflow(label.as_str(), width - UI_WIDTH_MARGIN).iter()
                     {
-                        return Some(action::Action::DescriptionToDescriptionGet {
-                            url: url.to_string(),
-                        });
+                        if ctx
+                            .button("link", label_line.as_str())
+                            .align(ui::TextAlign::Center)
+                            .pressed()
+                        {
+                            return Some(action::Action::DescriptionToDescriptionGet {
+                                url: url.to_string(),
+                            });
+                        }
                     }
-                }
-            } else {
-                for label_line in util::overflow(label.as_str(), width - UI_WIDTH_MARGIN).iter() {
-                    ctx.label(label_line.as_str()).align(ui::TextAlign::Left);
+                } else {
+                    for label_line in util::overflow(label.as_str(), width - UI_WIDTH_MARGIN).iter()
+                    {
+                        ctx.label(label_line.as_str()).align(ui::TextAlign::Left);
+                    }
                 }
             }
 

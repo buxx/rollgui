@@ -1,7 +1,7 @@
 use crate::config;
-use crate::world;
-use crate::util;
 use crate::tile::world::Tiles as WorldTiles;
+use crate::util;
+use crate::world;
 use std::error::Error;
 
 pub mod client;
@@ -29,6 +29,11 @@ impl Server {
         let tiles = WorldTiles::new(legend.as_str())?;
         let world = world::World::new(world_raw.as_str(), &tiles)?;
 
-        Ok(Self { config, client, world, world_tiles: tiles })
+        Ok(Self {
+            config,
+            client,
+            world,
+            world_tiles: tiles,
+        })
     }
 }

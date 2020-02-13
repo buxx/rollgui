@@ -267,13 +267,12 @@ impl Engine for RollingGui {
         self.ctx.begin();
         let mut action = None;
         let gui_action = self.build_ui();
-        let engine_ui_action = self
-            .engine
-            .as_mut()
-            .build_ui(&mut self.ctx, self.width, self.height);
+        let engine_ui_action =
+            self.engine
+                .as_mut()
+                .build_ui(&mut self.ctx, self.width, self.height);
         self.ctx.end();
         let engine_upd_action = self.engine.as_mut().update(api, self.width, self.height);
-
 
         if action.is_none() && gui_action.is_some() {
             action = gui_action;

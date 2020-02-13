@@ -32,7 +32,12 @@ pub struct ActionCondition {
 
 impl ActionManager {
     pub fn new(conditions: Vec<ActionCondition>) -> Self {
-        Self { conditions, waiting_key: None, wait_since: None, waiting_key_seen: false }
+        Self {
+            conditions,
+            waiting_key: None,
+            wait_since: None,
+            waiting_key_seen: false,
+        }
     }
 
     pub fn resolve(&mut self, input: &mut dyn InputApi, engine_id: &str) -> Option<Action> {
@@ -41,19 +46,20 @@ impl ActionManager {
             if let Some(waiting_key) = self.waiting_key.as_ref() {
                 if input.key(waiting_key) {
                     self.waiting_key_seen = true;
-                    return None
+                    return None;
                 }
             }
-        }
-        else {
+        } else {
             if let Some(waiting_key) = self.waiting_key.as_ref() {
                 let max_duration = Duration::new(3, 0);
-                if !input.key(waiting_key.as_str()) || self.wait_since.unwrap().elapsed().unwrap() > max_duration {
+                if !input.key(waiting_key.as_str())
+                    || self.wait_since.unwrap().elapsed().unwrap() > max_duration
+                {
                     self.waiting_key = None;
                     self.wait_since = None;
                     self.waiting_key_seen = false;
                 } else {
-                    return None
+                    return None;
                 }
             }
         }

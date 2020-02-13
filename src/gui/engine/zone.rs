@@ -12,11 +12,11 @@ use crate::event::ZoneEventType;
 use crate::gui;
 use crate::gui::action;
 use crate::gui::engine::Engine;
+use crate::server::Server;
 use crate::tile::zone::Tiles;
 use crate::util;
 use crate::world::level::Level;
 use crate::world::socket::ZoneSocket;
-use crate::server::Server;
 
 const UI_WIDTH: i32 = 20;
 const UI_HEIGHT: i32 = 50;
@@ -78,7 +78,12 @@ impl Engine for ZoneEngine {
         "ZONE"
     }
 
-    fn update(&mut self, api: &mut dyn DoryenApi, width: i32, height: i32) -> Option<action::Action> {
+    fn update(
+        &mut self,
+        api: &mut dyn DoryenApi,
+        width: i32,
+        height: i32,
+    ) -> Option<action::Action> {
         let _input = api.input();
 
         for event in self.socket.pending_events() {
@@ -108,27 +113,30 @@ impl Engine for ZoneEngine {
         // Test if next requested move is an travel
         // FIXME: do only if there is a move
         let next = self.player.next_position((mov.0, mov.1));
-        if let Some(corner ) = util::get_corner(self.level.width, self.level.height, next.0, next.1) {
+        if let Some(corner) = util::get_corner(self.level.width, self.level.height, next.0, next.1)
+        {
             let w_row_i = self.player.world_position.0;
             let w_col_i = self.player.world_position.1;
             let (to_row_i, to_col_i) = match corner {
-                util::CornerEnum::Top => {( w_row_i - 1, w_col_i )},
-                util::CornerEnum::TopRight => {(  w_row_i - 1, w_col_i + 1 )},
-                util::CornerEnum::Right => {(  w_row_i, w_col_i +1 )},
-                util::CornerEnum::BottomRight => {(  w_row_i + 1, w_col_i + 1 )},
-                util::CornerEnum::Bottom => {(  w_row_i + 1, w_col_i )},
-                util::CornerEnum::BottomLeft => {(  w_row_i + 1, w_col_i - 1 )},
-                util::CornerEnum::Left => {(  w_row_i, w_col_i - 1 )},
-                util::CornerEnum::TopLeft => {(  w_row_i - 1, w_col_i - 1 )},
+                util::CornerEnum::Top => (w_row_i - 1, w_col_i),
+                util::CornerEnum::TopRight => (w_row_i - 1, w_col_i + 1),
+                util::CornerEnum::Right => (w_row_i, w_col_i + 1),
+                util::CornerEnum::BottomRight => (w_row_i + 1, w_col_i + 1),
+                util::CornerEnum::Bottom => (w_row_i + 1, w_col_i),
+                util::CornerEnum::BottomLeft => (w_row_i + 1, w_col_i - 1),
+                util::CornerEnum::Left => (w_row_i, w_col_i - 1),
+                util::CornerEnum::TopLeft => (w_row_i - 1, w_col_i - 1),
             };
 
             // If world coordinates don't exist, do nothing
             if let Some(_) = self.server.world.tile_id(to_row_i, to_col_i) {
-                let url = format!("/_describe/character/{}/move-to-zone/{}/{}", self.player.id, to_row_i, to_col_i);
-                return Some(action::Action::ZoneToDescription {url});
+                let url = format!(
+                    "/_describe/character/{}/move-to-zone/{}/{}",
+                    self.player.id, to_row_i, to_col_i
+                );
+                return Some(action::Action::ZoneToDescription { url });
             }
         }
-
 
         if !self.can_move(self.player.next_position((mov.0, 0))) {
             mov.0 = 0;

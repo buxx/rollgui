@@ -231,7 +231,6 @@ pub fn overflow(text: &str, width: i32) -> Vec<String> {
     lines
 }
 
-
 #[derive(Debug)]
 pub enum CornerEnum {
     Top,
