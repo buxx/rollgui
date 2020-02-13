@@ -113,28 +113,33 @@ impl Engine for ZoneEngine {
         // Test if next requested move is an travel
         // FIXME: do only if there is a move
         let next = self.player.next_position((mov.0, mov.1));
-        if let Some(corner) = util::get_corner(self.level.width, self.level.height, next.0, next.1)
-        {
-            let w_row_i = self.player.world_position.0;
-            let w_col_i = self.player.world_position.1;
-            let (to_row_i, to_col_i) = match corner {
-                util::CornerEnum::Top => (w_row_i - 1, w_col_i),
-                util::CornerEnum::TopRight => (w_row_i - 1, w_col_i + 1),
-                util::CornerEnum::Right => (w_row_i, w_col_i + 1),
-                util::CornerEnum::BottomRight => (w_row_i + 1, w_col_i + 1),
-                util::CornerEnum::Bottom => (w_row_i + 1, w_col_i),
-                util::CornerEnum::BottomLeft => (w_row_i + 1, w_col_i - 1),
-                util::CornerEnum::Left => (w_row_i, w_col_i - 1),
-                util::CornerEnum::TopLeft => (w_row_i - 1, w_col_i - 1),
-            };
+        // TODO: current check is tile will be None before get corner because get_corner algorithm
+        // is ... not very working well
+        if "NOTHING" == self.level.tile_id((next.0, next.1)) {
+            if let Some(corner) =
+                util::get_corner(self.level.width, self.level.height, next.0, next.1)
+            {
+                let w_row_i = self.player.world_position.0;
+                let w_col_i = self.player.world_position.1;
+                let (to_row_i, to_col_i) = match corner {
+                    util::CornerEnum::Top => (w_row_i - 1, w_col_i),
+                    util::CornerEnum::TopRight => (w_row_i - 1, w_col_i + 1),
+                    util::CornerEnum::Right => (w_row_i, w_col_i + 1),
+                    util::CornerEnum::BottomRight => (w_row_i + 1, w_col_i + 1),
+                    util::CornerEnum::Bottom => (w_row_i + 1, w_col_i),
+                    util::CornerEnum::BottomLeft => (w_row_i + 1, w_col_i - 1),
+                    util::CornerEnum::Left => (w_row_i, w_col_i - 1),
+                    util::CornerEnum::TopLeft => (w_row_i - 1, w_col_i - 1),
+                };
 
-            // If world coordinates don't exist, do nothing
-            if let Some(_) = self.server.world.tile_id(to_row_i, to_col_i) {
-                let url = format!(
-                    "/_describe/character/{}/move-to-zone/{}/{}",
-                    self.player.id, to_row_i, to_col_i
-                );
-                return Some(action::Action::ZoneToDescription { url });
+                // If world coordinates don't exist, do nothing
+                if let Some(_) = self.server.world.tile_id(to_row_i, to_col_i) {
+                    let url = format!(
+                        "/_describe/character/{}/move-to-zone/{}/{}",
+                        self.player.id, to_row_i, to_col_i
+                    );
+                    return Some(action::Action::ZoneToDescription { url });
+                }
             }
         }
 
