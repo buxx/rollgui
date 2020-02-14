@@ -9,7 +9,7 @@ use crate::entity::character::Character;
 use crate::entity::player::Player;
 use crate::entity::stuff::Stuff;
 use crate::error::RollingError;
-use crate::gui::action::{Action, ActionCondition};
+use crate::gui::action::Action;
 use crate::gui::engine::description::DescriptionEngine;
 use crate::gui::engine::startup::StartupEngine;
 use crate::gui::engine::world::WorldEngine;
@@ -17,14 +17,11 @@ use crate::gui::engine::zone::ZoneEngine;
 use crate::gui::engine::Engine as RollingEngine;
 use crate::server;
 use crate::server::Server;
-use crate::tile::world::Tiles as WorldTiles;
 use crate::tile::zone::Tiles as ZoneTiles;
 use crate::util;
 use crate::world::level::Level;
 use crate::world::socket::ZoneSocket;
-use crate::world::World;
 use doryen_ui as ui;
-use serde_json::Map;
 use std::error::Error;
 
 pub mod action;
@@ -240,7 +237,7 @@ impl RollingGui {
                     println!("Player found on server");
                     return Ok(Some(player));
                 }
-                Err(server::client::ClientError::PlayerNotFound { response }) => {
+                Err(server::client::ClientError::PlayerNotFound { response: _ }) => {
                     println!("Player NOT found on server");
                     return Ok(None);
                 }

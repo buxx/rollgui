@@ -1,4 +1,4 @@
-use doryen_rs::{DoryenApi, Image, UpdateEvent};
+use doryen_rs::{DoryenApi, Image};
 use doryen_ui as ui;
 
 use crate::gui::action;
@@ -39,8 +39,8 @@ impl Engine for StartupEngine {
     fn build_ui(
         &mut self,
         ctx: &mut ui::Context,
-        width: i32,
-        height: i32,
+        _width: i32,
+        _height: i32,
     ) -> Option<action::Action> {
         ctx.frame_window_begin("main_menu", "Main menu", 10, 10, 32, 32);
         ctx.frame_begin("menu", "Rejoindre un univers", 32, 20)

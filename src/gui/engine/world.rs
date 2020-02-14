@@ -1,16 +1,14 @@
-use doryen_rs::{DoryenApi, UpdateEvent};
+use doryen_rs::DoryenApi;
 use doryen_ui as ui;
 
 use crate::entity::player::Player;
 use crate::gui::action;
 use crate::gui::engine::Engine;
 use crate::server::Server;
-use crate::tile;
-use crate::world;
 
 pub struct WorldEngine {
     server: Server,
-    player: Player,
+    _player: Player,
     // Map coordinates where start to display it
     start_display_map_row_i: i32,
     start_display_map_col_i: i32,
@@ -20,13 +18,13 @@ pub struct WorldEngine {
 impl WorldEngine {
     pub fn new(
         server: Server,
-        player: Player,
+        _player: Player,
         start_display_map_row_i: i32,
         start_display_map_col_i: i32,
     ) -> Self {
         Self {
             server,
-            player,
+            _player,
             start_display_map_row_i,
             start_display_map_col_i,
             mouse_pos: (0.0, 0.0),
@@ -117,9 +115,9 @@ impl Engine for WorldEngine {
 
     fn build_ui(
         &mut self,
-        ctx: &mut ui::Context,
-        width: i32,
-        height: i32,
+        _ctx: &mut ui::Context,
+        _width: i32,
+        _height: i32,
     ) -> Option<action::Action> {
         None
     }

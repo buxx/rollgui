@@ -1,4 +1,4 @@
-use doryen_rs::{DoryenApi, TextAlign, UpdateEvent};
+use doryen_rs::{DoryenApi, TextAlign};
 use doryen_ui as ui;
 use std::collections::HashMap;
 
@@ -252,8 +252,8 @@ impl Engine for ZoneEngine {
     fn build_ui(
         &mut self,
         ctx: &mut ui::Context,
-        width: i32,
-        height: i32,
+        _width: i32,
+        _height: i32,
     ) -> Option<gui::action::Action> {
         ctx.window_begin("main_windows", 0, 0, UI_WIDTH, UI_HEIGHT);
         ctx.frame_begin("margin", "margin", UI_WIDTH, UI_HEIGHT);

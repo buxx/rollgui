@@ -1,4 +1,4 @@
-use doryen_rs::{DoryenApi, Image, UpdateEvent};
+use doryen_rs::DoryenApi;
 use doryen_ui as ui;
 use serde_json::{Map, Number, Value};
 
@@ -41,7 +41,7 @@ impl Engine for DescriptionEngine {
         None
     }
 
-    fn render(&mut self, api: &mut dyn DoryenApi, _width: i32, _height: i32) {}
+    fn render(&mut self, _api: &mut dyn DoryenApi, _width: i32, _height: i32) {}
 
     fn resize(&mut self, _api: &mut dyn DoryenApi) {}
 
@@ -71,7 +71,6 @@ impl Engine for DescriptionEngine {
             let mut label: String = "----------".to_string();
 
             if item.go_back_zone {
-                let mut label = "Continuer";
                 let label = item.label.as_deref().unwrap_or("Continuer");
                 if ctx
                     .button("validate_form", label)

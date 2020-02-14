@@ -3,7 +3,6 @@ use std::error::Error;
 use std::fs;
 use std::io::Read;
 use std::path::Path;
-use websocket::url::form_urlencoded::Target;
 
 pub const BLOCK_GEO: &str = "GEO";
 pub const BLOCK_LEGEND: &str = "LEGEND";
@@ -249,7 +248,9 @@ pub fn get_corner(width: i32, height: i32, new_row_i: i32, new_col_i: i32) -> Op
     let top_row_i_end = height / 3;
     let bottom_row_i_start = (height / 3) * 2;
     let mut more = if new_row_i >= 0 { new_row_i } else { 0 };
+    #[allow(unused_assignments)]
     let mut right_col_i = 0;
+    #[allow(unused_assignments)]
     let mut left_col_i = 0;
 
     if new_row_i < top_row_i_end {

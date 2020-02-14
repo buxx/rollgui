@@ -1,4 +1,4 @@
-use doryen_rs::{DoryenApi, UpdateEvent};
+use doryen_rs::DoryenApi;
 use doryen_ui as ui;
 
 use crate::gui::action;
