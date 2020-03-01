@@ -304,16 +304,35 @@ impl Engine for RollingGui {
                         .setup_zone(&self.server.as_ref().unwrap(), player)
                         .unwrap();
                 } else {
-                    self.engine = Box::new(DescriptionEngine::new(
-                        // TODO: manage error cases
-                        self.server
-                            .as_ref()
-                            .unwrap()
-                            .client
-                            .describe("/_describe/character/create", None, None)
-                            .unwrap(),
-                        self.server.as_ref().unwrap().clone(),
-                    ));
+                    // Maybe our character is dead ?
+                    if let Some(character_id) = &self.server.as_ref().unwrap().config.character_id {
+                        println!("Maybe character is dead ?");
+                        // TODO: manage error case
+                        if self.server.as_ref().unwrap().client.player_is_dead(character_id).unwrap() {
+                            println!("Yes, it is dead");
+                            self.engine = Box::new(DescriptionEngine::new(
+                                // TODO: manage error cases
+                                self.server
+                                    .as_ref()
+                                    .unwrap()
+                                    .client
+                                    .describe(format!("/character/{}/post_mortem", character_id).as_str(), None, None)
+                                    .unwrap(),
+                                self.server.as_ref().unwrap().clone(),
+                            ));
+                        }
+                    } else {
+                        self.engine = Box::new(DescriptionEngine::new(
+                            // TODO: manage error cases
+                            self.server
+                                .as_ref()
+                                .unwrap()
+                                .client
+                                .describe("/_describe/character/create", None, None)
+                                .unwrap(),
+                            self.server.as_ref().unwrap().clone(),
+                        ));
+                    }
                 }
             }
             Some(Action::ZoneToWorld) => {

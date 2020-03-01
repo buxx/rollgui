@@ -317,4 +317,22 @@ impl Client {
             None => return url,
         }
     }
+
+    pub fn player_is_dead(
+        &self,
+        character_id: &str,
+    ) -> Result<bool, ClientError> {
+        let url = format!(
+            "{}/character/{}/dead",
+            self.get_base_path(),
+            character_id
+        );
+        let response: Response =
+            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+
+        if response.text().unwrap() == "1" {
+            return Ok(true)
+        }
+        Ok(false)
+    }
 }
