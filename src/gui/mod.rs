@@ -308,7 +308,14 @@ impl Engine for RollingGui {
                     if let Some(character_id) = &self.server.as_ref().unwrap().config.character_id {
                         println!("Maybe character is dead ?");
                         // TODO: manage error case
-                        if self.server.as_ref().unwrap().client.player_is_dead(character_id).unwrap() {
+                        if self
+                            .server
+                            .as_ref()
+                            .unwrap()
+                            .client
+                            .player_is_dead(character_id)
+                            .unwrap()
+                        {
                             println!("Yes, it is dead");
                             self.engine = Box::new(DescriptionEngine::new(
                                 // TODO: manage error cases
@@ -316,7 +323,11 @@ impl Engine for RollingGui {
                                     .as_ref()
                                     .unwrap()
                                     .client
-                                    .describe(format!("/character/{}/post_mortem", character_id).as_str(), None, None)
+                                    .describe(
+                                        format!("/character/{}/post_mortem", character_id).as_str(),
+                                        None,
+                                        None,
+                                    )
                                     .unwrap(),
                                 self.server.as_ref().unwrap().clone(),
                             ));
