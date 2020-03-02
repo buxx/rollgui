@@ -286,6 +286,7 @@ impl Engine for RollingGui {
                 .resolve(api.input(), self.engine.as_ref().get_name())
         }
 
+        let mut create_new_character = false;
         match action {
             Some(action::Action::StartupToZone {
                 server_ip,
@@ -331,8 +332,14 @@ impl Engine for RollingGui {
                                     .unwrap(),
                                 self.server.as_ref().unwrap().clone(),
                             ));
+                        } else {
+                            create_new_character = true;
                         }
                     } else {
+                        create_new_character = true;
+                    }
+
+                    if create_new_character {
                         self.engine = Box::new(DescriptionEngine::new(
                             // TODO: manage error cases
                             self.server
