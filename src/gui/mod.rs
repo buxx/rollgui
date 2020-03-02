@@ -366,13 +366,49 @@ impl Engine for RollingGui {
             Some(Action::DescriptionToZone) => {
                 println!("Exit description");
                 self.engine.teardown();
-                let player = self
+                if let Some(player) = self
                     .create_or_grab_player(&self.server.as_ref().unwrap())
                     .unwrap()
-                    .unwrap();
-                self.engine = self
-                    .setup_zone(&self.server.as_ref().unwrap(), player)
-                    .unwrap();
+                {
+                    self.engine = self
+                        .setup_zone(&self.server.as_ref().unwrap(), player)
+                        .unwrap();
+                } else {
+                    let character_id = self
+                        .server
+                        .as_ref()
+                        .unwrap()
+                        .config
+                        .character_id
+                        .as_ref()
+                        .unwrap();
+                    println!("Maybe character is dead ?");
+                    // TODO: manage error case
+                    if self
+                        .server
+                        .as_ref()
+                        .unwrap()
+                        .client
+                        .player_is_dead(character_id)
+                        .unwrap()
+                    {
+                        println!("Yes, it is dead");
+                        self.engine = Box::new(DescriptionEngine::new(
+                            // TODO: manage error cases
+                            self.server
+                                .as_ref()
+                                .unwrap()
+                                .client
+                                .describe(
+                                    format!("/character/{}/post_mortem", character_id).as_str(),
+                                    None,
+                                    None,
+                                )
+                                .unwrap(),
+                            self.server.as_ref().unwrap().clone(),
+                        ));
+                    }
+                }
             }
             Some(Action::ZoneToStartup) => {
                 println!("Exit zone");
