@@ -321,8 +321,8 @@ impl Client {
     pub fn player_is_dead(&self, character_id: &str) -> Result<bool, ClientError> {
         let url = format!("{}/character/{}/dead", self.get_base_path(), character_id);
         let result = self.check_response(self.client.get(url.as_str()).send().unwrap());
-        if let Err(ClientError::NotFound{ response }) = result {
-            return Ok(false)
+        if let Err(ClientError::NotFound { response }) = result {
+            return Ok(false);
         }
         let response: Response = result?;
 

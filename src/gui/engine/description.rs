@@ -15,6 +15,7 @@ pub struct DescriptionEngine {
     description: Description,
     server: Server,
     form_error_message: Option<String>,
+    start_items_from: i32,
 }
 
 impl DescriptionEngine {
@@ -23,6 +24,7 @@ impl DescriptionEngine {
             description,
             server,
             form_error_message: None,
+            start_items_from: 0,
         }
     }
 }
@@ -34,10 +36,22 @@ impl Engine for DescriptionEngine {
 
     fn update(
         &mut self,
-        _api: &mut dyn DoryenApi,
+        api: &mut dyn DoryenApi,
         _width: i32,
         _height: i32,
     ) -> Option<action::Action> {
+        let input = api.input();
+
+        if input.key("ArrowUp") || input.key("KeyW") {
+            self.start_items_from -= 1;
+        } else if input.key("ArrowDown") || input.key("KeyS") {
+            self.start_items_from += 1;
+        }
+
+        if self.start_items_from < 0 {
+            self.start_items_from = 0;
+        }
+
         None
     }
 
@@ -67,6 +81,10 @@ impl Engine for DescriptionEngine {
         }
 
         let items = &self.description.items;
+        if self.start_items_from as usize >= items.len() {
+            self.start_items_from = items.len() as i32 - 1;
+        }
+        let items = &items[self.start_items_from as usize..];
         for item in items.iter() {
             let mut label: String = "----------".to_string();
 
