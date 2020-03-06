@@ -126,9 +126,11 @@ impl Engine for DescriptionEngine {
                         }
                     }
                 } else {
-                    for label_line in util::overflow(label.as_str(), width - UI_WIDTH_MARGIN).iter()
-                    {
-                        ctx.label(label_line.as_str()).align(ui::TextAlign::Left);
+                    for line in label.split("\n") {
+                        for label_line in util::overflow(line, width - UI_WIDTH_MARGIN).iter()
+                        {
+                            ctx.label(label_line.as_str()).align(ui::TextAlign::Left);
+                        }
                     }
                 }
             }
