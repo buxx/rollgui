@@ -19,6 +19,8 @@ pub struct Description {
     pub title: Option<String>,
     pub items: Vec<Part>,
     pub image: Option<String>,
+    pub image_id: Option<i32>,
+    pub image_extension: Option<String>,
     pub is_long_text: bool,
     pub new_character_id: Option<String>,
 }

@@ -10,7 +10,9 @@ use crate::gui::lang::model::Description;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
 use std::error::Error;
-use std::fmt;
+use std::{fmt, io, fs};
+use std::fs::File;
+use std::path::Path;
 
 #[derive(Debug)]
 pub enum ClientError {
@@ -330,5 +332,17 @@ impl Client {
             return Ok(true);
         }
         Ok(false)
+    }
+
+    pub fn download_image(&self, image_id: i32, image_extension: &str) -> Result<(), ClientError> {
+        let url = format!("{}/image/{}", self.get_base_path(), image_id);
+        let mut response: Response = self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        // FIXME BS: user dir or somewhere
+        let file_path = format!("cache/{}{}", image_id, image_extension);
+        fs::create_dir_all("cache").unwrap();
+        let mut out = File::create(Path::new(&file_path)).expect(format!("failed to create file {}", &file_path).as_str());
+        io::copy(&mut response, &mut out).expect(format!("failed to copy content into {}", &file_path).as_str());
+
+        Ok(())
     }
 }

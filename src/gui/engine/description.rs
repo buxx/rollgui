@@ -1,4 +1,4 @@
-use doryen_rs::DoryenApi;
+use doryen_rs::{DoryenApi, Image};
 use doryen_ui as ui;
 use serde_json::{Map, Number, Value};
 
@@ -8,6 +8,7 @@ use crate::gui::lang::model::Description;
 use crate::server::client::ClientError;
 use crate::server::Server;
 use crate::util;
+use std::borrow::BorrowMut;
 
 const UI_WIDTH_MARGIN: i32 = 2;
 
@@ -16,6 +17,7 @@ pub struct DescriptionEngine {
     server: Server,
     form_error_message: Option<String>,
     start_items_from: i32,
+    illustration: Option<Image>,
 }
 
 impl DescriptionEngine {
@@ -25,6 +27,7 @@ impl DescriptionEngine {
             server,
             form_error_message: None,
             start_items_from: 0,
+            illustration: None,
         }
     }
 }
@@ -55,7 +58,14 @@ impl Engine for DescriptionEngine {
         None
     }
 
-    fn render(&mut self, _api: &mut dyn DoryenApi, _width: i32, _height: i32) {}
+    fn render(&mut self, api: &mut dyn DoryenApi, _width: i32, _height: i32) {
+        if let Some(illustration) = self.illustration.as_mut() {
+            illustration.blit_2x(api.con(), 0, 0, 0, 0, None, None, None);
+            api.con().back(0, 0, (255, 255, 255, 255));
+            api.con().fore(0, 0, (255, 255, 255, 255));
+            api.con().ascii(0, 0, '@' as u16);
+        }
+    }
 
     fn resize(&mut self, _api: &mut dyn DoryenApi) {}
 
@@ -77,6 +87,17 @@ impl Engine for DescriptionEngine {
         if let Some(title) = &self.description.title {
             for label_line in util::overflow(title.as_str(), width - UI_WIDTH_MARGIN).iter() {
                 ctx.label(label_line.as_str()).align(ui::TextAlign::Center);
+            }
+        }
+
+        if self.illustration.is_none() {
+            if let Some(image_id) = &self.description.image_id {
+                let image_extension = self.description.image_extension.as_ref().unwrap();
+                let image_path = format!("cache/{}{}", image_id, image_extension);
+                if !std::path::Path::new(image_path.as_str()).exists() {
+                    self.server.client.download_image(*image_id, image_extension);
+                }
+                self.illustration = Some(Image::new(image_path.as_str()));
             }
         }
 
