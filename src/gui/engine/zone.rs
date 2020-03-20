@@ -100,10 +100,35 @@ impl Engine for ZoneEngine {
                         moved_character.zone_row_i = to_row_i;
                         moved_character.zone_col_i = to_col_i;
                     } else if character_id != self.player.id {
-                        eprintln!("Unknown character {}", character_id)
+                        eprintln!("Unknown character {} for move", character_id)
                     }
                 }
-                _ => {}
+                ZoneEventType::CharacterEnter {
+                    zone_row_i,
+                    zone_col_i,
+                    character_id,
+                } => {
+                    println!("{} is enter in zone", &character_id);
+                    self.characters.insert(
+                        character_id.clone(),
+                        Character {
+                            id: character_id.clone(),
+                            zone_row_i,
+                            zone_col_i,
+                        },
+                    );
+                }
+                ZoneEventType::CharacterExit { character_id } => {
+                    if let None = self.characters.remove(&character_id) {
+                        println!(
+                            "{} left zone but was not in list of characters",
+                            &character_id
+                        );
+                    } else {
+                        println!("{} exit from zone", &character_id);
+                    }
+                }
+                _ => println!("unknown event type {:?}", &event.event_type),
             }
         }
 
@@ -184,13 +209,13 @@ impl Engine for ZoneEngine {
         // CHARACTERS
         for (_character_id, character) in self.characters.iter() {
             con.ascii(
-                (character.zone_col_i - self.start_display_map_col_i) + 0,
-                (character.zone_row_i - self.start_display_map_row_i) + (UI_WIDTH / 2),
+                (character.zone_col_i - self.start_display_map_col_i) + (UI_WIDTH / 2),
+                (character.zone_row_i - self.start_display_map_row_i) + 0,
                 gui::CHAR_CHARACTER,
             );
             con.fore(
-                (character.zone_col_i - self.start_display_map_col_i) + 0,
-                (character.zone_row_i - self.start_display_map_row_i) + (UI_WIDTH / 2),
+                (character.zone_col_i - self.start_display_map_col_i) + (UI_WIDTH / 2),
+                (character.zone_row_i - self.start_display_map_row_i) + 0,
                 color::WHITE,
             );
         }

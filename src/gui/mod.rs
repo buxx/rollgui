@@ -1,4 +1,4 @@
-use doryen_rs::{DoryenApi, Engine, UpdateEvent};
+use doryen_rs::{DoryenApi, Engine, TextAlign, UpdateEvent};
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
 
@@ -51,6 +51,9 @@ pub struct RollingGui {
     action: action::ActionManager,
     pub width: i32,
     pub height: i32,
+    loading: bool,
+    loading_displayed: bool,
+    loading_action: Option<action::Action>,
 }
 
 fn get_db(db_file_path: &str) -> PickleDb {
@@ -99,6 +102,9 @@ impl RollingGui {
             height,
             action,
             server: None,
+            loading: false,
+            loading_displayed: false,
+            loading_action: None,
         }
     }
 
@@ -259,230 +265,249 @@ impl Engine for RollingGui {
         api.con().register_color("error", color::RED);
     }
     fn update(&mut self, api: &mut dyn DoryenApi) -> Option<UpdateEvent> {
-        // ui
-        ui::update_doryen_input_data(api, &mut self.ctx);
-        self.ctx.begin();
-        let mut action = None;
-        let gui_action = self.build_ui();
-        let engine_ui_action =
-            self.engine
-                .as_mut()
-                .build_ui(&mut self.ctx, self.width, self.height);
-        self.ctx.end();
-        let engine_upd_action = self.engine.as_mut().update(api, self.width, self.height);
+        if !self.loading {
+            // ui
+            ui::update_doryen_input_data(api, &mut self.ctx);
+            self.ctx.begin();
+            let mut action = None;
+            let gui_action = self.build_ui();
+            let engine_ui_action =
+                self.engine
+                    .as_mut()
+                    .build_ui(&mut self.ctx, self.width, self.height);
+            self.ctx.end();
+            let engine_upd_action = self.engine.as_mut().update(api, self.width, self.height);
 
-        if action.is_none() && gui_action.is_some() {
-            action = gui_action;
-        }
-        if action.is_none() && engine_ui_action.is_some() {
-            action = engine_ui_action;
-        }
-        if action.is_none() && engine_upd_action.is_some() {
-            action = engine_upd_action;
-        }
-        if action.is_none() {
-            action = self
-                .action
-                .resolve(api.input(), self.engine.as_ref().get_name())
-        }
+            if action.is_none() && gui_action.is_some() {
+                action = gui_action;
+            }
+            if action.is_none() && engine_ui_action.is_some() {
+                action = engine_ui_action;
+            }
+            if action.is_none() && engine_upd_action.is_some() {
+                action = engine_upd_action;
+            }
+            if action.is_none() {
+                action = self
+                    .action
+                    .resolve(api.input(), self.engine.as_ref().get_name())
+            }
 
-        let mut create_new_character = false;
-        match action {
-            Some(action::Action::StartupToZone {
-                server_ip,
-                server_port,
-            }) => {
-                println!("Server selected ({}:{})", &server_ip, server_port);
-                // TODO: manage error cases
-                self.server = Some(self.create_server(&server_ip, server_port).unwrap());
-                // TODO: manage error cases
-                let player = self
-                    .create_or_grab_player(self.server.as_ref().unwrap())
-                    .unwrap();
-                if let Some(player) = player {
-                    // TODO: manage error cases
-                    self.engine = self
-                        .setup_zone(&self.server.as_ref().unwrap(), player)
-                        .unwrap();
-                } else {
-                    // Maybe our character is dead ?
-                    if let Some(character_id) = &self.server.as_ref().unwrap().config.character_id {
-                        println!("Maybe character is dead ?");
-                        // TODO: manage error case
-                        if self
+            self.loading = action.is_some();
+            self.loading_action = action;
+        } else {
+            if !self.loading_displayed {
+                self.loading_displayed = true;
+                return None;
+            }
+
+            let loading_action = self.loading_action.clone();
+            self.loading_action = None;
+            self.loading = false;
+
+            if let Some(action) = loading_action {
+                let mut create_new_character = false;
+                match action {
+                    action::Action::StartupToZone {
+                        server_ip,
+                        server_port,
+                    } => {
+                        println!("Server selected ({}:{})", &server_ip, server_port);
+                        // TODO: manage error cases
+                        self.server = Some(self.create_server(&server_ip, server_port).unwrap());
+                        // TODO: manage error cases
+                        let player = self
+                            .create_or_grab_player(self.server.as_ref().unwrap())
+                            .unwrap();
+                        if let Some(player) = player {
+                            // TODO: manage error cases
+                            self.engine = self
+                                .setup_zone(&self.server.as_ref().unwrap(), player)
+                                .unwrap();
+                        } else {
+                            // Maybe our character is dead ?
+                            if let Some(character_id) =
+                                &self.server.as_ref().unwrap().config.character_id
+                            {
+                                println!("Maybe character is dead ?");
+                                // TODO: manage error case
+                                if self
+                                    .server
+                                    .as_ref()
+                                    .unwrap()
+                                    .client
+                                    .player_is_dead(character_id)
+                                    .unwrap()
+                                {
+                                    println!("Yes, it is dead");
+                                    self.engine = Box::new(DescriptionEngine::new(
+                                        // TODO: manage error cases
+                                        self.server
+                                            .as_ref()
+                                            .unwrap()
+                                            .client
+                                            .describe(
+                                                format!("/character/{}/post_mortem", character_id)
+                                                    .as_str(),
+                                                None,
+                                                None,
+                                            )
+                                            .unwrap(),
+                                        self.server.as_ref().unwrap().clone(),
+                                    ));
+                                } else {
+                                    create_new_character = true;
+                                }
+                            } else {
+                                create_new_character = true;
+                            }
+
+                            if create_new_character {
+                                self.engine = Box::new(DescriptionEngine::new(
+                                    // TODO: manage error cases
+                                    self.server
+                                        .as_ref()
+                                        .unwrap()
+                                        .client
+                                        .describe("/_describe/character/create", None, None)
+                                        .unwrap(),
+                                    self.server.as_ref().unwrap().clone(),
+                                ));
+                            }
+                        }
+                    }
+                    Action::ZoneToWorld => {
+                        println!("Display world map");
+                        self.engine.teardown();
+                        // TODO manage error
+                        self.engine = self.setup_world(&self.server.as_ref().unwrap()).unwrap();
+                    }
+                    Action::WorldToZone => {
+                        println!("Exit world map");
+                        self.engine.teardown();
+                        let player = self
+                            .create_or_grab_player(&self.server.as_ref().unwrap())
+                            .unwrap()
+                            .unwrap();
+                        self.engine = self
+                            .setup_zone(&self.server.as_ref().unwrap(), player)
+                            .unwrap();
+                    }
+                    Action::DescriptionToZone => {
+                        println!("Exit description");
+                        self.engine.teardown();
+                        if let Some(player) = self
+                            .create_or_grab_player(&self.server.as_ref().unwrap())
+                            .unwrap()
+                        {
+                            self.engine = self
+                                .setup_zone(&self.server.as_ref().unwrap(), player)
+                                .unwrap();
+                        } else {
+                            let character_id = self
+                                .server
+                                .as_ref()
+                                .unwrap()
+                                .config
+                                .character_id
+                                .as_ref()
+                                .unwrap();
+                            println!("Maybe character is dead ?");
+                            // TODO: manage error case
+                            if self
+                                .server
+                                .as_ref()
+                                .unwrap()
+                                .client
+                                .player_is_dead(character_id)
+                                .unwrap()
+                            {
+                                println!("Yes, it is dead");
+                                self.engine = Box::new(DescriptionEngine::new(
+                                    // TODO: manage error cases
+                                    self.server
+                                        .as_ref()
+                                        .unwrap()
+                                        .client
+                                        .describe(
+                                            format!("/character/{}/post_mortem", character_id)
+                                                .as_str(),
+                                            None,
+                                            None,
+                                        )
+                                        .unwrap(),
+                                    self.server.as_ref().unwrap().clone(),
+                                ));
+                            }
+                        }
+                    }
+                    Action::ZoneToStartup => {
+                        println!("Exit zone");
+                        self.engine.teardown();
+                        self.engine = self.setup_startup();
+                    }
+                    Action::ExitGame => return Some(UpdateEvent::Exit),
+                    Action::NewCharacterId { character_id } => {
+                        println!("New character {}", &character_id);
+                        self.server.as_mut().unwrap().config.character_id = Some(character_id);
+                        self.db
+                            .set(
+                                format!(
+                                    "server_{}_{}",
+                                    self.server.as_ref().unwrap().config.ip,
+                                    self.server.as_ref().unwrap().config.port
+                                )
+                                .as_str(),
+                                &self.server.as_ref().unwrap().config,
+                            )
+                            .unwrap();
+                        let player = self
+                            .create_or_grab_player(&self.server.as_ref().unwrap())
+                            .unwrap()
+                            .unwrap();
+                        self.engine = self
+                            .setup_zone(&self.server.as_ref().unwrap(), player)
+                            .unwrap();
+                    }
+                    Action::DescriptionToDescription { description } => {
+                        println!("Switch description");
+                        self.engine = Box::new(DescriptionEngine::new(
+                            description,
+                            self.server.as_ref().unwrap().clone(),
+                        ));
+                    }
+                    Action::ZoneToDescription { url } => {
+                        println!("To description");
+                        // TODO manage error
+                        let description = self
                             .server
                             .as_ref()
                             .unwrap()
                             .client
-                            .player_is_dead(character_id)
+                            .describe(url.as_ref(), None, None)
+                            .unwrap();
+                        self.engine = Box::new(DescriptionEngine::new(
+                            description,
+                            self.server.as_ref().unwrap().clone(),
+                        ));
+                    }
+                    Action::DescriptionToDescriptionGet { url } => {
+                        println!("To description");
+                        // TODO manage error
+                        let description = self
+                            .server
+                            .as_ref()
                             .unwrap()
-                        {
-                            println!("Yes, it is dead");
-                            self.engine = Box::new(DescriptionEngine::new(
-                                // TODO: manage error cases
-                                self.server
-                                    .as_ref()
-                                    .unwrap()
-                                    .client
-                                    .describe(
-                                        format!("/character/{}/post_mortem", character_id).as_str(),
-                                        None,
-                                        None,
-                                    )
-                                    .unwrap(),
-                                self.server.as_ref().unwrap().clone(),
-                            ));
-                        } else {
-                            create_new_character = true;
-                        }
-                    } else {
-                        create_new_character = true;
-                    }
-
-                    if create_new_character {
+                            .client
+                            .describe(url.as_ref(), None, None)
+                            .unwrap();
                         self.engine = Box::new(DescriptionEngine::new(
-                            // TODO: manage error cases
-                            self.server
-                                .as_ref()
-                                .unwrap()
-                                .client
-                                .describe("/_describe/character/create", None, None)
-                                .unwrap(),
+                            description,
                             self.server.as_ref().unwrap().clone(),
                         ));
                     }
                 }
             }
-            Some(Action::ZoneToWorld) => {
-                println!("Display world map");
-                self.engine.teardown();
-                // TODO manage error
-                self.engine = self.setup_world(&self.server.as_ref().unwrap()).unwrap();
-            }
-            Some(Action::WorldToZone) => {
-                println!("Exit world map");
-                self.engine.teardown();
-                let player = self
-                    .create_or_grab_player(&self.server.as_ref().unwrap())
-                    .unwrap()
-                    .unwrap();
-                self.engine = self
-                    .setup_zone(&self.server.as_ref().unwrap(), player)
-                    .unwrap();
-            }
-            Some(Action::DescriptionToZone) => {
-                println!("Exit description");
-                self.engine.teardown();
-                if let Some(player) = self
-                    .create_or_grab_player(&self.server.as_ref().unwrap())
-                    .unwrap()
-                {
-                    self.engine = self
-                        .setup_zone(&self.server.as_ref().unwrap(), player)
-                        .unwrap();
-                } else {
-                    let character_id = self
-                        .server
-                        .as_ref()
-                        .unwrap()
-                        .config
-                        .character_id
-                        .as_ref()
-                        .unwrap();
-                    println!("Maybe character is dead ?");
-                    // TODO: manage error case
-                    if self
-                        .server
-                        .as_ref()
-                        .unwrap()
-                        .client
-                        .player_is_dead(character_id)
-                        .unwrap()
-                    {
-                        println!("Yes, it is dead");
-                        self.engine = Box::new(DescriptionEngine::new(
-                            // TODO: manage error cases
-                            self.server
-                                .as_ref()
-                                .unwrap()
-                                .client
-                                .describe(
-                                    format!("/character/{}/post_mortem", character_id).as_str(),
-                                    None,
-                                    None,
-                                )
-                                .unwrap(),
-                            self.server.as_ref().unwrap().clone(),
-                        ));
-                    }
-                }
-            }
-            Some(Action::ZoneToStartup) => {
-                println!("Exit zone");
-                self.engine.teardown();
-                self.engine = self.setup_startup();
-            }
-            Some(Action::ExitGame) => return Some(UpdateEvent::Exit),
-            Some(Action::NewCharacterId { character_id }) => {
-                println!("New character {}", &character_id);
-                self.server.as_mut().unwrap().config.character_id = Some(character_id);
-                self.db
-                    .set(
-                        format!(
-                            "server_{}_{}",
-                            self.server.as_ref().unwrap().config.ip,
-                            self.server.as_ref().unwrap().config.port
-                        )
-                        .as_str(),
-                        &self.server.as_ref().unwrap().config,
-                    )
-                    .unwrap();
-                let player = self
-                    .create_or_grab_player(&self.server.as_ref().unwrap())
-                    .unwrap()
-                    .unwrap();
-                self.engine = self
-                    .setup_zone(&self.server.as_ref().unwrap(), player)
-                    .unwrap();
-            }
-            Some(Action::DescriptionToDescription { description }) => {
-                println!("Switch description");
-                self.engine = Box::new(DescriptionEngine::new(
-                    description,
-                    self.server.as_ref().unwrap().clone(),
-                ));
-            }
-            Some(Action::ZoneToDescription { url }) => {
-                println!("To description");
-                // TODO manage error
-                let description = self
-                    .server
-                    .as_ref()
-                    .unwrap()
-                    .client
-                    .describe(url.as_ref(), None, None)
-                    .unwrap();
-                self.engine = Box::new(DescriptionEngine::new(
-                    description,
-                    self.server.as_ref().unwrap().clone(),
-                ));
-            }
-            Some(Action::DescriptionToDescriptionGet { url }) => {
-                println!("To description");
-                // TODO manage error
-                let description = self
-                    .server
-                    .as_ref()
-                    .unwrap()
-                    .client
-                    .describe(url.as_ref(), None, None)
-                    .unwrap();
-                self.engine = Box::new(DescriptionEngine::new(
-                    description,
-                    self.server.as_ref().unwrap().clone(),
-                ));
-            }
-            None => {}
         }
 
         None
@@ -490,6 +515,19 @@ impl Engine for RollingGui {
     fn render(&mut self, api: &mut dyn DoryenApi) {
         api.con()
             .clear(Some((0, 0, 0, 255)), Some((0, 0, 0, 255)), Some(' ' as u16));
+
+        if self.loading {
+            api.con().print(
+                self.width / 2,
+                self.height / 2,
+                "Chargement ...",
+                TextAlign::Center,
+                Some(color::WHITE),
+                Some(color::BLACK),
+            );
+            return;
+        }
+
         self.engine.as_mut().render(api, self.width, self.height);
         ui::render_doryen(api.con(), &mut self.ctx);
     }

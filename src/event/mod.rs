@@ -6,6 +6,8 @@ use serde_json::Value;
 pub const PLAYER_MOVE: &str = "PLAYER_MOVE";
 pub const CLIENT_WANT_CLOSE: &str = "CLIENT_WANT_CLOSE";
 pub const SERVER_PERMIT_CLOSE: &str = "SERVER_PERMIT_CLOSE";
+pub const CHARACTER_ENTER_ZONE: &str = "CHARACTER_ENTER_ZONE";
+pub const CHARACTER_EXIT_ZONE: &str = "CHARACTER_EXIT_ZONE";
 
 #[derive(SerializeDerive, DeserializeDerive, Debug)]
 #[serde(untagged)]
@@ -17,6 +19,14 @@ pub enum ZoneEventType {
     PlayerMove {
         to_row_i: i32,
         to_col_i: i32,
+        character_id: String,
+    },
+    CharacterEnter {
+        zone_row_i: i32,
+        zone_col_i: i32,
+        character_id: String,
+    },
+    CharacterExit {
         character_id: String,
     },
 }
@@ -49,6 +59,20 @@ impl ZoneEvent {
             &SERVER_PERMIT_CLOSE => Ok(ZoneEvent {
                 event_type_name: String::from(SERVER_PERMIT_CLOSE),
                 event_type: ZoneEventType::ServerPermitClose,
+            }),
+            &CHARACTER_ENTER_ZONE => Ok(ZoneEvent {
+                event_type_name: String::from(CHARACTER_ENTER_ZONE),
+                event_type: ZoneEventType::CharacterEnter {
+                    zone_row_i: data["zone_row_i"].as_i64().unwrap() as i32,
+                    zone_col_i: data["zone_col_i"].as_i64().unwrap() as i32,
+                    character_id: String::from(data["character_id"].as_str().unwrap()),
+                },
+            }),
+            &CHARACTER_EXIT_ZONE => Ok(ZoneEvent {
+                event_type_name: String::from(CHARACTER_EXIT_ZONE),
+                event_type: ZoneEventType::CharacterExit {
+                    character_id: String::from(data["character_id"].as_str().unwrap()),
+                },
             }),
             _ => Err(RollingError {
                 message: format!("Unknown event {}", &type_),
