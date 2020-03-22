@@ -213,9 +213,20 @@ impl Engine for DescriptionEngine {
                             label.as_str()
                         };
                         for label_line in util::overflow(label, width - UI_WIDTH_MARGIN).iter() {
+                            let align = match item.align.as_ref() {
+                                Some(align) => {
+                                    match align.as_str() {
+                                        "left" => ui::TextAlign::Left,
+                                        "center" => ui::TextAlign::Center,
+                                        "right" => ui::TextAlign::Right,
+                                        _ => ui::TextAlign::Center,
+                                    }
+                                }
+                                _ => {ui::TextAlign::Center}
+                            };
                             if ctx
                                 .button("link", label_line.as_str())
-                                .align(ui::TextAlign::Center)
+                                .align(align)
                                 .pressed()
                             {
                                 if self.link_group_name.is_none() && item.link_group_name.is_some()

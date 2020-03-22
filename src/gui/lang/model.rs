@@ -14,6 +14,7 @@ pub struct Part {
     pub go_back_zone: bool,
     pub default_value: Option<String>,
     pub link_group_name: Option<String>,
+    pub align: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
