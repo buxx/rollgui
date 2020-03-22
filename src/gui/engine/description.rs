@@ -214,18 +214,16 @@ impl Engine for DescriptionEngine {
                         };
                         for label_line in util::overflow(label, width - UI_WIDTH_MARGIN).iter() {
                             let align = match item.align.as_ref() {
-                                Some(align) => {
-                                    match align.as_str() {
-                                        "left" => ui::TextAlign::Left,
-                                        "center" => ui::TextAlign::Center,
-                                        "right" => ui::TextAlign::Right,
-                                        _ => ui::TextAlign::Center,
-                                    }
-                                }
-                                _ => {ui::TextAlign::Center}
+                                Some(align) => match align.as_str() {
+                                    "left" => ui::TextAlign::Left,
+                                    "center" => ui::TextAlign::Center,
+                                    "right" => ui::TextAlign::Right,
+                                    _ => ui::TextAlign::Center,
+                                },
+                                _ => ui::TextAlign::Center,
                             };
                             if ctx
-                                .button("link", label_line.as_str())
+                                .button(label_line.as_str(), label_line.as_str())
                                 .align(align)
                                 .pressed()
                             {

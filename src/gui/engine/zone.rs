@@ -351,9 +351,7 @@ impl Engine for ZoneEngine {
                     .align(ui::TextAlign::Left)
                     .pressed()
                 {
-                    return Some(action::Action::ZoneToDescription {
-                        url: link.clone(),
-                    });
+                    return Some(action::Action::ZoneToDescription { url: link.clone() });
                 }
             } else {
                 ctx.label(resume_text);
