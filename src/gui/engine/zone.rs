@@ -34,7 +34,7 @@ pub struct ZoneEngine {
     start_display_map_row_i: i32,
     start_display_map_col_i: i32,
     mouse_pos: (f32, f32),
-    resume_text: Vec<String>,
+    resume_text: Vec<(String, Option<String>)>,
 }
 
 impl ZoneEngine {
@@ -49,7 +49,7 @@ impl ZoneEngine {
         tiles: Tiles,
         start_display_map_row_i: i32,
         start_display_map_col_i: i32,
-        resume_text: Vec<String>,
+        resume_text: Vec<(String, Option<String>)>,
     ) -> Self {
         Self {
             server,
@@ -302,7 +302,7 @@ impl Engine for ZoneEngine {
         }
 
         if ctx
-            .button("inventory_button", "Evenements")
+            .button("events_button", "Evenements")
             .align(ui::TextAlign::Center)
             .pressed()
         {
@@ -322,7 +322,7 @@ impl Engine for ZoneEngine {
         }
 
         if ctx
-            .button("inventory_button", "Actions")
+            .button("action_button", "Actions")
             .align(ui::TextAlign::Center)
             .pressed()
         {
@@ -333,7 +333,7 @@ impl Engine for ZoneEngine {
         }
 
         if ctx
-            .button("inventory_button", "Construire")
+            .button("build_button", "Construire")
             .align(ui::TextAlign::Center)
             .pressed()
         {
@@ -344,8 +344,20 @@ impl Engine for ZoneEngine {
 
         ctx.label("");
 
-        for resume_text in self.resume_text.iter() {
-            ctx.label(resume_text);
+        for (resume_text, optional_link) in self.resume_text.iter() {
+            if let Some(link) = optional_link {
+                if ctx
+                    .button(resume_text, resume_text)
+                    .align(ui::TextAlign::Left)
+                    .pressed()
+                {
+                    return Some(action::Action::ZoneToDescription {
+                        url: link.clone(),
+                    });
+                }
+            } else {
+                ctx.label(resume_text);
+            }
         }
 
         None

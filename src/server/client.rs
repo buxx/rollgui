@@ -56,7 +56,7 @@ impl fmt::Display for ClientError {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ListOfStrModel {
-    pub items: Vec<String>,
+    pub items: Vec<(String, Option<String>)>,
 }
 
 #[derive(Clone)]
@@ -281,7 +281,7 @@ impl Client {
     pub fn get_character_resume_texts(
         &self,
         character_id: &str,
-    ) -> Result<Vec<String>, ClientError> {
+    ) -> Result<Vec<(String, Option<String>)>, ClientError> {
         let url = format!(
             "{}/character/{}/resume_texts",
             self.get_base_path(),
