@@ -4,7 +4,7 @@ use serde_json::{Map, Number, Value};
 
 use crate::gui::action;
 use crate::gui::engine::Engine;
-use crate::gui::lang::model::Description;
+use crate::gui::lang::model::{Description, Part};
 use crate::server::client::{Client, ClientError};
 use crate::server::Server;
 use crate::{color, util};
@@ -158,6 +158,11 @@ impl Engine for DescriptionEngine {
             }
         } else {
             let mut items = self.description.items.clone();
+            if items.len() == 0 {
+                items.push(Part {
+                    ..Default::default()
+                });
+            }
 
             // if group name displayed, filter these
             if let Some(link_group_name) = self.link_group_name.as_ref() {
