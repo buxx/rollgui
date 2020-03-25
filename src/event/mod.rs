@@ -8,6 +8,8 @@ pub const CLIENT_WANT_CLOSE: &str = "CLIENT_WANT_CLOSE";
 pub const SERVER_PERMIT_CLOSE: &str = "SERVER_PERMIT_CLOSE";
 pub const CHARACTER_ENTER_ZONE: &str = "CHARACTER_ENTER_ZONE";
 pub const CHARACTER_EXIT_ZONE: &str = "CHARACTER_EXIT_ZONE";
+pub const CLIENT_REQUIRE_AROUND: &str = "CLIENT_REQUIRE_AROUND";
+pub const THERE_IS_AROUND: &str = "THERE_IS_AROUND";
 
 #[derive(SerializeDerive, DeserializeDerive, Debug)]
 #[serde(untagged)]
@@ -28,6 +30,14 @@ pub enum ZoneEventType {
     },
     CharacterExit {
         character_id: String,
+    },
+    ClientRequireAround {
+        zone_row_i: i32,
+        zone_col_i: i32,
+        character_id: String,
+    },
+    ThereIsAround {
+        items: Vec<(String, Option<String>)>,
     },
 }
 
@@ -74,6 +84,23 @@ impl ZoneEvent {
                     character_id: String::from(data["character_id"].as_str().unwrap()),
                 },
             }),
+            &THERE_IS_AROUND => {
+                let mut items: Vec<(String, Option<String>)> = vec![];
+                for value in data["items"].as_array().unwrap() {
+                    let vector = value.as_array().unwrap();
+                    let text = vector.get(0).unwrap().as_str().unwrap().to_string();
+                    let mut url: Option<String> = None;
+                    if let Some(txt) = vector.get(1).unwrap().as_str() {
+                        url = Some(txt.to_string());
+                    }
+                    items.push((text, url));
+                }
+
+                Ok(ZoneEvent {
+                    event_type_name: String::from(THERE_IS_AROUND),
+                    event_type: ZoneEventType::ThereIsAround { items },
+                })
+            }
             _ => Err(RollingError {
                 message: format!("Unknown event {}", &type_),
             }),

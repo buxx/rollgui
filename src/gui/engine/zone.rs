@@ -1,6 +1,7 @@
 use doryen_rs::{DoryenApi, TextAlign};
 use doryen_ui as ui;
 use std::collections::HashMap;
+use std::time::Instant;
 
 use crate::color;
 use crate::entity::build::Build;
@@ -35,6 +36,8 @@ pub struct ZoneEngine {
     start_display_map_col_i: i32,
     mouse_pos: (f32, f32),
     resume_text: Vec<(String, Option<String>)>,
+    around_text: Vec<(String, Option<String>)>,
+    around_wait: Option<Instant>,
 }
 
 impl ZoneEngine {
@@ -64,6 +67,8 @@ impl ZoneEngine {
             start_display_map_col_i,
             mouse_pos: (0.0, 0.0),
             resume_text,
+            around_text: vec![],
+            around_wait: None,
         }
     }
 
@@ -128,6 +133,9 @@ impl Engine for ZoneEngine {
                         println!("{} exit from zone", &character_id);
                     }
                 }
+                ZoneEventType::ThereIsAround { items } => {
+                    self.around_text = items;
+                }
                 _ => println!("unknown event type {:?}", &event.event_type),
             }
         }
@@ -185,6 +193,22 @@ impl Engine for ZoneEngine {
                     character_id: String::from(self.player.id.as_str()),
                 },
             });
+            self.around_wait = Some(Instant::now());
+            self.around_text = vec![];
+        } else {
+            if let Some(around_wait) = self.around_wait.as_ref() {
+                if around_wait.elapsed().as_millis() > 150 {
+                    self.around_wait = None;
+                    self.socket.send(event::ZoneEvent {
+                        event_type_name: String::from(event::CLIENT_REQUIRE_AROUND),
+                        event_type: event::ZoneEventType::ClientRequireAround {
+                            zone_row_i: self.player.position.0 as i32,
+                            zone_col_i: self.player.position.1 as i32,
+                            character_id: String::from(self.player.id.as_str()),
+                        },
+                    });
+                }
+            }
         }
 
         self.start_display_map_row_i = self.player.position.0 as i32 - (height / 2);
@@ -356,6 +380,25 @@ impl Engine for ZoneEngine {
             } else {
                 ctx.label(resume_text);
             }
+        }
+
+        ctx.label("");
+        if self.around_text.len() != 0 {
+            ctx.label("Autour: ");
+            for (around_text, optional_link) in self.around_text.iter() {
+                if let Some(link) = optional_link {
+                    if ctx
+                        .button(around_text, around_text)
+                        .align(ui::TextAlign::Left)
+                        .pressed()
+                    {
+                        return Some(action::Action::ZoneToDescription { url: link.clone() });
+                    }
+                } else {
+                    ctx.label(around_text);
+                }
+            }
+            ctx.label("");
         }
 
         None
