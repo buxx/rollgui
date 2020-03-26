@@ -358,6 +358,26 @@ impl Engine for ZoneEngine {
             });
         }
 
+        let zone_message_label =
+            if self.player.unread_zone_message && self.menu_blinker.visible(500, 'Z') {
+                "*Messages de zone*"
+            } else {
+                "Messages de zone"
+            };
+        if ctx
+            .button("zone_messages_button", zone_message_label)
+            .align(ui::TextAlign::Center)
+            .pressed()
+        {
+            return Some(action::Action::ZoneToDescription {
+                url: format!(
+                    "/zones/{}/{}/messages?character_id={}",
+                    self.player.world_position.0, self.player.world_position.1, self.player.id
+                )
+                .to_string(),
+            });
+        }
+
         if ctx
             .button("inventory_button", "Inventaire")
             .align(ui::TextAlign::Center)

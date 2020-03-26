@@ -130,6 +130,7 @@ impl Client {
             character.weight_overcharge,
             character.clutter_overcharge,
             character.unread_event,
+            character.unread_zone_message,
         ))
     }
 
@@ -171,6 +172,7 @@ impl Client {
             character.weight_overcharge,
             character.clutter_overcharge,
             character.unread_event,
+            character.unread_zone_message,
         ))
     }
 

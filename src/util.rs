@@ -9,10 +9,7 @@ use std::time::Instant;
 pub const BLOCK_GEO: &str = "GEO";
 pub const BLOCK_LEGEND: &str = "LEGEND";
 
-pub struct Blinker<T>
-where
-    T: std::cmp::Eq + std::hash::Hash,
-{
+pub struct Blinker<T> {
     pub items: HashMap<T, Instant>,
 }
 

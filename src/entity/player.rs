@@ -19,6 +19,7 @@ pub struct Player {
     pub weight_overcharge: bool,
     pub clutter_overcharge: bool,
     pub unread_event: bool,
+    pub unread_zone_message: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -36,6 +37,7 @@ pub struct ApiCharacter {
     pub weight_overcharge: bool,
     pub clutter_overcharge: bool,
     pub unread_event: bool,
+    pub unread_zone_message: bool,
 }
 
 impl Player {
@@ -51,6 +53,7 @@ impl Player {
         weight_overcharge: bool,
         clutter_overcharge: bool,
         unread_event: bool,
+        unread_zone_message: bool,
     ) -> Self {
         Self {
             id: id.to_string(),
@@ -65,6 +68,7 @@ impl Player {
             weight_overcharge,
             clutter_overcharge,
             unread_event,
+            unread_zone_message,
         }
     }
 
