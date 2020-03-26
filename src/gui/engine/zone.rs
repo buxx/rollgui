@@ -336,6 +336,20 @@ impl Engine for ZoneEngine {
         }
 
         if ctx
+            .button("zone_button", "Zone")
+            .align(ui::TextAlign::Center)
+            .pressed()
+        {
+            return Some(action::Action::ZoneToDescription {
+                url: format!(
+                    "/zones/{}/{}/describe",
+                    self.player.world_position.0, self.player.world_position.1,
+                )
+                .to_string(),
+            });
+        }
+
+        if ctx
             .button("inventory_button", "Inventaire")
             .align(ui::TextAlign::Center)
             .pressed()
