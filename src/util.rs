@@ -1,11 +1,39 @@
 use crate::error::RollingError;
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::io::Read;
 use std::path::Path;
+use std::time::Instant;
 
 pub const BLOCK_GEO: &str = "GEO";
 pub const BLOCK_LEGEND: &str = "LEGEND";
+
+pub struct Blinker<T>
+where
+    T: std::cmp::Eq + std::hash::Hash,
+{
+    pub items: HashMap<T, Instant>,
+}
+
+impl<T> Blinker<T>
+where
+    T: std::cmp::Eq + std::hash::Hash,
+{
+    pub fn visible(&mut self, blink_ms: i32, key: T) -> bool {
+        if let Some(instant) = self.items.get(&key) {
+            let elapsed = instant.elapsed().as_millis();
+            if elapsed < blink_ms as u128 {
+                return false;
+            } else if elapsed <= (blink_ms * 2) as u128 {
+                return true;
+            }
+        }
+
+        self.items.insert(key, Instant::now());
+        false
+    }
+}
 
 pub fn extract_block_from_source(block_name: &str, source: &str) -> Result<String, RollingError> {
     let mut block_found = false;

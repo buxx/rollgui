@@ -5,6 +5,8 @@ use crate::entity::player::Player;
 use crate::gui::action;
 use crate::gui::engine::Engine;
 use crate::server::Server;
+use crate::util::Blinker;
+use std::collections::HashMap;
 
 pub struct WorldEngine {
     server: Server,
@@ -13,6 +15,7 @@ pub struct WorldEngine {
     start_display_map_row_i: i32,
     start_display_map_col_i: i32,
     mouse_pos: (f32, f32),
+    position: Blinker<char>,
 }
 
 impl WorldEngine {
@@ -28,6 +31,9 @@ impl WorldEngine {
             start_display_map_row_i,
             start_display_map_col_i,
             mouse_pos: (0.0, 0.0),
+            position: Blinker {
+                items: HashMap::new(),
+            },
         }
     }
 }
@@ -100,6 +106,10 @@ impl Engine for WorldEngine {
                     con.ascii(col_i as i32, row_i, appearance.ascii.unwrap() as u16);
                 }
             }
+        }
+
+        if self.position.visible(250, 'x') {
+            con.ascii(width / 2, height / 2, 'x' as u16);
         }
 
         con.back(
