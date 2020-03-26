@@ -38,6 +38,7 @@ pub struct ZoneEngine {
     resume_text: Vec<(String, Option<String>)>,
     around_text: Vec<(String, Option<String>)>,
     around_wait: Option<Instant>,
+    menu_blinker: util::Blinker<char>,
 }
 
 impl ZoneEngine {
@@ -69,6 +70,9 @@ impl ZoneEngine {
             resume_text,
             around_text: vec![],
             around_wait: None,
+            menu_blinker: util::Blinker {
+                items: HashMap::new(),
+            },
         }
     }
 
@@ -325,8 +329,13 @@ impl Engine for ZoneEngine {
             });
         }
 
+        let events_label = if self.player.unread_event && self.menu_blinker.visible(500, 'E') {
+            "*Evenements*"
+        } else {
+            "Evenements"
+        };
         if ctx
-            .button("events_button", "Evenements")
+            .button("events_button", events_label)
             .align(ui::TextAlign::Center)
             .pressed()
         {

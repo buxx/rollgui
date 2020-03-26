@@ -18,6 +18,7 @@ pub struct Player {
     pub feel_hungry: bool,
     pub weight_overcharge: bool,
     pub clutter_overcharge: bool,
+    pub unread_event: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -34,6 +35,7 @@ pub struct ApiCharacter {
     pub feel_hungry: bool,
     pub weight_overcharge: bool,
     pub clutter_overcharge: bool,
+    pub unread_event: bool,
 }
 
 impl Player {
@@ -48,6 +50,7 @@ impl Player {
         feel_hungry: bool,
         weight_overcharge: bool,
         clutter_overcharge: bool,
+        unread_event: bool,
     ) -> Self {
         Self {
             id: id.to_string(),
@@ -61,6 +64,7 @@ impl Player {
             feel_hungry,
             weight_overcharge,
             clutter_overcharge,
+            unread_event,
         }
     }
 

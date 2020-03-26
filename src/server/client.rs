@@ -129,6 +129,7 @@ impl Client {
             character.feel_hungry,
             character.weight_overcharge,
             character.clutter_overcharge,
+            character.unread_event,
         ))
     }
 
@@ -169,6 +170,7 @@ impl Client {
             character.feel_hungry,
             character.weight_overcharge,
             character.clutter_overcharge,
+            character.unread_event,
         ))
     }
 
