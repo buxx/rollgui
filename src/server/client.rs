@@ -131,6 +131,7 @@ impl Client {
             character.clutter_overcharge,
             character.unread_event,
             character.unread_zone_message,
+            character.unread_conversation,
         ))
     }
 
@@ -173,6 +174,7 @@ impl Client {
             character.clutter_overcharge,
             character.unread_event,
             character.unread_zone_message,
+            character.unread_conversation,
         ))
     }
 

@@ -378,6 +378,22 @@ impl Engine for ZoneEngine {
             });
         }
 
+        let conversation_label =
+            if self.player.unread_conversation && self.menu_blinker.visible(500, 'C') {
+                "*Conversations*"
+            } else {
+                "Conversations"
+            };
+        if ctx
+            .button("conversation_button", conversation_label)
+            .align(ui::TextAlign::Center)
+            .pressed()
+        {
+            return Some(action::Action::ZoneToDescription {
+                url: format!("/conversation/{}", self.player.id).to_string(),
+            });
+        }
+
         if ctx
             .button("inventory_button", "Inventaire")
             .align(ui::TextAlign::Center)

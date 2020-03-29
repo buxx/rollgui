@@ -15,6 +15,9 @@ pub struct Part {
     pub default_value: Option<String>,
     pub link_group_name: Option<String>,
     pub align: Option<String>,
+    pub value: Option<String>,
+    pub is_checkbox: bool,
+    pub checked: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

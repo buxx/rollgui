@@ -311,6 +311,14 @@ impl Engine for DescriptionEngine {
                                 }
                                 _ => {}
                             }
+                        } else if form_item.is_checkbox {
+                            let label = form_item.label.as_ref().unwrap();
+                            if ctx.checkbox(label, label, form_item.checked).active() {
+                                let key = form_item.name.as_ref().unwrap().clone();
+                                let value =
+                                    Value::String(form_item.value.as_ref().unwrap().clone());
+                                form_data.insert(key, value);
+                            }
                         }
 
                         if form_item.go_back_zone {
