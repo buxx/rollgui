@@ -345,6 +345,20 @@ impl Engine for ZoneEngine {
         }
 
         if ctx
+            .button("affinity_button", "Affinités")
+            .align(ui::TextAlign::Center)
+            .pressed()
+        {
+            return Some(action::Action::ZoneToDescription {
+                url: format!(
+                    "/affinity/{}",
+                    self.player.id,
+                )
+                .to_string(),
+            });
+        }
+
+        if ctx
             .button("zone_button", "Zone")
             .align(ui::TextAlign::Center)
             .pressed()
