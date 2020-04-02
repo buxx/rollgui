@@ -7,6 +7,7 @@ use crate::color;
 use crate::entity::build::Build;
 use crate::entity::character::Character;
 use crate::entity::player::Player;
+use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
 use crate::event;
 use crate::event::ZoneEventType;
@@ -27,6 +28,7 @@ pub struct ZoneEngine {
     player: Player,
     characters: HashMap<String, Character>,
     stuffs: HashMap<String, Stuff>,
+    resources: Vec<Resource>,
     builds: HashMap<String, Build>,
     socket: ZoneSocket,
     level: Level,
@@ -47,6 +49,7 @@ impl ZoneEngine {
         player: Player,
         characters: HashMap<String, Character>,
         stuffs: HashMap<String, Stuff>,
+        resources: Vec<Resource>,
         builds: HashMap<String, Build>,
         socket: ZoneSocket,
         level: Level,
@@ -60,6 +63,7 @@ impl ZoneEngine {
             player,
             characters,
             stuffs,
+            resources,
             builds,
             socket,
             level,
@@ -262,6 +266,20 @@ impl Engine for ZoneEngine {
             );
         }
 
+        // RESOURCE
+        for resource in self.resources.iter() {
+            con.ascii(
+                (resource.zone_col_i - self.start_display_map_col_i) + (UI_WIDTH / 2),
+                (resource.zone_row_i - self.start_display_map_row_i) + 0,
+                gui::CHAR_TRUNK,
+            );
+            con.fore(
+                (resource.zone_col_i - self.start_display_map_col_i) + (UI_WIDTH / 2),
+                (resource.zone_row_i - self.start_display_map_row_i) + 0,
+                color::WHITE,
+            );
+        }
+
         // BUILDS
         for (_build_id, build) in self.builds.iter() {
             con.ascii(
@@ -350,11 +368,7 @@ impl Engine for ZoneEngine {
             .pressed()
         {
             return Some(action::Action::ZoneToDescription {
-                url: format!(
-                    "/affinity/{}",
-                    self.player.id,
-                )
-                .to_string(),
+                url: format!("/affinity/{}", self.player.id,).to_string(),
             });
         }
 

@@ -2,11 +2,11 @@ use doryen_rs::{DoryenApi, Engine, TextAlign, UpdateEvent};
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
 
-use crate::color;
 use crate::config;
 use crate::entity::build::Build;
 use crate::entity::character::Character;
 use crate::entity::player::Player;
+use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
 use crate::error::RollingError;
 use crate::gui::action::Action;
@@ -21,6 +21,7 @@ use crate::tile::zone::Tiles as ZoneTiles;
 use crate::util;
 use crate::world::level::Level;
 use crate::world::socket::ZoneSocket;
+use crate::{color, event};
 use doryen_ui as ui;
 use std::error::Error;
 
@@ -155,6 +156,11 @@ impl RollingGui {
             stuffs.insert(stuff.id.to_string().clone(), stuff);
         }
 
+        // RESOURCES
+        let resources: Vec<Resource> = server
+            .client
+            .get_zone_resources(player.world_position.0, player.world_position.1)?;
+
         // BUILDS
         let builds_list = server
             .client
@@ -170,6 +176,14 @@ impl RollingGui {
             server.config.ip, server.config.port, player.world_position.0, player.world_position.1,
         ));
         socket.connect();
+        socket.send(event::ZoneEvent {
+            event_type_name: String::from(event::CLIENT_REQUIRE_AROUND),
+            event_type: event::ZoneEventType::ClientRequireAround {
+                zone_row_i: player.position.0 as i32,
+                zone_col_i: player.position.1 as i32,
+                character_id: String::from(player.id.as_str()),
+            },
+        });
 
         let resume_text = server.client.get_character_resume_texts(&player.id)?;
 
@@ -178,6 +192,7 @@ impl RollingGui {
             player,
             characters,
             stuffs,
+            resources,
             builds,
             socket,
             level,

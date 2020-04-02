@@ -5,6 +5,7 @@ use url::Url;
 use crate::entity::build::Build;
 use crate::entity::character::Character;
 use crate::entity::player::{ApiCharacter, Player};
+use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
 use crate::gui::lang::model::Description;
 use serde::{Deserialize, Serialize};
@@ -235,6 +236,24 @@ impl Client {
             self.check_response(self.client.get(url.as_str()).send().unwrap())?;
 
         Ok(response.json::<Vec<Stuff>>().unwrap())
+    }
+
+    pub fn get_zone_resources(
+        &self,
+        world_row_i: i32,
+        world_col_i: i32,
+    ) -> Result<Vec<Resource>, ClientError> {
+        println!("Retrieve resources from server");
+        let url = format!(
+            "{}/zones/{}/{}/resources",
+            self.get_base_path(),
+            world_row_i,
+            world_col_i
+        );
+        let response: Response =
+            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+
+        Ok(response.json::<Vec<Resource>>().unwrap())
     }
 
     pub fn get_zone_builds(
