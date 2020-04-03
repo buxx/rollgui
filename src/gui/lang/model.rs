@@ -6,6 +6,7 @@ pub struct Part {
     pub is_form: bool,
     pub form_action: Option<String>,
     pub form_values_in_query: bool,
+    pub submit_label: Option<String>,
     pub items: Vec<Part>,
     pub type_: Option<String>,
     pub label: Option<String>,
@@ -18,6 +19,7 @@ pub struct Part {
     pub value: Option<String>,
     pub is_checkbox: bool,
     pub checked: bool,
+    pub choices: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -29,4 +31,5 @@ pub struct Description {
     pub image_extension: Option<String>,
     pub is_long_text: bool,
     pub new_character_id: Option<String>,
+    pub redirect: Option<String>,
 }

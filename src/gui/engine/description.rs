@@ -8,6 +8,7 @@ use crate::gui::lang::model::{Description, Part};
 use crate::server::client::{Client, ClientError};
 use crate::server::Server;
 use crate::{color, util};
+use std::collections::HashMap;
 
 const UI_WIDTH_MARGIN: i32 = 2;
 
@@ -22,6 +23,7 @@ pub struct DescriptionEngine {
     loading_displayed: bool,
     loading_closure: Option<Box<dyn Fn(Client) -> Result<action::Action, String>>>,
     link_group_name: Option<String>,
+    tmp_choices: HashMap<String, String>,
 }
 
 impl DescriptionEngine {
@@ -37,6 +39,7 @@ impl DescriptionEngine {
             loading_displayed: false,
             loading_closure: None,
             link_group_name: None,
+            tmp_choices: HashMap::new(),
         }
     }
 }
@@ -52,6 +55,12 @@ impl Engine for DescriptionEngine {
         _width: i32,
         _height: i32,
     ) -> Option<action::Action> {
+        if let Some(redirect) = self.description.redirect.as_ref() {
+            return Some(action::Action::DescriptionToDescriptionGet {
+                url: redirect.to_string(),
+            });
+        }
+
         let input = api.input();
 
         if input.key("ArrowUp") || input.key("KeyW") {
@@ -256,7 +265,11 @@ impl Engine for DescriptionEngine {
                     let form_action = form.form_action.as_ref().unwrap();
                     let mut form_data = Map::new();
                     let form_query = Map::new();
-                    let mut form_submit_label = "Continuer";
+                    let mut form_submit_label = item
+                        .submit_label
+                        .as_ref()
+                        .unwrap_or(&"Continuer".to_string())
+                        .clone();
 
                     if let Some(form_error_message) = &self.form_error_message {
                         ctx.label_color(
@@ -319,10 +332,44 @@ impl Engine for DescriptionEngine {
                                     Value::String(form_item.value.as_ref().unwrap().clone());
                                 form_data.insert(key, value);
                             }
+                        } else if form_item.choices.is_some() {
+                            let key = form_item.name.as_ref().unwrap().clone();
+                            //                            ctx.list_button_begin(&key);
+                            //                            for choice in form_item.choices.as_ref().unwrap().iter() {
+                            //                                if ctx.list_button_item(choice, ui::TextAlign::Center) {
+                            //                                    let value = Value::String(choice.to_string());
+                            //                                    form_data.insert(key.clone(), value);
+                            //                                }
+                            //                            }
+                            //                            ctx.list_button_end(true);
+                            self.tmp_choices
+                                .entry(key.clone())
+                                .or_insert(form_item.value.as_ref().unwrap().clone());
+                            for choice in form_item.choices.as_ref().unwrap().iter() {
+                                let label = if self.tmp_choices[&key.clone()].eq(choice) {
+                                    format!("**{}**", choice)
+                                } else {
+                                    choice.to_string()
+                                };
+                                if ctx
+                                    .button(&key, &label)
+                                    .align(ui::TextAlign::Center)
+                                    .pressed()
+                                {
+                                    self.tmp_choices.insert(key.clone(), choice.clone());
+                                };
+                            }
+                            let value =
+                                Value::String(self.tmp_choices.get(&key).unwrap().to_string());
+                            form_data.insert(key.clone(), value);
                         }
 
                         if form_item.go_back_zone {
-                            form_submit_label = item.label.as_deref().unwrap_or("Continuer");
+                            form_submit_label = item
+                                .label
+                                .as_ref()
+                                .unwrap_or(&"Continuer".to_string())
+                                .clone();
                         }
                     }
 
