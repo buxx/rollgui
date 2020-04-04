@@ -224,7 +224,7 @@ dependencies = [
 [[package]]
 name = "doryen-ui"
 version = "0.1.0"
-source = "git+https://github.com/jice-nospam/doryen-ui.git?rev=eeda9363a40c9158cba72f886f146cc4f11cf5a5#eeda9363a40c9158cba72f886f146cc4f11cf5a5"
+source = "git+https://github.com/jice-nospam/doryen-ui.git?rev=0ffe6d1a74d32fd720615b78aed466ad37adfc46#0ffe6d1a74d32fd720615b78aed466ad37adfc46"
 dependencies = [
  "doryen-rs 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "unicode-segmentation 1.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1245,7 +1245,7 @@ version = "0.1.0"
 dependencies = [
  "colors-transform 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)",
  "doryen-rs 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "doryen-ui 0.1.0 (git+https://github.com/jice-nospam/doryen-ui.git?rev=eeda9363a40c9158cba72f886f146cc4f11cf5a5)",
+ "doryen-ui 0.1.0 (git+https://github.com/jice-nospam/doryen-ui.git?rev=0ffe6d1a74d32fd720615b78aed466ad37adfc46)",
  "pickledb 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2093,7 +2093,7 @@ dependencies = [
 "checksum discard 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "212d0f5754cb6769937f4501cc0e67f4f4483c8d2c3e1e922ee9edbe4ab4c7c0"
 "checksum dlib 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "77e51249a9d823a4cb79e3eca6dcd756153e8ed0157b6c04775d04bf1b13b76a"
 "checksum doryen-rs 1.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "9de399ff837ec8b3d0ddcc053a1a1f2d2e961cea2e1905f8e833f4256d24df46"
-"checksum doryen-ui 0.1.0 (git+https://github.com/jice-nospam/doryen-ui.git?rev=eeda9363a40c9158cba72f886f146cc4f11cf5a5)" = "<none>"
+"checksum doryen-ui 0.1.0 (git+https://github.com/jice-nospam/doryen-ui.git?rev=0ffe6d1a74d32fd720615b78aed466ad37adfc46)" = "<none>"
 "checksum downcast-rs 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "52ba6eb47c2131e784a38b726eb54c1e1484904f013e576a25354d0124161af6"
 "checksum dtoa 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "ea57b42383d091c85abcc2706240b94ab2a8fa1fc81c10ff23c4de06e2a90b5e"
 "checksum encoding_rs 0.8.22 (registry+https://github.com/rust-lang/crates.io-index)" = "cd8d03faa7fe0c1431609dfad7bbe827af30f82e1e2ae6f7ee4fca6bd764bc28"

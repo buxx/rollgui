@@ -334,34 +334,22 @@ impl Engine for DescriptionEngine {
                             }
                         } else if form_item.choices.is_some() {
                             let key = form_item.name.as_ref().unwrap().clone();
-                            //                            ctx.list_button_begin(&key);
-                            //                            for choice in form_item.choices.as_ref().unwrap().iter() {
-                            //                                if ctx.list_button_item(choice, ui::TextAlign::Center) {
-                            //                                    let value = Value::String(choice.to_string());
-                            //                                    form_data.insert(key.clone(), value);
-                            //                                }
-                            //                            }
-                            //                            ctx.list_button_end(true);
-                            self.tmp_choices
-                                .entry(key.clone())
-                                .or_insert(form_item.value.as_ref().unwrap().clone());
+                            let default_value = form_item.value.as_ref().unwrap().clone();
+                            let default_position = form_item
+                                .choices
+                                .as_ref()
+                                .unwrap()
+                                .iter()
+                                .position(|x| x.eq(&default_value))
+                                .unwrap();
+                            ctx.list_button_begin(&key, default_position as i32);
                             for choice in form_item.choices.as_ref().unwrap().iter() {
-                                let label = if self.tmp_choices[&key.clone()].eq(choice) {
-                                    format!("**{}**", choice)
-                                } else {
-                                    choice.to_string()
-                                };
-                                if ctx
-                                    .button(&key, &label)
-                                    .align(ui::TextAlign::Center)
-                                    .pressed()
-                                {
-                                    self.tmp_choices.insert(key.clone(), choice.clone());
-                                };
+                                if ctx.list_button_item(choice, ui::TextAlign::Center) {
+                                    let value = Value::String(choice.to_string());
+                                    form_data.insert(key.clone(), value);
+                                }
                             }
-                            let value =
-                                Value::String(self.tmp_choices.get(&key).unwrap().to_string());
-                            form_data.insert(key.clone(), value);
+                            ctx.list_button_end(true);
                         }
 
                         if form_item.go_back_zone {
