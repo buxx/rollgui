@@ -362,8 +362,14 @@ impl Engine for ZoneEngine {
             });
         }
 
+        let conversation_label =
+            if self.player.unvote_affinity_relation && self.menu_blinker.visible(500, 'A') {
+                "*Affinités*"
+            } else {
+                "Affinités"
+            };
         if ctx
-            .button("affinity_button", "Affinités")
+            .button("affinity_button", conversation_label)
             .align(ui::TextAlign::Center)
             .pressed()
         {

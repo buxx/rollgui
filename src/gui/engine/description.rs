@@ -8,7 +8,6 @@ use crate::gui::lang::model::{Description, Part};
 use crate::server::client::{Client, ClientError};
 use crate::server::Server;
 use crate::{color, util};
-use std::collections::HashMap;
 
 const UI_WIDTH_MARGIN: i32 = 2;
 
@@ -23,7 +22,6 @@ pub struct DescriptionEngine {
     loading_displayed: bool,
     loading_closure: Option<Box<dyn Fn(Client) -> Result<action::Action, String>>>,
     link_group_name: Option<String>,
-    tmp_choices: HashMap<String, String>,
 }
 
 impl DescriptionEngine {
@@ -39,7 +37,6 @@ impl DescriptionEngine {
             loading_displayed: false,
             loading_closure: None,
             link_group_name: None,
-            tmp_choices: HashMap::new(),
         }
     }
 }
