@@ -8,7 +8,6 @@ use crate::gui::lang::model::{Description, Part};
 use crate::server::client::{Client, ClientError};
 use crate::server::Server;
 use crate::{color, util};
-use std::collections::HashMap;
 
 const UI_WIDTH_MARGIN: i32 = 2;
 
@@ -23,7 +22,6 @@ pub struct DescriptionEngine {
     loading_displayed: bool,
     loading_closure: Option<Box<dyn Fn(Client) -> Result<action::Action, String>>>,
     link_group_name: Option<String>,
-    tmp_choices: HashMap<String, String>,
 }
 
 impl DescriptionEngine {
@@ -39,7 +37,6 @@ impl DescriptionEngine {
             loading_displayed: false,
             loading_closure: None,
             link_group_name: None,
-            tmp_choices: HashMap::new(),
         }
     }
 }
@@ -291,7 +288,9 @@ impl Engine for DescriptionEngine {
                         }
 
                         if let Some(label_) = label {
-                            ctx.label(label_.as_str()).align(ui::TextAlign::Left);
+                            for label_line in util::overflow(&label_, width - UI_WIDTH_MARGIN).iter() {
+                                ctx.label(label_line.as_str()).align(ui::TextAlign::Left);
+                            }
                         }
                         if form_item.type_.is_some() && form_item.name.is_some() {
                             let default_value = form_item.default_value.as_deref().unwrap_or("");
