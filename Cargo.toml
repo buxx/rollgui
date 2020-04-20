@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 doryen-rs="1.2.*"
-doryen-ui = { git = "https://github.com/jice-nospam/doryen-ui.git", rev = "0ffe6d1a74d32fd720615b78aed466ad37adfc46" }
+doryen-ui = { git = "https://github.com/jice-nospam/doryen-ui.git", rev = "0a75f176016afe6c462826a110826e0a87d9be63" }
 websocket = "0.24.0"
 serde = "1.0.104"
 serde_derive = "1.0.104"

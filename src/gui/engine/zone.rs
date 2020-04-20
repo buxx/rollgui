@@ -362,6 +362,22 @@ impl Engine for ZoneEngine {
             });
         }
 
+        let business_label =
+            if self.player.unread_transactions && self.menu_blinker.visible(500, 'T') {
+                "*Commerce*"
+            } else {
+                "Commerce"
+            };
+        if ctx
+            .button("events_button", business_label)
+            .align(ui::TextAlign::Center)
+            .pressed()
+        {
+            return Some(action::Action::ZoneToDescription {
+                url: format!("/business/{}", self.player.id).to_string(),
+            });
+        }
+
         let conversation_label =
             if self.player.unvote_affinity_relation && self.menu_blinker.visible(500, 'A') {
                 "*Affinités*"
@@ -385,8 +401,8 @@ impl Engine for ZoneEngine {
         {
             return Some(action::Action::ZoneToDescription {
                 url: format!(
-                    "/zones/{}/{}/describe",
-                    self.player.world_position.0, self.player.world_position.1,
+                    "/zones/{}/{}/describe/{}",
+                    self.player.world_position.0, self.player.world_position.1, self.player.id
                 )
                 .to_string(),
             });

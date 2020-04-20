@@ -134,6 +134,7 @@ impl Client {
             character.unread_zone_message,
             character.unread_conversation,
             character.unvote_affinity_relation,
+            character.unread_transactions,
         ))
     }
 
@@ -178,6 +179,7 @@ impl Client {
             character.unread_zone_message,
             character.unread_conversation,
             character.unvote_affinity_relation,
+            character.unread_transactions,
         ))
     }
 

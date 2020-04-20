@@ -8,6 +8,7 @@ use crate::gui::lang::model::{Description, Part};
 use crate::server::client::{Client, ClientError};
 use crate::server::Server;
 use crate::{color, util};
+use std::collections::HashMap;
 
 const UI_WIDTH_MARGIN: i32 = 2;
 
@@ -22,6 +23,7 @@ pub struct DescriptionEngine {
     loading_displayed: bool,
     loading_closure: Option<Box<dyn Fn(Client) -> Result<action::Action, String>>>,
     link_group_name: Option<String>,
+    selections: HashMap<String, String>,
 }
 
 impl DescriptionEngine {
@@ -37,6 +39,7 @@ impl DescriptionEngine {
             loading_displayed: false,
             loading_closure: None,
             link_group_name: None,
+            selections: HashMap::new(),
         }
     }
 }
@@ -287,10 +290,25 @@ impl Engine for DescriptionEngine {
                             label = Some(format!("{}:", label.unwrap()));
                         }
 
-                        if let Some(label_) = label {
-                            ctx.label(label_.as_str()).align(ui::TextAlign::Left);
+                        if !form_item.is_link {
+                            if let Some(label_) = label.clone() {
+                                ctx.label(label_.as_str()).align(ui::TextAlign::Left);
+                            }
                         }
-                        if form_item.type_.is_some() && form_item.name.is_some() {
+
+                        if form_item.is_link {
+                            if let Some(link_label) = label {
+                                if ctx
+                                    .button(link_label.as_str(), link_label.as_str())
+                                    .align(ui::TextAlign::Center)
+                                    .pressed()
+                                {
+                                    return Some(action::Action::DescriptionToDescriptionGet {
+                                        url: form_item.form_action.as_ref().unwrap().clone(),
+                                    });
+                                }
+                            }
+                        } else if form_item.type_.is_some() && form_item.name.is_some() {
                             let default_value = form_item.default_value.as_deref().unwrap_or("");
                             ctx.textbox(
                                 form_item.name.as_ref().unwrap().as_str(),
@@ -329,9 +347,9 @@ impl Engine for DescriptionEngine {
                                     Value::String(form_item.value.as_ref().unwrap().clone());
                                 form_data.insert(key, value);
                             }
-                        } else if form_item.choices.is_some() {
+                        } else if form_item.choices.is_some() && !form_item.search_by_str {
                             let key = form_item.name.as_ref().unwrap().clone();
-                            let default_value = form_item.value.as_ref().unwrap().clone();
+                            let default_value = form_item.value.as_ref().unwrap_or(&"".to_string()).clone();
                             let default_position = form_item
                                 .choices
                                 .as_ref()
@@ -347,6 +365,46 @@ impl Engine for DescriptionEngine {
                                 }
                             }
                             ctx.list_button_end(true);
+                        } else if form_item.choices.is_some() && form_item.search_by_str {
+                            let input_name = form_item.name.as_ref().unwrap().as_str();
+                            ctx.textbox(input_name, 32, None, Some("Chercher"));
+                            let textbox_id = ctx.last_id();
+                            let value: &str = ctx.text(ctx.last_id());
+                            let mut choices: Vec<String> =
+                                form_item.choices.as_ref().unwrap().clone();
+                            if !value.is_empty() {
+                                choices = choices
+                                    .into_iter()
+                                    .filter(|string_| {
+                                        string_
+                                            .to_lowercase()
+                                            .matches(value.to_lowercase().as_str())
+                                            .collect::<String>()
+                                            .len()
+                                            != 0
+                                    })
+                                    .collect();
+                            }
+                            for choice in choices.iter() {
+                                let label = if self.selections.get(choice).is_some() {
+                                    format!("*{}*", choice)
+                                } else {
+                                    choice.to_string()
+                                };
+
+                                if ctx
+                                    .button(choice.as_str(), label.as_str())
+                                    .align(ui::TextAlign::Center)
+                                    .pressed()
+                                {
+                                    ctx.set_textbox_value(textbox_id, choice);
+                                    self.selections.insert(input_name.to_string(), choice.to_string());
+                                }
+                            }
+                            if let Some(value_) = self.selections.get(input_name) {
+                                let value = Value::String(value_.to_string());
+                                form_data.insert(input_name.to_string(), value);
+                            }
                         }
 
                         if form_item.go_back_zone {
