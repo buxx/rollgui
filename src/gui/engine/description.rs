@@ -288,7 +288,9 @@ impl Engine for DescriptionEngine {
                         }
 
                         if let Some(label_) = label {
-                            ctx.label(label_.as_str()).align(ui::TextAlign::Left);
+                            for label_line in util::overflow(&label_, width - UI_WIDTH_MARGIN).iter() {
+                                ctx.label(label_line.as_str()).align(ui::TextAlign::Left);
+                            }
                         }
                         if form_item.type_.is_some() && form_item.name.is_some() {
                             let default_value = form_item.default_value.as_deref().unwrap_or("");
