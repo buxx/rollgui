@@ -20,6 +20,7 @@ pub struct Part {
     pub is_checkbox: bool,
     pub checked: bool,
     pub choices: Option<Vec<String>>,
+    pub search_by_str: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
