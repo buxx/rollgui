@@ -24,10 +24,11 @@ pub struct DescriptionEngine {
     loading_closure: Option<Box<dyn Fn(Client) -> Result<action::Action, String>>>,
     link_group_name: Option<String>,
     selections: HashMap<String, String>,
+    back_url: Option<String>,
 }
 
 impl DescriptionEngine {
-    pub fn new(description: Description, server: Server) -> Self {
+    pub fn new(description: Description, server: Server, back_url: Option<String>) -> Self {
         Self {
             description,
             server,
@@ -40,6 +41,7 @@ impl DescriptionEngine {
             loading_closure: None,
             link_group_name: None,
             selections: HashMap::new(),
+            back_url,
         }
     }
 }
@@ -58,6 +60,7 @@ impl Engine for DescriptionEngine {
         if let Some(redirect) = self.description.redirect.as_ref() {
             return Some(action::Action::DescriptionToDescriptionGet {
                 url: redirect.to_string(),
+                back_url: None,
             });
         }
 
@@ -67,6 +70,21 @@ impl Engine for DescriptionEngine {
             self.start_items_from -= 1;
         } else if input.key("ArrowDown") || input.key("KeyS") {
             self.start_items_from += 1;
+        }
+
+        if input.key_pressed("Escape") {
+            if let Some(force_back_url) = &self.description.force_back_url {
+                return Some(action::Action::DescriptionToDescriptionGet {
+                    url: force_back_url.clone(),
+                    back_url: None,
+                });
+            }
+            if let Some(back_url) = &self.back_url {
+                return Some(action::Action::DescriptionToDescriptionGet {
+                    url: back_url.clone(),
+                    back_url: None,
+                });
+            }
         }
 
         if self.start_items_from < 0 {
@@ -109,6 +127,11 @@ impl Engine for DescriptionEngine {
                 character_id: character_id.clone(),
             });
         }
+        let future_back_url = if self.description.can_be_back_url {
+            self.description.origin_url.clone()
+        } else {
+            None
+        };
 
         if self.loading {
             if self.loading_displayed {
@@ -247,6 +270,7 @@ impl Engine for DescriptionEngine {
                                 } else {
                                     return Some(action::Action::DescriptionToDescriptionGet {
                                         url: url.to_string(),
+                                        back_url: future_back_url.clone(),
                                     });
                                 }
                             }
@@ -292,10 +316,12 @@ impl Engine for DescriptionEngine {
 
                         if !form_item.is_link {
                             if let Some(label_) = label.clone() {
-                            for label_line in util::overflow(&label_, width - UI_WIDTH_MARGIN).iter() {
-                                ctx.label(label_line.as_str()).align(ui::TextAlign::Left);
+                                for label_line in
+                                    util::overflow(&label_, width - UI_WIDTH_MARGIN).iter()
+                                {
+                                    ctx.label(label_line.as_str()).align(ui::TextAlign::Left);
+                                }
                             }
-                        }
                         }
 
                         if form_item.is_link {
@@ -307,6 +333,7 @@ impl Engine for DescriptionEngine {
                                 {
                                     return Some(action::Action::DescriptionToDescriptionGet {
                                         url: form_item.form_action.as_ref().unwrap().clone(),
+                                        back_url: future_back_url.clone(),
                                     });
                                 }
                             }
@@ -351,7 +378,8 @@ impl Engine for DescriptionEngine {
                             }
                         } else if form_item.choices.is_some() && !form_item.search_by_str {
                             let key = form_item.name.as_ref().unwrap().clone();
-                            let default_value = form_item.value.as_ref().unwrap_or(&"".to_string()).clone();
+                            let default_value =
+                                form_item.value.as_ref().unwrap_or(&"".to_string()).clone();
                             let default_position = form_item
                                 .choices
                                 .as_ref()
@@ -400,7 +428,8 @@ impl Engine for DescriptionEngine {
                                     .pressed()
                                 {
                                     ctx.set_textbox_value(textbox_id, choice);
-                                    self.selections.insert(input_name.to_string(), choice.to_string());
+                                    self.selections
+                                        .insert(input_name.to_string(), choice.to_string());
                                 }
                             }
                             if let Some(value_) = self.selections.get(input_name) {
@@ -434,6 +463,7 @@ impl Engine for DescriptionEngine {
                         } else {
                             form_data.clone()
                         };
+                        let next_back_url = future_back_url.clone();
                         self.loading = true;
                         self.loading_closure = Some(Box::new(move |client| {
                             let description = client.describe(
@@ -441,17 +471,17 @@ impl Engine for DescriptionEngine {
                                 Some(press_form_data.clone()),
                                 Some(press_form_query.clone()),
                             );
-
-                            match description {
+                            return match description {
                                 Result::Err(client_error) => {
-                                    return Err(ClientError::get_message(&client_error))
+                                    Err(ClientError::get_message(&client_error))
                                 }
                                 Result::Ok(description) => {
-                                    return Ok(action::Action::DescriptionToDescription {
+                                    Ok(action::Action::DescriptionToDescription {
                                         description,
-                                    });
+                                        back_url: next_back_url.clone(),
+                                    })
                                 }
-                            }
+                            };
                         }));
                     }
                 }

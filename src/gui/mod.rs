@@ -369,6 +369,7 @@ impl Engine for RollingGui {
                                             )
                                             .unwrap(),
                                         self.server.as_ref().unwrap().clone(),
+                                        None,
                                     ));
                                 } else {
                                     create_new_character = true;
@@ -387,6 +388,7 @@ impl Engine for RollingGui {
                                         .describe("/_describe/character/create", None, None)
                                         .unwrap(),
                                     self.server.as_ref().unwrap().clone(),
+                                    None,
                                 ));
                             }
                         }
@@ -452,6 +454,7 @@ impl Engine for RollingGui {
                                         )
                                         .unwrap(),
                                     self.server.as_ref().unwrap().clone(),
+                                    None,
                                 ));
                             }
                         }
@@ -484,11 +487,15 @@ impl Engine for RollingGui {
                             .setup_zone(&self.server.as_ref().unwrap(), player)
                             .unwrap();
                     }
-                    Action::DescriptionToDescription { description } => {
+                    Action::DescriptionToDescription {
+                        description,
+                        back_url,
+                    } => {
                         println!("Switch description");
                         self.engine = Box::new(DescriptionEngine::new(
                             description,
                             self.server.as_ref().unwrap().clone(),
+                            back_url,
                         ));
                     }
                     Action::ZoneToDescription { url } => {
@@ -504,9 +511,10 @@ impl Engine for RollingGui {
                         self.engine = Box::new(DescriptionEngine::new(
                             description,
                             self.server.as_ref().unwrap().clone(),
+                            None,
                         ));
                     }
-                    Action::DescriptionToDescriptionGet { url } => {
+                    Action::DescriptionToDescriptionGet { url, back_url } => {
                         println!("To description");
                         // TODO manage error
                         let description = self
@@ -519,6 +527,7 @@ impl Engine for RollingGui {
                         self.engine = Box::new(DescriptionEngine::new(
                             description,
                             self.server.as_ref().unwrap().clone(),
+                            back_url,
                         ));
                     }
                 }

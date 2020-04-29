@@ -25,6 +25,7 @@ pub struct Part {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Description {
+    pub origin_url: Option<String>,
     pub title: Option<String>,
     pub items: Vec<Part>,
     pub image: Option<String>,
@@ -33,4 +34,6 @@ pub struct Description {
     pub is_long_text: bool,
     pub new_character_id: Option<String>,
     pub redirect: Option<String>,
+    pub force_back_url: Option<String>,
+    pub can_be_back_url: bool,
 }

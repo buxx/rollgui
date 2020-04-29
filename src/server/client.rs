@@ -293,9 +293,13 @@ impl Client {
         data: Option<Map<String, Value>>,
         query: Option<Map<String, Value>>,
     ) -> Result<Description, ClientError> {
-        println!("Describe with url {}", url);
-        let url = format!("{}{}", self.get_base_path(), url);
+        let url = if !url.starts_with("http") {
+            format!("{}{}", self.get_base_path(), url)
+        } else {
+            url.to_string()
+        };
         let url = self.url_with_query(url, query);
+        println!("Describe with url {}", url);
 
         let mut request = self.client.post(url.as_str());
         if let Some(data_) = data {
@@ -303,8 +307,9 @@ impl Client {
         }
 
         let response: Response = self.check_response(request.send().unwrap())?;
-
-        Ok(response.json::<Description>().unwrap())
+        let mut description = response.json::<Description>().unwrap();
+        description.origin_url = Some(url);
+        Ok(description)
     }
 
     pub fn get_character_resume_texts(
