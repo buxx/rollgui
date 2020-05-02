@@ -66,9 +66,9 @@ impl Engine for DescriptionEngine {
 
         let input = api.input();
 
-        if input.key("ArrowUp") || input.key("KeyW") {
+        if input.key("ArrowUp") {
             self.start_items_from -= 1;
-        } else if input.key("ArrowDown") || input.key("KeyS") {
+        } else if input.key("ArrowDown") {
             self.start_items_from += 1;
         }
 
@@ -112,6 +112,14 @@ impl Engine for DescriptionEngine {
         if let Some(illustration) = self.illustration.as_mut() {
             illustration.blit_2x(api.con(), 0, 0, 0, 0, None, None, None);
         }
+
+        api.con().print_color(
+            width - 1,
+            0,
+            "Echap: Retour",
+            TextAlign::Right,
+            None,
+        );
     }
 
     fn resize(&mut self, _api: &mut dyn DoryenApi) {}

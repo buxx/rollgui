@@ -296,21 +296,17 @@ impl Engine for ZoneEngine {
         self.player
             .render(api, width as i32, height as i32, 0, UI_WIDTH / 2);
 
-        let fps = api.fps();
-        api.con().print_color(
-            1,
-            20,
-            &format!(
-                "row {} / col {} {}fps",
-                self.mouse_pos.1 as i32, self.mouse_pos.0 as i32, fps
-            ),
-            TextAlign::Left,
-            None,
-        );
         api.con().back(
             self.mouse_pos.0 as i32,
             self.mouse_pos.1 as i32,
             (255, 255, 255, 255),
+        );
+        api.con().print_color(
+            width - 1,
+            0,
+            "Echap: Quitter",
+            TextAlign::Right,
+            None,
         );
     }
     fn resize(&mut self, _api: &mut dyn DoryenApi) {}

@@ -12,6 +12,7 @@ use crate::error::RollingError;
 use crate::gui::action::Action;
 use crate::gui::engine::description::DescriptionEngine;
 use crate::gui::engine::startup::StartupEngine;
+use crate::gui::engine::exit::ConfirmExitEngine;
 use crate::gui::engine::world::WorldEngine;
 use crate::gui::engine::zone::ZoneEngine;
 use crate::gui::engine::Engine as RollingEngine;
@@ -83,7 +84,13 @@ impl RollingGui {
             action::ActionCondition {
                 keys: vec!["Escape".to_string()],
                 engine_id: "ZONE".to_string(),
-                to: action::Action::ZoneToStartup,
+                to: action::Action::ZoneToConfirmExit,
+                wait_while_key: None,
+            },
+            action::ActionCondition {
+                keys: vec!["Escape".to_string()],
+                engine_id: "CONFIRM_EXIT".to_string(),
+                to: action::Action::ConfirmExitToZone,
                 wait_while_key: None,
             },
             action::ActionCondition {
@@ -111,6 +118,10 @@ impl RollingGui {
 
     pub fn setup_startup(&mut self) -> Box<dyn RollingEngine> {
         Box::new(StartupEngine::new())
+    }
+
+    pub fn setup_confirm_exit(&mut self) -> Box<dyn RollingEngine> {
+        Box::new(ConfirmExitEngine::new(self.server.as_ref().unwrap().clone()))
     }
 
     pub fn setup_zone(
@@ -459,11 +470,27 @@ impl Engine for RollingGui {
                             }
                         }
                     }
-                    Action::ZoneToStartup => {
-                        println!("Exit zone");
+                    Action::ToStartup => {
+                        println!("To startup");
                         self.engine.teardown();
                         self.engine = self.setup_startup();
                     }
+                    Action::ZoneToConfirmExit => {
+                        println!("To exit confirm page (from zone)");
+                        self.engine.teardown();
+                        self.engine = self.setup_confirm_exit();
+                    },
+                    Action::ConfirmExitToZone => {
+                        println!("To zone (from confirm exit)");
+                        self.engine.teardown();
+                        let player = self
+                            .create_or_grab_player(&self.server.as_ref().unwrap())
+                            .unwrap()
+                            .unwrap();
+                        self.engine = self
+                            .setup_zone(&self.server.as_ref().unwrap(), player)
+                            .unwrap();
+                    },
                     Action::ExitGame => return Some(UpdateEvent::Exit),
                     Action::NewCharacterId { character_id } => {
                         println!("New character {}", &character_id);

@@ -7,6 +7,7 @@ pub mod description;
 pub mod startup;
 pub mod world;
 pub mod zone;
+pub mod exit;
 
 pub trait Engine {
     fn get_name(&self) -> &str;

@@ -12,7 +12,9 @@ pub enum Action {
     },
     ZoneToWorld,
     WorldToZone,
-    ZoneToStartup,
+    ZoneToConfirmExit,
+    ConfirmExitToZone,
+    ToStartup,
     DescriptionToDescription {
         description: Description,
         back_url: Option<String>,
