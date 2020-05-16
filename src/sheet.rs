@@ -15,7 +15,7 @@ pub struct TileSheet {
     tile_height: i16,
 }
 
-const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 23] = [
+const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 24] = [
     ("BACK_BEACH", None, (0, 3)),
     ("BACK_PLAIN", None, (0, 6)),
     ("BACK_JUNGLE", None, (0, 4)),
@@ -36,12 +36,20 @@ const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 23] = [
     ("TROPICAL_TREE", None, (1, 8)),
     ("DEAD_TREE", None, (0, 8)),
     ("CHARACTER", None, (6, 0)),
+
     ("STUFF_GENERIC", None, (3, 0)),
+    ("BOTTLE", None, (3, 1)),
+
     ("RESOURCE_GENERIC", None, (5, 0)),
+
     ("BUILD_GENERIC", None, (4, 1)),
 ];
 
 impl TileSheet {
+    pub fn have_id(&self, id: &str) -> bool {
+        self.appearances.get(id).is_some()
+    }
+
     pub fn new(image: Image, tile_width: i16, tile_height: i16) -> Self {
         let mut sources: HashMap<SheetPosition, Rectangle<u16>> = HashMap::new();
         let max_row_i = image.height() as i16 / tile_height;

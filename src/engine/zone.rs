@@ -242,10 +242,15 @@ impl ZoneEngine {
                 continue;
             }
 
-            sprites.push(
-                self.tile_sheet
-                    .create_sprite_for("STUFF_GENERIC", real_x, real_y),
-            );
+            for class in stuff.get_classes().iter().rev() {
+                if self.tile_sheet.have_id(class) {
+                    sprites.push(
+                        self.tile_sheet
+                            .create_sprite_for(class, real_x, real_y),
+                    );
+                    break
+                }
+            }
         }
 
         sprites
@@ -290,10 +295,15 @@ impl ZoneEngine {
                 continue;
             }
 
-            sprites.push(
-                self.tile_sheet
-                    .create_sprite_for("BUILD_GENERIC", real_x, real_y),
-            );
+            for class in build.get_classes().iter().rev() {
+                if self.tile_sheet.have_id(class) {
+                    sprites.push(
+                        self.tile_sheet
+                            .create_sprite_for(class, real_x, real_y),
+                    );
+                    break
+                }
+            }
         }
 
         sprites
