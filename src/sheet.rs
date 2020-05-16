@@ -1,0 +1,113 @@
+use crate::tile::{TileAppearance, TileId};
+use coffee::graphics::{Image, Point, Rectangle, Sprite};
+use std::collections::HashMap;
+
+pub type SheetPosition = (i16, i16);
+
+#[derive(Debug, Clone)]
+pub struct TileSheet {
+    image: Image,
+    sources: HashMap<SheetPosition, Rectangle<u16>>,
+    max_row_i: i16,
+    max_col_i: i16,
+    appearances: HashMap<TileId, TileAppearance>,
+    tile_width: i16,
+    tile_height: i16,
+}
+
+const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 23] = [
+    ("BACK_BEACH", None, (0, 3)),
+    ("BACK_PLAIN", None, (0, 6)),
+    ("BACK_JUNGLE", None, (0, 4)),
+    ("BACK_HILL", None, (0, 4)),
+    ("BACK_MOUNTAIN", None, (0, 5)),
+    ("BACK_SEA", None, (0, 2)),
+    ("UNKNOWN", None, (0, 0)),
+    ("SAND", None, (0, 0)),
+    ("DRY_BUSH", None, (2, 8)),
+    ("ROCK", None, (2, 9)),
+    ("SEA_WATER", None, (0, 2)),
+    ("FRESH_WATER", None, (0, 1)),
+    ("SHORT_GRASS", None, (1, 0)),
+    ("HIGH_GRASS", None, (1, 3)),
+    ("ROCKY_GROUND", None, (0, 0)),
+    ("DIRT", None, (0, 0)),
+    ("LEAF_TREE", None, (1, 7)),
+    ("TROPICAL_TREE", None, (1, 8)),
+    ("DEAD_TREE", None, (0, 8)),
+    ("CHARACTER", None, (6, 0)),
+    ("STUFF_GENERIC", None, (3, 0)),
+    ("RESOURCE_GENERIC", None, (5, 0)),
+    ("BUILD_GENERIC", None, (4, 1)),
+];
+
+impl TileSheet {
+    pub fn new(image: Image, tile_width: i16, tile_height: i16) -> Self {
+        let mut sources: HashMap<SheetPosition, Rectangle<u16>> = HashMap::new();
+        let max_row_i = image.height() as i16 / tile_height;
+        let max_col_i = image.width() as i16 / tile_width;
+        for tile_row_i in 0..max_row_i {
+            for tile_col_i in 0..max_col_i {
+                sources.insert(
+                    (tile_row_i, tile_col_i),
+                    Rectangle {
+                        x: (tile_col_i * tile_height) as u16,
+                        y: (tile_row_i * tile_width) as u16,
+                        width: tile_width as u16,
+                        height: tile_height as u16,
+                    },
+                );
+            }
+        }
+
+        let mut appearances = HashMap::new();
+        for (tile_id, back, fore) in APPEARANCES.iter() {
+            appearances.insert(
+                tile_id.to_string(),
+                TileAppearance {
+                    back: back.clone(),
+                    fore: fore.clone(),
+                },
+            );
+        }
+
+        Self {
+            image,
+            sources,
+            max_row_i: max_row_i - 1,
+            max_col_i: max_col_i - 1,
+            appearances,
+            tile_width,
+            tile_height,
+        }
+    }
+
+    pub fn create_sprite_for(&self, tile_type_id: &str, x: i16, y: i16) -> Sprite {
+        // FIXME BS NOW: retourner une liste de sprites (2 possible)
+        let appearance = self
+            .appearances
+            .get(tile_type_id)
+            .unwrap_or(self.appearances.get("UNKNOWN").unwrap());
+        Sprite {
+            source: self.sources[&appearance.fore],
+            position: Point::new(x as f32, y as f32),
+            scale: (1.0, 1.0),
+        }
+    }
+
+    pub fn get_tile_width(&self) -> i16 {
+        self.tile_width
+    }
+
+    pub fn get_tile_height(&self) -> i16 {
+        self.tile_height
+    }
+
+    pub fn row_count(&self) -> i16 {
+        self.max_row_i + 1
+    }
+
+    pub fn col_count(&self) -> i16 {
+        self.max_col_i + 1
+    }
+}

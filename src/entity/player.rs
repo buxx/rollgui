@@ -1,14 +1,13 @@
-use doryen_rs::DoryenApi;
+use crate::game::{TILE_HEIGHT, TILE_WIDTH};
 use serde::{Deserialize, Serialize};
-
-use crate::color;
-use crate::gui;
 
 #[derive(Debug, Clone)]
 pub struct Player {
     pub id: String,
+    pub x: i16,
+    pub y: i16,
     // row_i, col_i
-    pub position: (f32, f32),
+    pub position: (i32, i32),
     pub world_position: (i32, i32),
     speed: f32,
     pub max_life_comp: f32,
@@ -66,7 +65,10 @@ impl Player {
     ) -> Self {
         Self {
             id: id.to_string(),
-            position: (position.0 as f32, position.1 as f32),
+            // TODO: tile width/height must be passed by args
+            x: position.1 as i16 * TILE_WIDTH,
+            y: position.0 as i16 * TILE_HEIGHT,
+            position: (position.0, position.1),
             world_position: (world_position.0, world_position.1),
             speed: 0.2,
             max_life_comp,
@@ -84,55 +86,57 @@ impl Player {
         }
     }
 
-    // row_i, col_i
-    pub fn move_from_input(&self, api: &mut dyn DoryenApi) -> (i32, i32) {
-        let input = api.input();
-        let mut mov = (0, 0);
-        if input.key("ArrowLeft") || input.key("KeyA") {
-            mov.1 = -1;
-        } else if input.key("ArrowRight") || input.key("KeyD") {
-            mov.1 = 1;
+    pub fn try_move_by(&mut self, x: i16, y: i16) -> (bool, bool) {
+        let before_x = self.x;
+        let before_y = self.y;
+        let before_row_i = self.position.0;
+        let before_col_i = self.position.1;
+
+        if (self.x + x) > -1 {
+            self.x += x;
         }
-        if input.key("ArrowUp") || input.key("KeyW") {
-            mov.0 = -1;
-        } else if input.key("ArrowDown") || input.key("KeyS") {
-            mov.0 = 1;
+        if (self.y + y) > -1 {
+            self.y += y;
         }
-        mov
-    }
 
-    pub fn move_to(&mut self, pos: (i32, i32)) {
-        self.position = (pos.0 as f32, pos.1 as f32);
-    }
-
-    pub fn move_by(&mut self, mov: (i32, i32), coef: f32) -> bool {
-        let old_row_i = self.position.0 as i32;
-        let old_col_i = self.position.1 as i32;
-        self.position.0 += self.speed * mov.0 as f32 * coef;
-        self.position.1 += self.speed * mov.1 as f32 * coef;
-        old_row_i != self.position.0 as i32 || old_col_i != self.position.1 as i32
-    }
-
-    pub fn next_position(&self, mov: (i32, i32)) -> (i32, i32) {
+        self.position.0 = (self.y / TILE_HEIGHT) as i32;
+        self.position.1 = (self.x / TILE_WIDTH) as i32;
         (
-            self.position.0 as i32 + mov.0,
-            self.position.1 as i32 + mov.1,
+            before_x != x || before_y != y,
+            before_row_i != self.position.0 || before_col_i != self.position.1,
         )
     }
 
-    pub fn render(
-        &self,
-        api: &mut dyn DoryenApi,
-        width: i32,
-        height: i32,
-        row_offset: i32,
-        col_offset: i32,
-    ) {
-        let con = api.con();
-        let row_i = height / 2;
-        let col_i = width / 2;
+    pub fn next_position(&self, x: i16, y: i16) -> Option<(i16, i16)> {
+        let before_row_i = self.position.0;
+        let before_col_i = self.position.1;
+        let mut next_x = self.x + x;
+        let mut next_y = self.y + y;
 
-        con.ascii(col_i + col_offset, row_i + row_offset, gui::CHAR_PLAYER);
-        con.fore(col_i + col_offset, row_i + row_offset, color::WHITE);
+        if x > 0 {
+            next_x += TILE_WIDTH / 2;
+        }
+        if y > 0 {
+            next_y += TILE_HEIGHT / 2;
+        }
+        let next_row_i_f = next_y as f32 / TILE_HEIGHT as f32;
+        let next_col_i_f = next_x as f32 / TILE_WIDTH as f32;
+
+        let next_row_i = if next_row_i_f < 0.0 {
+            -1
+        } else {
+            next_y / TILE_HEIGHT
+        };
+
+        let next_col_i = if next_col_i_f < 0.0 {
+            -1
+        } else {
+            next_x / TILE_WIDTH
+        };
+
+        if before_row_i != next_row_i as i32 || before_col_i != next_col_i as i32 {
+            return Some((next_row_i, next_col_i));
+        }
+        None
     }
 }

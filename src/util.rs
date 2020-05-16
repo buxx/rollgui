@@ -267,7 +267,7 @@ pub enum CornerEnum {
     TopLeft,
 }
 
-pub fn get_corner(width: i32, height: i32, new_row_i: i32, new_col_i: i32) -> Option<CornerEnum> {
+pub fn get_corner(width: i16, height: i16, new_row_i: i16, new_col_i: i16) -> Option<CornerEnum> {
     let left_col_i_end = width / 3;
     let right_col_i_start = (width / 3) * 2;
     let top_row_i_end = height / 3;
@@ -336,4 +336,11 @@ mod tests {
             vec!["I'm a pingoo with an apple".to_string()],
         );
     }
+}
+
+pub fn get_tile_position_for_xy(tile_width: i16, tile_height: i16, x: i16, y: i16) -> (i16, i16) {
+    (
+        (y + tile_width / 2) / tile_width,
+        (x + tile_height / 2) / tile_height,
+    )
 }

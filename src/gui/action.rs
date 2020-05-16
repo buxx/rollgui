@@ -1,5 +1,4 @@
 use crate::gui::lang::model::Description;
-use doryen_rs::InputApi;
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -31,7 +30,7 @@ pub enum Action {
 }
 
 pub struct ActionManager {
-    conditions: Vec<ActionCondition>,
+    _conditions: Vec<ActionCondition>,
 }
 
 pub struct ActionCondition {
@@ -43,23 +42,25 @@ pub struct ActionCondition {
 
 impl ActionManager {
     pub fn new(conditions: Vec<ActionCondition>) -> Self {
-        Self { conditions }
-    }
-
-    pub fn resolve(&mut self, input: &mut dyn InputApi, engine_id: &str) -> Option<Action> {
-        'conditions: for condition in self.conditions.iter() {
-            if engine_id != condition.engine_id {
-                continue 'conditions;
-            }
-
-            for key in condition.keys.iter() {
-                if !input.key_pressed(key.as_str()) {
-                    continue 'conditions;
-                }
-            }
-            return Some(condition.to.clone());
+        Self {
+            _conditions: conditions,
         }
-
-        None
     }
+
+    // pub fn resolve(&mut self, input: &mut dyn InputApi, engine_id: &str) -> Option<Action> {
+    //     'conditions: for condition in self.conditions.iter() {
+    //         if engine_id != condition.engine_id {
+    //             continue 'conditions;
+    //         }
+    //
+    //         for key in condition.keys.iter() {
+    //             if !input.key_pressed(key.as_str()) {
+    //                 continue 'conditions;
+    //             }
+    //         }
+    //         return Some(condition.to.clone());
+    //     }
+    //
+    //     None
+    // }
 }

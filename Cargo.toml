@@ -1,17 +1,16 @@
 [package]
-name = "rollgui"
-version = "0.1.1"
-authors = ["Bastien Sevajol <sevajol.bastien@gmail.com>"]
+name = "rolfee"
+version = "0.1.0"
+authors = ["Bastien Sevajol <bastien.sevajol@algoo.fr>"]
 edition = "2018"
 
 [dependencies]
-doryen-rs="1.2.*"
-doryen-ui = { git = "https://github.com/jice-nospam/doryen-ui.git", rev = "0a75f176016afe6c462826a110826e0a87d9be63" }
+coffee = { git = "https://github.com/buxx/coffee.git", rev = "a2b1a0966c738757493ac5f412e67f9745561e79", features = ["opengl"] }
+rand = "0.6"
+pickledb = "0.4.0"
 websocket = "0.24.0"
 serde = "1.0.104"
 serde_derive = "1.0.104"
 serde_json = "1.0.44"
-pickledb = "0.4.0"
 reqwest = { version = "0.10.1", features = ["blocking", "json"] }
-colors-transform = "0.2.11"
 url = "2.1.1"
