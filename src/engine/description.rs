@@ -54,6 +54,8 @@ pub struct DescriptionEngine {
     search_by_str_button_values: HashMap<i32, String>,
     search_by_str_selected: i32,
     search_by_str_button_pressed: i32,
+    // pending_request: Option<(String, Map<String, Value>, Map<String, Value>)>,
+    // loading_displayed: bool,
 }
 
 impl DescriptionEngine {

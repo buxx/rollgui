@@ -15,9 +15,9 @@ use crate::message::{MainMessage, Message};
 use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles as ZoneTiles;
 use crate::{config, event, server, util};
-use coffee::graphics::{Frame, Window};
+use coffee::graphics::{Frame, HorizontalAlignment, VerticalAlignment, Window, Color};
 use coffee::load::{loading_screen, Task};
-use coffee::ui::{Element, Renderer, UserInterface};
+use coffee::ui::{Align, Column, Element, Justify, Renderer, Text, UserInterface};
 use coffee::{graphics, Game, Timer};
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
@@ -34,6 +34,8 @@ pub struct MyGame {
     server: Option<server::Server>,
     player: Option<Player>,
     exit_requested: bool,
+    pending_action: Option<MainMessage>,
+    loading_displayed: bool,
 }
 
 fn get_db(db_file_path: &str) -> PickleDb {
@@ -244,77 +246,7 @@ impl MyGame {
     }
 
     fn proceed_main_message(&mut self, main_message: MainMessage) {
-        match main_message {
-            MainMessage::StartupToZone {
-                server_ip,
-                server_port,
-            } => {
-                self.setup_startup_to_zone_engine(server_ip, server_port);
-            }
-            MainMessage::ToDescriptionWithDescription {
-                description,
-                back_url,
-            } => {
-                self.engine = Box::new(DescriptionEngine::new(
-                    description,
-                    self.server.as_ref().unwrap().clone(),
-                    back_url,
-                ));
-            }
-            MainMessage::NewCharacterId { character_id } => {
-                println!("New character {}", &character_id);
-                self.server.as_mut().unwrap().config.character_id = Some(character_id);
-                self.db
-                    .set(
-                        format!(
-                            "server_{}_{}",
-                            self.server.as_ref().unwrap().config.ip,
-                            self.server.as_ref().unwrap().config.port
-                        )
-                        .as_str(),
-                        &self.server.as_ref().unwrap().config,
-                    )
-                    .unwrap();
-                self.setup_startup_to_zone_engine(
-                    self.server.as_ref().unwrap().config.ip.clone(),
-                    self.server.as_ref().unwrap().config.port,
-                );
-            }
-            MainMessage::ToDescriptionWithUrl { url, back_url } => {
-                // FIXME: manage errors
-                let description = self
-                    .server
-                    .as_ref()
-                    .unwrap()
-                    .client
-                    .describe(&url, None, None)
-                    .unwrap();
-                self.engine = Box::new(DescriptionEngine::new(
-                    description,
-                    self.server.as_ref().unwrap().clone(),
-                    back_url,
-                ));
-            }
-            MainMessage::DescriptionToZone => {
-                // FIXME: manage errors
-                self.player = self.create_player().unwrap(); // must succeed ...
-                self.setup_zone_engine();
-            }
-            MainMessage::ToStartup => {
-                self.engine = Box::new(StartupEngine::new());
-            }
-            MainMessage::ToExit => {
-                self.engine = Box::new(ExitEngine::new());
-            }
-            MainMessage::ExitRequested => self.exit_requested = true,
-            MainMessage::ToWorld => {
-                self.engine = Box::new(WorldEngine::new(
-                    self.server.as_ref().unwrap().clone(),
-                    self.tile_sheet_image.clone(),
-                    self.player.as_ref().unwrap().clone(),
-                ));
-            }
-        }
+        self.pending_action = Some(main_message);
     }
 }
 
@@ -331,6 +263,8 @@ impl Game for MyGame {
             server: None,
             player: None,
             exit_requested: false,
+            pending_action: None,
+            loading_displayed: false,
         })
     }
 
@@ -342,6 +276,84 @@ impl Game for MyGame {
     }
 
     fn update(&mut self, window: &Window) {
+        if self.loading_displayed {
+            let main_message = self.pending_action.as_ref().unwrap().clone();
+            self.pending_action = None;
+            self.loading_displayed = false;
+
+            match main_message {
+                MainMessage::StartupToZone {
+                    server_ip,
+                    server_port,
+                } => {
+                    self.setup_startup_to_zone_engine(server_ip.clone(), server_port);
+                }
+                MainMessage::ToDescriptionWithDescription {
+                    description,
+                    back_url,
+                } => {
+                    self.engine = Box::new(DescriptionEngine::new(
+                        description.clone(),
+                        self.server.as_ref().unwrap().clone(),
+                        back_url.clone(),
+                    ));
+                }
+                MainMessage::NewCharacterId { character_id } => {
+                    println!("New character {}", &character_id);
+                    self.server.as_mut().unwrap().config.character_id = Some(character_id.clone());
+                    self.db
+                        .set(
+                            format!(
+                                "server_{}_{}",
+                                self.server.as_ref().unwrap().config.ip,
+                                self.server.as_ref().unwrap().config.port
+                            )
+                            .as_str(),
+                            &self.server.as_ref().unwrap().config,
+                        )
+                        .unwrap();
+                    self.setup_startup_to_zone_engine(
+                        self.server.as_ref().unwrap().config.ip.clone(),
+                        self.server.as_ref().unwrap().config.port,
+                    );
+                }
+                MainMessage::ToDescriptionWithUrl { url, back_url } => {
+                    // FIXME: manage errors
+                    let description = self
+                        .server
+                        .as_ref()
+                        .unwrap()
+                        .client
+                        .describe(&url, None, None)
+                        .unwrap();
+                    self.engine = Box::new(DescriptionEngine::new(
+                        description,
+                        self.server.as_ref().unwrap().clone(),
+                        back_url.clone(),
+                    ));
+                }
+                MainMessage::DescriptionToZone => {
+                    // FIXME: manage errors
+                    self.player = self.create_player().unwrap(); // must succeed ...
+                    self.setup_zone_engine();
+                }
+                MainMessage::ToStartup => {
+                    self.engine = Box::new(StartupEngine::new());
+                }
+                MainMessage::ToExit => {
+                    self.engine = Box::new(ExitEngine::new());
+                }
+                MainMessage::ExitRequested => self.exit_requested = true,
+                MainMessage::ToWorld => {
+                    self.engine = Box::new(WorldEngine::new(
+                        self.server.as_ref().unwrap().clone(),
+                        self.tile_sheet_image.clone(),
+                        self.player.as_ref().unwrap().clone(),
+                    ));
+                }
+            }
+        }
+
         match self.engine.update(window) {
             Some(main_message) => self.proceed_main_message(main_message),
             None => {}
@@ -349,7 +361,11 @@ impl Game for MyGame {
     }
 
     fn draw(&mut self, frame: &mut Frame, timer: &Timer) {
-        self.engine.draw(frame, timer)
+        if self.pending_action.is_some() {
+            frame.clear(Color::BLACK);
+        } else {
+            self.engine.draw(frame, timer)
+        }
     }
 
     fn is_finished(&self) -> bool {
@@ -369,6 +385,24 @@ impl UserInterface for MyGame {
     }
 
     fn layout(&mut self, window: &Window) -> Element<Message> {
-        self.engine.layout(window)
+        if self.pending_action.is_some() {
+            self.loading_displayed = true;
+            Column::new()
+                .width(window.width() as u32)
+                .height(window.height() as u32)
+                .align_items(Align::Center)
+                .justify_content(Justify::Center)
+                .spacing(20)
+                .push(
+                    Text::new("Chargement ...")
+                        .size(50)
+                        .height(60)
+                        .horizontal_alignment(HorizontalAlignment::Center)
+                        .vertical_alignment(VerticalAlignment::Center),
+                )
+                .into()
+        } else {
+            self.engine.layout(window)
+        }
     }
 }
