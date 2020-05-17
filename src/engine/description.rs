@@ -54,8 +54,8 @@ pub struct DescriptionEngine {
     search_by_str_button_values: HashMap<i32, String>,
     search_by_str_selected: i32,
     search_by_str_button_pressed: i32,
-    // pending_request: Option<(String, Map<String, Value>, Map<String, Value>)>,
-    // loading_displayed: bool,
+    pending_request: Option<(String, Map<String, Value>, Map<String, Value>)>,
+    loading_displayed: bool,
 }
 
 impl DescriptionEngine {
@@ -246,6 +246,8 @@ impl DescriptionEngine {
             search_by_str_selected,
             search_by_str_button_pressed: -1,
             search_by_str_names,
+            pending_request: None,
+            loading_displayed: false,
         }
     }
 
@@ -419,6 +421,34 @@ impl Engine for DescriptionEngine {
             });
         }
 
+        if self.loading_displayed {
+            let (url, form_data, form_query) = self.pending_request.as_ref().unwrap().clone();
+            self.pending_request = None;
+            self.loading_displayed = false;
+
+            let try_description = self.server.client.describe(
+                url.as_str(),
+                Some(form_data.clone()),
+                Some(form_query.clone()),
+            );
+            match try_description {
+                Result::Err(client_error) => {
+                    self.error_message = Some(ClientError::get_message(&client_error));
+                }
+                Result::Ok(description) => {
+                    if let Some(character_id) = description.new_character_id {
+                        return Some(MainMessage::NewCharacterId {
+                            character_id: character_id.clone(),
+                        });
+                    }
+                    return Some(MainMessage::ToDescriptionWithDescription {
+                        description,
+                        back_url: self.future_back_url.clone(),
+                    });
+                }
+            }
+        }
+
         None
     }
 
@@ -493,27 +523,7 @@ impl Engine for DescriptionEngine {
                     (Map::new(), form_data.clone())
                 };
 
-                let try_description = self.server.client.describe(
-                    form_action.as_str(),
-                    Some(final_form_data),
-                    Some(final_form_query),
-                );
-                match try_description {
-                    Result::Err(client_error) => {
-                        self.error_message = Some(ClientError::get_message(&client_error));
-                    }
-                    Result::Ok(description) => {
-                        if let Some(character_id) = description.new_character_id {
-                            return Some(MainMessage::NewCharacterId {
-                                character_id: character_id.clone(),
-                            });
-                        }
-                        return Some(MainMessage::ToDescriptionWithDescription {
-                            description,
-                            back_url: self.future_back_url.clone(),
-                        });
-                    }
-                }
+                self.pending_request = Some((form_action, final_form_data, final_form_query));
             }
             Message::LinkButtonPressed(id) => {
                 self.link_button_pressed = id;
@@ -552,87 +562,220 @@ impl Engine for DescriptionEngine {
     }
 
     fn layout(&mut self, window: &Window) -> Element<Message> {
-        let description = self.description.clone();
-        let title = description
-            .title
-            .as_ref()
-            .unwrap_or(&"Sans titre".to_string())
-            .clone();
-        let items = description.items;
-        let blink_char = self.get_blink_char();
-        let mut must_add_submit = false;
-        let mut submit_label = String::from("Enregistrer");
-        let text_input_ids = self.text_input_ids.clone();
-        let text_input_values = self.text_input_values.clone();
-        let text_input_selected = self.text_input_selected.clone();
-        let mut back_to_zone_button: Option<String> = None;
-        let mut replaced_by_group_names: Vec<String> = vec![];
+        if self.pending_request.is_some() {
+            self.loading_displayed = true;
+            Column::new()
+                .width(window.width() as u32)
+                .height(window.height() as u32)
+                .align_items(Align::Center)
+                .justify_content(Justify::Center)
+                .spacing(20)
+                .push(
+                    Text::new("Chargement ...")
+                        .size(50)
+                        .height(60)
+                        .horizontal_alignment(HorizontalAlignment::Center)
+                        .vertical_alignment(VerticalAlignment::Center),
+                )
+                .into()
+        } else {
+            let description = self.description.clone();
+            let title = description
+                .title
+                .as_ref()
+                .unwrap_or(&"Sans titre".to_string())
+                .clone();
+            let items = description.items;
+            let blink_char = self.get_blink_char();
+            let mut must_add_submit = false;
+            let mut submit_label = String::from("Enregistrer");
+            let text_input_ids = self.text_input_ids.clone();
+            let text_input_values = self.text_input_values.clone();
+            let text_input_selected = self.text_input_selected.clone();
+            let mut back_to_zone_button: Option<String> = None;
+            let mut replaced_by_group_names: Vec<String> = vec![];
 
-        let mut content = Column::new()
-            .max_width(768)
-            .spacing(5)
-            .push(Text::new(&title).size(50));
+            let mut content = Column::new()
+                .max_width(768)
+                .spacing(5)
+                .push(Text::new(&title).size(50));
 
-        if let Some(error_message) = self.error_message.as_ref() {
-            content = content.push(Text::new(error_message).color(Color::RED));
-        }
-
-        for item in items.iter() {
-            if part_is_pure_text(item) {
-                content = content.push(default_text_style(Text::new(&get_part_pure_text_text(
-                    item,
-                ))));
-                continue;
+            if let Some(error_message) = self.error_message.as_ref() {
+                content = content.push(Text::new(error_message).color(Color::RED));
             }
 
-            if part_is_form(&item) {
-                must_add_submit = true;
-                if let Some(submit_label_) = item.submit_label.as_ref() {
-                    submit_label = submit_label_.clone()
+            for item in items.iter() {
+                if part_is_pure_text(item) {
+                    content = content.push(default_text_style(Text::new(&get_part_pure_text_text(
+                        item,
+                    ))));
+                    continue;
                 }
 
-                for form_item in item.items.iter() {
-                    let label = form_item
+                if part_is_form(&item) {
+                    must_add_submit = true;
+                    if let Some(submit_label_) = item.submit_label.as_ref() {
+                        submit_label = submit_label_.clone()
+                    }
+
+                    for form_item in item.items.iter() {
+                        let label = form_item
+                            .label
+                            .as_ref()
+                            .unwrap_or(form_item.text.as_ref().unwrap_or(&"".to_string()))
+                            .clone();
+
+                        if part_is_pure_text(form_item) {
+                            content = content.push(default_text_style(Text::new(
+                                &get_part_pure_text_text(form_item),
+                            )));
+                        } else if part_is_input(form_item) {
+                            let form_item_name = form_item.name.as_ref().unwrap().clone();
+                            let form_item_id = text_input_ids.get(&form_item_name).unwrap();
+                            content = content.push(TextInput::new(
+                                *form_item_id,
+                                &label,
+                                text_input_values.get(&form_item_id).unwrap(),
+                                Message::TextInputSelected,
+                                if text_input_selected == *form_item_id {
+                                    blink_char
+                                } else {
+                                    None
+                                },
+                            ));
+                        } else if part_is_checkbox(form_item) {
+                            let name = form_item.name.as_ref().unwrap().clone();
+                            let id = self.checkbox_ids.get(&name).unwrap().clone();
+                            content = content.push(Checkbox::new(
+                                self.checkbox_values.get(&id).is_some(),
+                                &label,
+                                move |c| {
+                                    if c {
+                                        Message::CheckBoxChecked(id)
+                                    } else {
+                                        Message::CheckBoxUnchecked(id)
+                                    }
+                                },
+                            ))
+                        } else if part_is_link(form_item) {
+                            let label = form_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
+                            let id = *self.link_button_ids.get(&label).unwrap();
+                            content = content.push(
+                                StateLessButton::new(
+                                    self.link_button_pressed == id,
+                                    &label,
+                                    Message::LinkButtonPressed(id),
+                                    Message::LinkButtonReleased(id),
+                                )
+                                    .width(768)
+                                    .class(state_less_button::Class::Primary),
+                            );
+                        } else if part_is_choices(form_item) {
+                            let radio_id = *self
+                                .choice_ids
+                                .get(form_item.name.as_ref().unwrap())
+                                .unwrap();
+                            for choice in form_item.choices.as_ref().unwrap().iter() {
+                                let value_id = self.choice_values_ids.get(choice).unwrap();
+                                content = content.push(Radio::new(
+                                    value_id,
+                                    choice,
+                                    self.choice_values_ids
+                                        .get(self.choice_values.get(&radio_id).unwrap()),
+                                    move |value_id| Message::ChoicePressed(radio_id, *value_id),
+                                ));
+                            }
+                        } else if part_is_search_by_str(form_item) {
+                            let id = self
+                                .search_by_str_ids
+                                .get(form_item.name.as_ref().unwrap())
+                                .unwrap()
+                                .clone();
+                            let input_value = self.search_by_str_values.get(&id).unwrap().clone();
+
+                            content = content.push(TextInput::new(
+                                id,
+                                "Saisissez le nom ici: ",
+                                &input_value,
+                                Message::SearchByStrInputPressed,
+                                if self.search_by_str_selected == id {
+                                    blink_char
+                                } else {
+                                    None
+                                },
+                            ));
+
+                            let mut choices: Vec<String> = form_item.choices.as_ref().unwrap().clone();
+                            let current_value = self.search_by_str_values.get(&id);
+                            if current_value.is_some() {
+                                choices = choices
+                                    .into_iter()
+                                    .filter(|string_| {
+                                        string_
+                                            .to_lowercase()
+                                            .matches(current_value.unwrap().to_lowercase().as_str())
+                                            .collect::<String>()
+                                            .len()
+                                            != 0
+                                    })
+                                    .collect();
+                            }
+                            for choice in choices.iter() {
+                                let label = choice.to_string();
+                                let choice_id =
+                                    self.search_by_str_button_ids.get(&label).unwrap().clone();
+                                content = content.push(
+                                    StateLessButton::new(
+                                        self.search_by_str_button_pressed == choice_id,
+                                        &label,
+                                        Message::SearchByStrButtonPressed(id, choice_id),
+                                        Message::SearchByStrButtonReleased(id, choice_id),
+                                    )
+                                        .width(768)
+                                        .class(state_less_button::Class::Positive),
+                                );
+                            }
+                        }
+                    }
+                } else if part_is_link(item) {
+                    let label = item
                         .label
                         .as_ref()
-                        .unwrap_or(form_item.text.as_ref().unwrap_or(&"".to_string()))
+                        .unwrap_or(item.text.as_ref().unwrap_or(&"Continuer".to_string()))
                         .clone();
+                    let id = *self.link_button_ids.get(&label).unwrap();
+                    let mut display_normal_button = false;
 
-                    if part_is_pure_text(form_item) {
-                        content = content.push(default_text_style(Text::new(
-                            &get_part_pure_text_text(form_item),
-                        )));
-                    } else if part_is_input(form_item) {
-                        let form_item_name = form_item.name.as_ref().unwrap().clone();
-                        let form_item_id = text_input_ids.get(&form_item_name).unwrap();
-                        content = content.push(TextInput::new(
-                            *form_item_id,
-                            &label,
-                            text_input_values.get(&form_item_id).unwrap(),
-                            Message::TextInputSelected,
-                            if text_input_selected == *form_item_id {
-                                blink_char
-                            } else {
-                                None
-                            },
-                        ));
-                    } else if part_is_checkbox(form_item) {
-                        let name = form_item.name.as_ref().unwrap().clone();
-                        let id = self.checkbox_ids.get(&name).unwrap().clone();
-                        content = content.push(Checkbox::new(
-                            self.checkbox_values.get(&id).is_some(),
-                            &label,
-                            move |c| {
-                                if c {
-                                    Message::CheckBoxChecked(id)
-                                } else {
-                                    Message::CheckBoxUnchecked(id)
-                                }
-                            },
-                        ))
-                    } else if part_is_link(form_item) {
-                        let label = form_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
-                        let id = *self.link_button_ids.get(&label).unwrap();
+                    if self.current_link_group_name.is_some() {
+                        // display normal button if have same group name
+                        if self.current_link_group_name.as_ref() == item.link_group_name.as_ref() {
+                            display_normal_button = true;
+                        }
+                    } else {
+                        if let Some(link_group_name) = item.link_group_name.as_ref() {
+                            if !replaced_by_group_names.contains(link_group_name) {
+                                let group_button_id = *self
+                                    .link_group_name_ids
+                                    .get(&link_group_name.clone())
+                                    .unwrap();
+                                content = content.push(
+                                    StateLessButton::new(
+                                        self.link_group_button_pressed == group_button_id,
+                                        &link_group_name,
+                                        Message::GroupLinkButtonPressed(group_button_id),
+                                        Message::GroupLinkButtonReleased(group_button_id),
+                                    )
+                                        .width(768)
+                                        .class(state_less_button::Class::Primary),
+                                );
+                                replaced_by_group_names.push(link_group_name.clone());
+                            }
+                        } else {
+                            display_normal_button = true;
+                        }
+                    }
+
+                    if display_normal_button {
                         content = content.push(
                             StateLessButton::new(
                                 self.link_button_pressed == id,
@@ -640,188 +783,73 @@ impl Engine for DescriptionEngine {
                                 Message::LinkButtonPressed(id),
                                 Message::LinkButtonReleased(id),
                             )
-                            .width(768)
-                            .class(state_less_button::Class::Primary),
-                        );
-                    } else if part_is_choices(form_item) {
-                        let radio_id = *self
-                            .choice_ids
-                            .get(form_item.name.as_ref().unwrap())
-                            .unwrap();
-                        for choice in form_item.choices.as_ref().unwrap().iter() {
-                            let value_id = self.choice_values_ids.get(choice).unwrap();
-                            content = content.push(Radio::new(
-                                value_id,
-                                choice,
-                                self.choice_values_ids
-                                    .get(self.choice_values.get(&radio_id).unwrap()),
-                                move |value_id| Message::ChoicePressed(radio_id, *value_id),
-                            ));
-                        }
-                    } else if part_is_search_by_str(form_item) {
-                        let id = self
-                            .search_by_str_ids
-                            .get(form_item.name.as_ref().unwrap())
-                            .unwrap()
-                            .clone();
-                        let input_value = self.search_by_str_values.get(&id).unwrap().clone();
-
-                        content = content.push(TextInput::new(
-                            id,
-                            "Saisissez le nom ici: ",
-                            &input_value,
-                            Message::SearchByStrInputPressed,
-                            if self.search_by_str_selected == id {
-                                blink_char
-                            } else {
-                                None
-                            },
-                        ));
-
-                        let mut choices: Vec<String> = form_item.choices.as_ref().unwrap().clone();
-                        let current_value = self.search_by_str_values.get(&id);
-                        if current_value.is_some() {
-                            choices = choices
-                                .into_iter()
-                                .filter(|string_| {
-                                    string_
-                                        .to_lowercase()
-                                        .matches(current_value.unwrap().to_lowercase().as_str())
-                                        .collect::<String>()
-                                        .len()
-                                        != 0
-                                })
-                                .collect();
-                        }
-                        for choice in choices.iter() {
-                            let label = choice.to_string();
-                            let choice_id =
-                                self.search_by_str_button_ids.get(&label).unwrap().clone();
-                            content = content.push(
-                                StateLessButton::new(
-                                    self.search_by_str_button_pressed == choice_id,
-                                    &label,
-                                    Message::SearchByStrButtonPressed(id, choice_id),
-                                    Message::SearchByStrButtonReleased(id, choice_id),
-                                )
-                                .width(768)
-                                .class(state_less_button::Class::Positive),
-                            );
-                        }
-                    }
-                }
-            } else if part_is_link(item) {
-                let label = item
-                    .label
-                    .as_ref()
-                    .unwrap_or(item.text.as_ref().unwrap_or(&"Continuer".to_string()))
-                    .clone();
-                let id = *self.link_button_ids.get(&label).unwrap();
-                let mut display_normal_button = false;
-
-                if self.current_link_group_name.is_some() {
-                    // display normal button if have same group name
-                    if self.current_link_group_name.as_ref() == item.link_group_name.as_ref() {
-                        display_normal_button = true;
-                    }
-                } else {
-                    if let Some(link_group_name) = item.link_group_name.as_ref() {
-                        if !replaced_by_group_names.contains(link_group_name) {
-                            let group_button_id = *self
-                                .link_group_name_ids
-                                .get(&link_group_name.clone())
-                                .unwrap();
-                            content = content.push(
-                                StateLessButton::new(
-                                    self.link_group_button_pressed == group_button_id,
-                                    &link_group_name,
-                                    Message::GroupLinkButtonPressed(group_button_id),
-                                    Message::GroupLinkButtonReleased(group_button_id),
-                                )
                                 .width(768)
                                 .class(state_less_button::Class::Primary),
-                            );
-                            replaced_by_group_names.push(link_group_name.clone());
-                        }
-                    } else {
-                        display_normal_button = true;
+                        );
                     }
-                }
-
-                if display_normal_button {
-                    content = content.push(
-                        StateLessButton::new(
-                            self.link_button_pressed == id,
-                            &label,
-                            Message::LinkButtonPressed(id),
-                            Message::LinkButtonReleased(id),
-                        )
-                        .width(768)
-                        .class(state_less_button::Class::Primary),
+                } else if part_is_go_back_to_zone(item) {
+                    back_to_zone_button = Some(
+                        item.name
+                            .as_ref()
+                            .unwrap_or(
+                                item.text
+                                    .as_ref()
+                                    .unwrap_or(&"Retourner sur l'écran de déplacements".to_string()),
+                            )
+                            .clone(),
                     );
                 }
-            } else if part_is_go_back_to_zone(item) {
-                back_to_zone_button = Some(
-                    item.name
-                        .as_ref()
-                        .unwrap_or(
-                            item.text
-                                .as_ref()
-                                .unwrap_or(&"Retourner sur l'écran de déplacements".to_string()),
-                        )
-                        .clone(),
+            }
+
+            if must_add_submit {
+                content = content.push(
+                    Button::new(&mut self.submit_button, &submit_label)
+                        .on_press(Message::SubmitButtonPressed)
+                        .width(768)
+                        .class(button::Class::Primary),
                 );
             }
+
+            if self.current_link_group_name.is_some() {
+                content = content.push(
+                    Button::new(&mut self.back_from_group_by_button, "Retour")
+                        .on_press(Message::GoBackFromGroupButtonPressed)
+                        .width(768)
+                        .class(button::Class::Secondary),
+                );
+            }
+
+            if let Some(label) = back_to_zone_button {
+                content = content.push(
+                    Button::new(&mut self.go_back_zone_button, &label)
+                        .on_press(Message::GoBackZoneButtonPressed)
+                        .width(768)
+                        .class(button::Class::Secondary),
+                );
+            }
+
+            let info = Column::new()
+                .max_width(window.width() as u32)
+                .height(20)
+                .push(
+                    Text::new("Echap: retour")
+                        .size(20)
+                        .color(Color::WHITE)
+                        .horizontal_alignment(HorizontalAlignment::Right)
+                        .vertical_alignment(VerticalAlignment::Top),
+                );
+
+            Column::new()
+                .width(window.width() as u32)
+                .height(window.height() as u32)
+                .padding(0)
+                .spacing(2)
+                .align_items(Align::Center)
+                .justify_content(Justify::Center)
+                .push(info)
+                .push(content)
+                .into()
         }
-
-        if must_add_submit {
-            content = content.push(
-                Button::new(&mut self.submit_button, &submit_label)
-                    .on_press(Message::SubmitButtonPressed)
-                    .width(768)
-                    .class(button::Class::Primary),
-            );
-        }
-
-        if self.current_link_group_name.is_some() {
-            content = content.push(
-                Button::new(&mut self.back_from_group_by_button, "Retour")
-                    .on_press(Message::GoBackFromGroupButtonPressed)
-                    .width(768)
-                    .class(button::Class::Secondary),
-            );
-        }
-
-        if let Some(label) = back_to_zone_button {
-            content = content.push(
-                Button::new(&mut self.go_back_zone_button, &label)
-                    .on_press(Message::GoBackZoneButtonPressed)
-                    .width(768)
-                    .class(button::Class::Secondary),
-            );
-        }
-
-        let info = Column::new()
-            .max_width(window.width() as u32)
-            .height(20)
-            .push(
-                Text::new("Echap: retour")
-                    .size(20)
-                    .color(Color::WHITE)
-                    .horizontal_alignment(HorizontalAlignment::Right)
-                    .vertical_alignment(VerticalAlignment::Top),
-            );
-
-        Column::new()
-            .width(window.width() as u32)
-            .height(window.height() as u32)
-            .padding(0)
-            .spacing(2)
-            .align_items(Align::Center)
-            .justify_content(Justify::Center)
-            .push(info)
-            .push(content)
-            .into()
     }
 
     fn teardown(&mut self) {}
