@@ -4,6 +4,7 @@ use crate::gui::lang::model::Description;
 pub enum MainMessage {
     ToStartup,
     ToExit,
+    ToWorld,
     ExitRequested,
     StartupToZone {
         server_ip: String,
@@ -44,6 +45,7 @@ pub enum Message {
     SearchByStrButtonReleased(i32, i32),
     GoBackFromGroupButtonPressed,
     GoBackZoneButtonPressed,
+    WorldMenuButtonPressed,
     CardMenuButtonPressed,
     EventsMenuButtonPressed,
     BusinessMenuButtonPressed,

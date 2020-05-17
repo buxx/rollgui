@@ -21,6 +21,7 @@ use coffee::{graphics, Game, Timer};
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
 use std::error::Error;
+use crate::engine::world::WorldEngine;
 
 // TODO: dynamic from server (and tilesheet)
 pub const TILE_WIDTH: i16 = 16;
@@ -306,6 +307,13 @@ impl MyGame {
                 self.engine = Box::new(ExitEngine::new());
             }
             MainMessage::ExitRequested => self.exit_requested = true,
+            MainMessage::ToWorld => {
+                self.engine = Box::new(WorldEngine::new(
+                    self.server.as_ref().unwrap().clone(),
+                    self.tile_sheet_image.clone(),
+                    self.player.as_ref().unwrap().clone(),
+                ));
+            }
         }
     }
 }

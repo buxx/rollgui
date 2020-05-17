@@ -40,6 +40,7 @@ pub struct ZoneEngine {
     player: Player,
     level: Level,
     socket: ZoneSocket,
+    world_menu_button_state: button::State,
     card_menu_button_state: button::State,
     events_menu_button_state: button::State,
     business_menu_button_state: button::State,
@@ -100,6 +101,7 @@ impl ZoneEngine {
             player,
             level,
             socket,
+            world_menu_button_state: button::State::new(),
             card_menu_button_state: button::State::new(),
             events_menu_button_state: button::State::new(),
             business_menu_button_state: button::State::new(),
@@ -215,7 +217,7 @@ impl ZoneEngine {
         let mut sprites: Vec<Sprite> = vec![];
 
         sprites.push(self.tile_sheet.create_sprite_for(
-            "CHARACTER",
+            "PLAYER",
             self.get_real_x(self.player.x),
             self.get_real_y(self.player.y),
         ));
@@ -589,6 +591,9 @@ impl Engine for ZoneEngine {
 
     fn react(&mut self, event: Message, _window: &mut Window) -> Option<MainMessage> {
         match event {
+            Message::WorldMenuButtonPressed => {
+                return Some(MainMessage::ToWorld)
+            }
             Message::CardMenuButtonPressed => {
                 return Some(MainMessage::ToDescriptionWithUrl {
                     url: format!("/_describe/character/{}/card", self.player.id).to_string(),
@@ -712,6 +717,12 @@ impl Engine for ZoneEngine {
             // .justify_content(Justify::Center)
             .padding(0)
             .spacing(5)
+            .push(
+                Button::new(&mut self.world_menu_button_state, "Carte du monde")
+                    .class(button::Class::Secondary)
+                    .on_press(Message::WorldMenuButtonPressed)
+                    .width(175),
+            )
             .push(
                 Button::new(&mut self.card_menu_button_state, "Fiche")
                     .class(button::Class::Secondary)

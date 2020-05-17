@@ -15,13 +15,21 @@ pub struct TileSheet {
     tile_height: i16,
 }
 
-const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 37] = [
+const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 44] = [
+    ("SEA", None, (7, 0)),
+    ("JUNGLE", None, (7, 4)),
+    ("PLAIN", None, (7, 2)),
+    ("HILL", None, (7, 5)),
+    ("MOUNTAIN", None, (7, 6)),
+    ("BEACH", None, (7, 1)),
+
     ("BACK_BEACH", None, (0, 3)),
     ("BACK_PLAIN", None, (0, 6)),
     ("BACK_JUNGLE", None, (0, 4)),
     ("BACK_HILL", None, (0, 4)),
     ("BACK_MOUNTAIN", None, (0, 5)),
     ("BACK_SEA", None, (0, 2)),
+
     ("UNKNOWN", None, (0, 0)),
     ("SAND", None, (0, 0)),
     ("DRY_BUSH", None, (2, 8)),
@@ -35,6 +43,7 @@ const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 37] = [
     ("LEAF_TREE", None, (1, 7)),
     ("TROPICAL_TREE", None, (1, 8)),
     ("DEAD_TREE", None, (0, 8)),
+    ("PLAYER", None, (6, 0)),
     ("CHARACTER", None, (6, 0)),
     ("STUFF_GENERIC", None, (3, 0)),
     ("BOTTLE", None, (3, 1)),

@@ -8,6 +8,7 @@ pub mod description;
 pub mod exit;
 pub mod startup;
 pub mod zone;
+pub mod world;
 
 pub trait Engine {
     fn draw(&mut self, frame: &mut Frame, timer: &Timer);

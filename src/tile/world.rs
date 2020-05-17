@@ -9,6 +9,7 @@ pub struct Tiles {
     pub default: Option<TileId>,
 }
 
+// FIXME: not used
 const APPEARANCES: [(&str, TileAppearance); 6] = [
     (
         "JUNGLE",
