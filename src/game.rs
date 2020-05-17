@@ -1,6 +1,7 @@
 use crate::engine::description::DescriptionEngine;
 use crate::engine::exit::ExitEngine;
 use crate::engine::startup::StartupEngine;
+use crate::engine::world::WorldEngine;
 use crate::engine::zone::ZoneEngine;
 use crate::engine::Engine;
 use crate::entity::build::Build;
@@ -21,7 +22,6 @@ use coffee::{graphics, Game, Timer};
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
 use std::error::Error;
-use crate::engine::world::WorldEngine;
 
 // TODO: dynamic from server (and tilesheet)
 pub const TILE_WIDTH: i16 = 16;

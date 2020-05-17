@@ -591,9 +591,7 @@ impl Engine for ZoneEngine {
 
     fn react(&mut self, event: Message, _window: &mut Window) -> Option<MainMessage> {
         match event {
-            Message::WorldMenuButtonPressed => {
-                return Some(MainMessage::ToWorld)
-            }
+            Message::WorldMenuButtonPressed => return Some(MainMessage::ToWorld),
             Message::CardMenuButtonPressed => {
                 return Some(MainMessage::ToDescriptionWithUrl {
                     url: format!("/_describe/character/{}/card", self.player.id).to_string(),

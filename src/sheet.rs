@@ -22,14 +22,12 @@ const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 44] = [
     ("HILL", None, (7, 5)),
     ("MOUNTAIN", None, (7, 6)),
     ("BEACH", None, (7, 1)),
-
     ("BACK_BEACH", None, (0, 3)),
     ("BACK_PLAIN", None, (0, 6)),
     ("BACK_JUNGLE", None, (0, 4)),
     ("BACK_HILL", None, (0, 4)),
     ("BACK_MOUNTAIN", None, (0, 5)),
     ("BACK_SEA", None, (0, 2)),
-
     ("UNKNOWN", None, (0, 0)),
     ("SAND", None, (0, 0)),
     ("DRY_BUSH", None, (2, 8)),
