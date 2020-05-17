@@ -59,6 +59,7 @@ pub struct ZoneEngine {
     stuffs: HashMap<String, Stuff>,
     resources: Vec<Resource>,
     builds: HashMap<String, Build>,
+    builds_positions: Vec<(i16, i16)>,
     link_button_ids: HashMap<String, i32>,
     link_button_pressed: i32,
     link_button_urls: HashMap<i32, String>,
@@ -80,6 +81,11 @@ impl ZoneEngine {
         resources: Vec<Resource>,
         builds: HashMap<String, Build>,
     ) -> Self {
+        let mut builds_positions = vec![];
+        for (_, build) in builds.iter() {
+            builds_positions.push((build.row_i as i16, build.col_i as i16));
+        }
+
         let mut zone_engine = Self {
             tiles,
             tile_sheet: TileSheet::new(tile_sheet_image.clone(), tile_width, tile_height),
@@ -115,6 +121,7 @@ impl ZoneEngine {
             stuffs,
             resources,
             builds,
+            builds_positions,
             link_button_ids: HashMap::new(),
             link_button_pressed: -1,
             link_button_urls: HashMap::new(),
@@ -168,6 +175,13 @@ impl ZoneEngine {
             for absolute_col_i in 0..can_display_cols {
                 let zone_col_i = absolute_col_i + self.start_zone_col_i;
                 if zone_col_i >= row.cols.len() as i16 || zone_col_i < 0 {
+                    continue;
+                }
+
+                // If build is here, do not draw tile
+                if replace_by_back.is_none()
+                    && self.builds_positions.contains(&(zone_row_i, zone_col_i))
+                {
                     continue;
                 }
 
@@ -244,11 +258,8 @@ impl ZoneEngine {
 
             for class in stuff.get_classes().iter().rev() {
                 if self.tile_sheet.have_id(class) {
-                    sprites.push(
-                        self.tile_sheet
-                            .create_sprite_for(class, real_x, real_y),
-                    );
-                    break
+                    sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y));
+                    break;
                 }
             }
         }
@@ -297,11 +308,8 @@ impl ZoneEngine {
 
             for class in build.get_classes().iter().rev() {
                 if self.tile_sheet.have_id(class) {
-                    sprites.push(
-                        self.tile_sheet
-                            .create_sprite_for(class, real_x, real_y),
-                    );
-                    break
+                    sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y));
+                    break;
                 }
             }
         }
@@ -429,10 +437,10 @@ impl Engine for ZoneEngine {
 
             sprites.extend(self.get_zone_sprites(Some(self.level.world_tile_type_id.clone())));
             sprites.extend(self.get_zone_sprites(None));
-            sprites.extend(self.get_characters_sprites());
+            sprites.extend(self.get_build_sprites());
             sprites.extend(self.get_stuff_sprites());
             sprites.extend(self.get_resource_sprites());
-            sprites.extend(self.get_build_sprites());
+            sprites.extend(self.get_characters_sprites());
 
             self.tile_sheet_batch.clear();
             self.tile_sheet_batch.extend(sprites);

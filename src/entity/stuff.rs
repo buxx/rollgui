@@ -15,7 +15,7 @@ impl Stuff {
     }
     pub fn get_classes(&self) -> Vec<String> {
         // TODO perf: compute this at object creation
-        let mut classes = vec!("STUFF_GENERIC".to_string());
+        let mut classes = vec!["STUFF_GENERIC".to_string()];
         classes.extend(self.classes.clone());
         classes.push(self.stuff_id.clone());
         classes
