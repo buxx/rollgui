@@ -277,6 +277,7 @@ pub fn get_corner(width: i16, height: i16, new_row_i: i16, new_col_i: i16) -> Op
     let mut right_col_i = 0;
     #[allow(unused_assignments)]
     let mut left_col_i = 0;
+    let mut more_ = 0;
 
     if new_row_i < top_row_i_end {
         right_col_i = right_col_i_start + more;
@@ -284,6 +285,7 @@ pub fn get_corner(width: i16, height: i16, new_row_i: i16, new_col_i: i16) -> Op
     } else {
         if new_row_i >= bottom_row_i_start {
             more = (height / 3) - (new_row_i - bottom_row_i_start + 1);
+            more_ = more;
             more = if more >= 0 { more } else { 0 };
             right_col_i = right_col_i_start + more;
             left_col_i = left_col_i_end - more;
@@ -305,7 +307,7 @@ pub fn get_corner(width: i16, height: i16, new_row_i: i16, new_col_i: i16) -> Op
     if new_col_i > width - 1 && top_row_i_end <= new_row_i {
         return Some(CornerEnum::Right);
     }
-    if new_col_i >= right_col_i && new_row_i >= bottom_row_i_start {
+    if new_col_i >= (right_col_i + more_.abs()) && new_row_i >= bottom_row_i_start + more_.abs() {
         return Some(CornerEnum::BottomRight);
     }
     if new_row_i > height - 1 && left_col_i_end <= new_col_i {

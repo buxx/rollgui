@@ -91,8 +91,8 @@ impl Player {
             self.y += y;
         }
 
-        self.position.0 = (self.y / TILE_HEIGHT) as i32;
-        self.position.1 = (self.x / TILE_WIDTH) as i32;
+        self.position.0 = ((self.y + TILE_HEIGHT / 2) / TILE_HEIGHT) as i32;
+        self.position.1 = ((self.x + TILE_WIDTH / 2) / TILE_WIDTH) as i32;
         (
             before_x != x || before_y != y,
             before_row_i != self.position.0 || before_col_i != self.position.1,
@@ -106,10 +106,14 @@ impl Player {
         let mut next_y = self.y + y;
 
         if x > 0 {
-            next_x += TILE_WIDTH / 2;
+            next_x += 1;
+        } else if x < 0 {
+            next_x -= 1;
         }
         if y > 0 {
-            next_y += TILE_HEIGHT / 2;
+            next_y += 1;
+        } else if y < 0 {
+            next_y -= 1;
         }
         let next_row_i_f = next_y as f32 / TILE_HEIGHT as f32;
         let next_col_i_f = next_x as f32 / TILE_WIDTH as f32;
@@ -117,13 +121,13 @@ impl Player {
         let next_row_i = if next_row_i_f < 0.0 {
             -1
         } else {
-            next_y / TILE_HEIGHT
+            (next_y + TILE_HEIGHT / 2) / TILE_HEIGHT
         };
 
         let next_col_i = if next_col_i_f < 0.0 {
             -1
         } else {
-            next_x / TILE_WIDTH
+            (next_x + TILE_WIDTH / 2) / TILE_WIDTH
         };
 
         if before_row_i != next_row_i as i32 || before_col_i != next_col_i as i32 {
