@@ -659,11 +659,16 @@ impl Engine for DescriptionEngine {
                             ))
                         } else if part_is_link(form_item) {
                             let label = form_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
+                            let display_label = if item.text.is_some() && item.label.is_some() {
+                                format!("{}: {}", item.label.as_ref().unwrap().clone(), item.text.as_ref().unwrap().clone())
+                            } else {
+                                label.clone()
+                            };
                             let id = *self.link_button_ids.get(&label).unwrap();
                             content = content.push(
                                 StateLessButton::new(
                                     self.link_button_pressed == id,
-                                    &label,
+                                    &display_label,
                                     Message::LinkButtonPressed(id),
                                     Message::LinkButtonReleased(id),
                                 )
@@ -743,6 +748,11 @@ impl Engine for DescriptionEngine {
                         .as_ref()
                         .unwrap_or(item.text.as_ref().unwrap_or(&"Continuer".to_string()))
                         .clone();
+                    let display_label = if item.text.is_some() && item.label.is_some() {
+                        format!("{}: {}", item.label.as_ref().unwrap().clone(), item.text.as_ref().unwrap().clone())
+                    } else {
+                        label.clone()
+                    };
                     let id = *self.link_button_ids.get(&label).unwrap();
                     let mut display_normal_button = false;
 
@@ -779,7 +789,7 @@ impl Engine for DescriptionEngine {
                         content = content.push(
                             StateLessButton::new(
                                 self.link_button_pressed == id,
-                                &label,
+                                &display_label,
                                 Message::LinkButtonPressed(id),
                                 Message::LinkButtonReleased(id),
                             )
