@@ -1,4 +1,5 @@
 use crate::error::RollingError;
+use crate::level::Level;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
@@ -267,60 +268,78 @@ pub enum CornerEnum {
     TopLeft,
 }
 
-pub fn get_corner(width: i16, height: i16, new_row_i: i16, new_col_i: i16) -> Option<CornerEnum> {
-    let left_col_i_end = width / 3;
-    let right_col_i_start = (width / 3) * 2;
-    let top_row_i_end = height / 3;
-    let bottom_row_i_start = (height / 3) * 2;
-    let mut more = if new_row_i >= 0 { new_row_i } else { 0 };
-    #[allow(unused_assignments)]
-    let mut right_col_i = 0;
-    #[allow(unused_assignments)]
-    let mut left_col_i = 0;
-    let mut more_ = 0;
+const NORTH_WEST_BORDER_CONF: &str = "000\n001\n011";
+const LEFT_NORTH_BORDER_CONF: &str = "000\n000\n011";
+const STD_NORTH_BORDER_CONF: &str = "000\n000\n111";
+const RIGHT_NORTH_BORDER_CONF: &str = "000\n000\n110";
+const NORTH_EST_BORDER_CONF: &str = "000\n100\n110";
+const TOP_EST_BORDER_CONF: &str = "000\n100\n100";
+const STD_EST_BORDER_CONF: &str = "100\n100\n100";
+const BOTTOM_EST_BORDER_CONF: &str = "100\n100\n000";
+const SOUTH_EST_BORDER_CONF: &str = "110\n100\n000";
+const RIGHT_SOUTH_BORDER_CONF: &str = "110\n000\n000";
+const STD_SOUTH_BORDER_CONF: &str = "111\n000\n000";
+const LEFT_SOUTH_BORDER_CONF: &str = "011\n000\n000";
+const SOUTH_WEST_BORDER_CONF: &str = "011\n001\n000";
+const BOTTOM_WEST_BORDER_CONF: &str = "001\n001\n000";
+const STD_WEST_BORDER_CONF: &str = "001\n001\n001";
+const TOP_WEST_BORDER_CONF: &str = "000\n001\n001";
 
-    if new_row_i < top_row_i_end {
-        right_col_i = right_col_i_start + more;
-        left_col_i = left_col_i_end - more;
+fn get_bin_char_for_border(level: &Level, row_i: i16, col_i: i16) -> char {
+    if &level.tile_id(row_i, col_i) == "NOTHING" {
+        return '0';
+    }
+    '1'
+}
+
+pub fn get_corner(level: &Level, row_i: i16, col_i: i16) -> Option<CornerEnum> {
+    let mut representation: String = String::new();
+
+    representation.push(get_bin_char_for_border(level, row_i - 1, col_i - 1));
+    representation.push(get_bin_char_for_border(level, row_i - 1, col_i));
+    representation.push(get_bin_char_for_border(level, row_i - 1, col_i + 1));
+    representation.push('\n');
+    representation.push(get_bin_char_for_border(level, row_i, col_i - 1));
+    representation.push(get_bin_char_for_border(level, row_i, col_i));
+    representation.push(get_bin_char_for_border(level, row_i, col_i + 1));
+    representation.push('\n');
+    representation.push(get_bin_char_for_border(level, row_i + 1, col_i - 1));
+    representation.push(get_bin_char_for_border(level, row_i + 1, col_i));
+    representation.push(get_bin_char_for_border(level, row_i + 1, col_i + 1));
+
+    let representation = representation.as_str();
+
+    if representation == NORTH_WEST_BORDER_CONF {
+        Some(CornerEnum::TopLeft)
+    } else if representation == LEFT_NORTH_BORDER_CONF
+        || representation == STD_NORTH_BORDER_CONF
+        || representation == RIGHT_NORTH_BORDER_CONF
+    {
+        Some(CornerEnum::Top)
+    } else if representation == NORTH_EST_BORDER_CONF {
+        Some(CornerEnum::TopRight)
+    } else if representation == TOP_EST_BORDER_CONF
+        || representation == STD_EST_BORDER_CONF
+        || representation == BOTTOM_EST_BORDER_CONF
+    {
+        Some(CornerEnum::Right)
+    } else if representation == SOUTH_EST_BORDER_CONF {
+        Some(CornerEnum::BottomRight)
+    } else if representation == RIGHT_SOUTH_BORDER_CONF
+        || representation == STD_SOUTH_BORDER_CONF
+        || representation == LEFT_SOUTH_BORDER_CONF
+    {
+        Some(CornerEnum::Bottom)
+    } else if representation == SOUTH_WEST_BORDER_CONF {
+        Some(CornerEnum::BottomLeft)
+    } else if representation == BOTTOM_WEST_BORDER_CONF
+        || representation == STD_WEST_BORDER_CONF
+        || representation == TOP_WEST_BORDER_CONF
+    {
+        Some(CornerEnum::Left)
     } else {
-        if new_row_i >= bottom_row_i_start {
-            more = (height / 3) - (new_row_i - bottom_row_i_start + 1);
-            more_ = more;
-            more = if more >= 0 { more } else { 0 };
-            right_col_i = right_col_i_start + more;
-            left_col_i = left_col_i_end - more;
-        } else {
-            left_col_i = left_col_i_end;
-            right_col_i = right_col_i_start;
-        }
+        None
     }
-
-    if new_col_i < left_col_i && new_row_i < top_row_i_end {
-        return Some(CornerEnum::TopLeft);
-    }
-    if new_row_i < 0 && left_col_i <= new_col_i {
-        return Some(CornerEnum::Top);
-    }
-    if new_col_i >= right_col_i && new_row_i < top_row_i_end {
-        return Some(CornerEnum::TopRight);
-    }
-    if new_col_i > width - 1 && top_row_i_end <= new_row_i {
-        return Some(CornerEnum::Right);
-    }
-    if new_col_i >= (right_col_i + more_.abs()) && new_row_i >= bottom_row_i_start + more_.abs() {
-        return Some(CornerEnum::BottomRight);
-    }
-    if new_row_i > height - 1 && left_col_i_end <= new_col_i {
-        return Some(CornerEnum::Bottom);
-    }
-    if new_col_i < left_col_i && new_row_i >= bottom_row_i_start {
-        return Some(CornerEnum::BottomLeft);
-    }
-    if new_col_i < 0 && top_row_i_end <= new_row_i {
-        return Some(CornerEnum::Left);
-    }
-
-    None
 }
 
 #[cfg(test)]
