@@ -15,7 +15,7 @@ use crate::message::{MainMessage, Message};
 use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles as ZoneTiles;
 use crate::{config, event, server, util};
-use coffee::graphics::{Frame, HorizontalAlignment, VerticalAlignment, Window, Color};
+use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
 use coffee::load::{loading_screen, Task};
 use coffee::ui::{Align, Column, Element, Justify, Renderer, Text, UserInterface};
 use coffee::{graphics, Game, Timer};
