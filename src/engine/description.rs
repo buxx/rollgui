@@ -56,10 +56,16 @@ pub struct DescriptionEngine {
     search_by_str_button_pressed: i32,
     pending_request: Option<(String, Map<String, Value>, Map<String, Value>)>,
     loading_displayed: bool,
+    force_back_startup: bool,
 }
 
 impl DescriptionEngine {
-    pub fn new(description: Description, server: Server, back_url: Option<String>) -> Self {
+    pub fn new(
+        description: Description,
+        server: Server,
+        back_url: Option<String>,
+        force_back_startup: bool,
+    ) -> Self {
         let mut link_button_ids = HashMap::new();
         let mut link_button_urls = HashMap::new();
         let mut text_input_ids = HashMap::new();
@@ -248,6 +254,7 @@ impl DescriptionEngine {
             search_by_str_names,
             pending_request: None,
             loading_displayed: false,
+            force_back_startup,
         }
     }
 
@@ -468,6 +475,9 @@ impl Engine for DescriptionEngine {
         match input.key_code {
             Some(keyboard::KeyCode::Escape) => {
                 input.key_code = None;
+                if self.force_back_startup {
+                    return Some(MainMessage::ToStartup);
+                }
                 if let Some(force_back_url) = &self.description.force_back_url {
                     return Some(MainMessage::ToDescriptionWithUrl {
                         url: force_back_url.clone(),

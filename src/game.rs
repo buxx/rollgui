@@ -91,7 +91,9 @@ impl MyGame {
                         .unwrap(),
                     server.clone(),
                     None,
+                    true,
                 ));
+                return;
             }
         }
 
@@ -103,6 +105,7 @@ impl MyGame {
                 .unwrap(),
             server.clone(),
             None,
+            false,
         ));
     }
 
@@ -296,6 +299,7 @@ impl Game for MyGame {
                         description.clone(),
                         self.server.as_ref().unwrap().clone(),
                         back_url.clone(),
+                        false,
                     ));
                 }
                 MainMessage::NewCharacterId { character_id } => {
@@ -330,12 +334,13 @@ impl Game for MyGame {
                         description,
                         self.server.as_ref().unwrap().clone(),
                         back_url.clone(),
+                        false,
                     ));
                 }
                 MainMessage::DescriptionToZone => {
                     // FIXME: manage errors
-                    self.player = self.create_player().unwrap(); // must succeed ...
-                    self.setup_zone_engine();
+                    let server = self.server.as_mut().unwrap().clone(); // must succeed
+                    self.setup_startup_to_zone_engine(server.config.ip.clone(), server.config.port);
                 }
                 MainMessage::ToStartup => {
                     self.engine = Box::new(StartupEngine::new());
