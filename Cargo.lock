@@ -1931,6 +1931,7 @@ name = "rollgui"
 version = "0.2.0"
 dependencies = [
  "coffee",
+ "image",
  "pickledb",
  "rand 0.6.5",
  "reqwest",

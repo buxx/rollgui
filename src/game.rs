@@ -17,11 +17,12 @@ use crate::tile::zone::Tiles as ZoneTiles;
 use crate::{config, event, server, util};
 use coffee::graphics::{Frame, HorizontalAlignment, VerticalAlignment, Window, Color};
 use coffee::load::{loading_screen, Task};
-use coffee::ui::{Align, Column, Element, Justify, Renderer, Text, UserInterface};
+use coffee::ui::{Align, Column, Element, Justify, Text, UserInterface};
 use coffee::{graphics, Game, Timer};
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
 use std::error::Error;
+use crate::ui::renderer::Renderer;
 
 // TODO: dynamic from server (and tilesheet)
 pub const TILE_WIDTH: i16 = 16;
