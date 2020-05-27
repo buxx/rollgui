@@ -24,7 +24,7 @@ pub enum MainMessage {
     },
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Message {
     ConfirmButtonPressed,
     CancelButtonPressed,
@@ -36,9 +36,9 @@ pub enum Message {
     CheckBoxChecked(i32),
     CheckBoxUnchecked(i32),
     LinkButtonPressed(i32),
-    LinkButtonReleased(i32),
+    LinkButtonReleased(String),
     GroupLinkButtonPressed(i32),
-    GroupLinkButtonReleased(i32),
+    GroupLinkButtonReleased(String),
     ChoicePressed(i32, i32),
     SearchByStrInputPressed(i32),
     SearchByStrButtonPressed(i32, i32),

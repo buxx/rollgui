@@ -16,6 +16,7 @@ pub mod server;
 pub mod sheet;
 pub mod socket;
 pub mod tile;
+pub mod ui;
 pub mod util;
 pub mod world;
 

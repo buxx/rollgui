@@ -4,16 +4,22 @@ use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
 use crate::server::client::ClientError;
 use crate::server::Server;
+use crate::ui::Column;
+use crate::ui::Element;
 use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
 use coffee::input::keyboard;
-use coffee::ui::widget::state_less_button;
-use coffee::ui::widget::state_less_button::StateLessButton;
-use coffee::ui::widget::text_input::TextInput;
-use coffee::ui::{button, Align, Button, Checkbox, Column, Element, Justify, Radio, Text};
+use coffee::ui::{Align, Justify};
 use coffee::Timer;
 use serde_json::{Map, Number, Value};
 use std::collections::HashMap;
 use std::time::Instant;
+use crate::ui::widget::text::Text;
+use crate::ui::widget::text_input::TextInput;
+use crate::ui::widget::state_less_button::StateLessButton;
+use crate::ui::widget::{state_less_button, button};
+use crate::ui::widget::checkbox::Checkbox;
+use crate::ui::widget::radio::Radio;
+use crate::ui::widget::button::Button;
 
 const BLINK_MS: u128 = 250;
 
@@ -28,13 +34,11 @@ pub struct DescriptionEngine {
     text_input_types: HashMap<i32, String>,
     link_button_ids: HashMap<String, i32>,
     link_button_pressed: i32,
-    link_button_urls: HashMap<i32, String>,
     blink_time: Instant,
     submit_button: button::State,
     go_back_zone_button: button::State,
     current_link_group_name: Option<String>,
     link_group_name_ids: HashMap<String, i32>,
-    link_group_name_names: HashMap<i32, String>,
     link_group_button_pressed: i32,
     back_from_group_by_button: button::State,
     checkbox_ids: HashMap<String, i32>,
@@ -61,13 +65,11 @@ pub struct DescriptionEngine {
 impl DescriptionEngine {
     pub fn new(description: Description, server: Server, back_url: Option<String>) -> Self {
         let mut link_button_ids = HashMap::new();
-        let mut link_button_urls = HashMap::new();
         let mut text_input_ids = HashMap::new();
         let mut text_input_names = HashMap::new();
         let mut text_input_types = HashMap::new();
         let mut text_input_values = HashMap::new();
         let mut link_group_name_ids = HashMap::new();
-        let mut link_group_name_names = HashMap::new();
         let mut checkbox_values = HashMap::new();
         let mut checkbox_ids = HashMap::new();
         let mut checkbox_names = HashMap::new();
@@ -127,10 +129,6 @@ impl DescriptionEngine {
                             .unwrap_or(form_item.text.as_ref().unwrap_or(&" ".to_string()))
                             .clone();
                         link_button_ids.insert(label, link_button_counter);
-                        link_button_urls.insert(
-                            link_button_counter,
-                            form_item.form_action.as_ref().unwrap().clone(),
-                        );
                         link_button_counter += 1;
                     } else if part_is_choices(form_item) {
                         choice_ids.insert(form_item.name.as_ref().unwrap().clone(), choice_counter);
@@ -180,15 +178,10 @@ impl DescriptionEngine {
                         .clone(),
                     link_button_counter,
                 );
-                link_button_urls.insert(
-                    link_button_counter,
-                    item.form_action.as_ref().unwrap().clone(),
-                );
 
                 // Assume link group names are not in forms
                 if let Some(link_group_name) = item.link_group_name.as_ref() {
                     link_group_name_ids.insert(link_group_name.clone(), link_button_counter);
-                    link_group_name_names.insert(link_button_counter, link_group_name.clone());
                 }
                 link_button_counter += 1;
             }
@@ -211,13 +204,11 @@ impl DescriptionEngine {
             text_input_values,
             link_button_ids,
             link_button_pressed: -1,
-            link_button_urls,
             blink_time: Instant::now(),
             submit_button: button::State::new(),
             go_back_zone_button: button::State::new(),
             current_link_group_name: None,
             link_group_name_ids,
-            link_group_name_names,
             link_group_button_pressed: -1,
             back_from_group_by_button: button::State::new(),
             checkbox_ids,
@@ -531,15 +522,15 @@ impl Engine for DescriptionEngine {
             Message::GroupLinkButtonPressed(id) => {
                 self.link_group_button_pressed = id;
             }
-            Message::LinkButtonReleased(id) => {
+            Message::LinkButtonReleased(url) => {
                 return Some(MainMessage::ToDescriptionWithUrl {
-                    url: self.link_button_urls.get(&id).unwrap().clone(),
+                    url: url.clone(),
                     back_url: self.future_back_url.clone(),
                 });
             }
-            Message::GroupLinkButtonReleased(id) => {
+            Message::GroupLinkButtonReleased(url) => {
                 self.current_link_group_name =
-                    Some(self.link_group_name_names.get(&id).unwrap().clone());
+                    Some(url.clone());
             }
             Message::GoBackZoneButtonPressed => return Some(MainMessage::DescriptionToZone),
             Message::GoBackFromGroupButtonPressed => {
@@ -561,7 +552,7 @@ impl Engine for DescriptionEngine {
         None
     }
 
-    fn layout(&mut self, window: &Window) -> Element<Message> {
+    fn layout(&mut self, window: &Window) -> Element {
         if self.pending_request.is_some() {
             self.loading_displayed = true;
             Column::new()
@@ -606,9 +597,9 @@ impl Engine for DescriptionEngine {
 
             for item in items.iter() {
                 if part_is_pure_text(item) {
-                    content = content.push(default_text_style(Text::new(&get_part_pure_text_text(
-                        item,
-                    ))));
+                    content = content.push(default_text_style(Text::new(
+                        &get_part_pure_text_text(item),
+                    )));
                     continue;
                 }
 
@@ -658,9 +649,14 @@ impl Engine for DescriptionEngine {
                                 },
                             ))
                         } else if part_is_link(form_item) {
-                            let label = form_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
+                            let label =
+                                form_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
                             let display_label = if item.text.is_some() && item.label.is_some() {
-                                format!("{}: {}", item.label.as_ref().unwrap().clone(), item.text.as_ref().unwrap().clone())
+                                format!(
+                                    "{}: {}",
+                                    item.label.as_ref().unwrap().clone(),
+                                    item.text.as_ref().unwrap().clone()
+                                )
                             } else {
                                 label.clone()
                             };
@@ -670,10 +666,10 @@ impl Engine for DescriptionEngine {
                                     self.link_button_pressed == id,
                                     &display_label,
                                     Message::LinkButtonPressed(id),
-                                    Message::LinkButtonReleased(id),
+                                    Message::LinkButtonReleased(form_item.form_action.as_ref().unwrap().clone()),
                                 )
-                                    .width(768)
-                                    .class(state_less_button::Class::Primary),
+                                .width(768)
+                                .class(state_less_button::Class::Primary),
                             );
                         } else if part_is_choices(form_item) {
                             let radio_id = *self
@@ -710,7 +706,8 @@ impl Engine for DescriptionEngine {
                                 },
                             ));
 
-                            let mut choices: Vec<String> = form_item.choices.as_ref().unwrap().clone();
+                            let mut choices: Vec<String> =
+                                form_item.choices.as_ref().unwrap().clone();
                             let current_value = self.search_by_str_values.get(&id);
                             if current_value.is_some() {
                                 choices = choices
@@ -736,8 +733,8 @@ impl Engine for DescriptionEngine {
                                         Message::SearchByStrButtonPressed(id, choice_id),
                                         Message::SearchByStrButtonReleased(id, choice_id),
                                     )
-                                        .width(768)
-                                        .class(state_less_button::Class::Positive),
+                                    .width(768)
+                                    .class(state_less_button::Class::Positive),
                                 );
                             }
                         }
@@ -749,7 +746,11 @@ impl Engine for DescriptionEngine {
                         .unwrap_or(item.text.as_ref().unwrap_or(&"Continuer".to_string()))
                         .clone();
                     let display_label = if item.text.is_some() && item.label.is_some() {
-                        format!("{}: {}", item.label.as_ref().unwrap().clone(), item.text.as_ref().unwrap().clone())
+                        format!(
+                            "{}: {}",
+                            item.label.as_ref().unwrap().clone(),
+                            item.text.as_ref().unwrap().clone()
+                        )
                     } else {
                         label.clone()
                     };
@@ -773,10 +774,10 @@ impl Engine for DescriptionEngine {
                                         self.link_group_button_pressed == group_button_id,
                                         &link_group_name,
                                         Message::GroupLinkButtonPressed(group_button_id),
-                                        Message::GroupLinkButtonReleased(group_button_id),
+                                        Message::GroupLinkButtonReleased(item.form_action.as_ref().unwrap().clone()),
                                     )
-                                        .width(768)
-                                        .class(state_less_button::Class::Primary),
+                                    .width(768)
+                                    .class(state_less_button::Class::Primary),
                                 );
                                 replaced_by_group_names.push(link_group_name.clone());
                             }
@@ -791,23 +792,22 @@ impl Engine for DescriptionEngine {
                                 self.link_button_pressed == id,
                                 &display_label,
                                 Message::LinkButtonPressed(id),
-                                Message::LinkButtonReleased(id),
+                                Message::LinkButtonReleased(item.form_action.as_ref().unwrap().clone()),
                             )
-                                .width(768)
-                                .class(state_less_button::Class::Primary),
+                            .width(768)
+                            .class(state_less_button::Class::Primary),
                         );
                     }
                 } else if part_is_go_back_to_zone(item) {
-                    back_to_zone_button = Some(
-                        item.name
-                            .as_ref()
-                            .unwrap_or(
-                                item.text
-                                    .as_ref()
-                                    .unwrap_or(&"Retourner sur l'écran de déplacements".to_string()),
-                            )
-                            .clone(),
-                    );
+                    back_to_zone_button =
+                        Some(
+                            item.name
+                                .as_ref()
+                                .unwrap_or(item.text.as_ref().unwrap_or(
+                                    &"Retourner sur l'écran de déplacements".to_string(),
+                                ))
+                                .clone(),
+                        );
                 }
             }
 

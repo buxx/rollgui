@@ -5,14 +5,16 @@ use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
 use crate::server::Server;
 use crate::sheet::TileSheet;
+use crate::ui::Column;
+use crate::ui::Element;
 use crate::util::Blinker;
 use coffee::graphics::{
     Batch, Color, Frame, HorizontalAlignment, Sprite, VerticalAlignment, Window,
 };
 use coffee::input::keyboard;
-use coffee::ui::{Column, Element, Text};
 use coffee::{graphics, Timer};
 use std::collections::HashMap;
+use crate::ui::widget::text::Text;
 
 pub struct WorldEngine {
     server: Server,
@@ -171,7 +173,7 @@ impl Engine for WorldEngine {
         None
     }
 
-    fn layout(&mut self, window: &Window) -> Element<Message> {
+    fn layout(&mut self, window: &Window) -> Element {
         Column::new()
             .width(window.width() as u32)
             .height(window.height() as u32)

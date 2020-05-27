@@ -1,9 +1,14 @@
 use crate::engine::Engine;
 use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
+use crate::ui::Column;
+use crate::ui::Element;
 use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
-use coffee::ui::{button, Align, Button, Column, Element, Justify, Text};
+use coffee::ui::{Align, Justify};
 use coffee::Timer;
+use crate::ui::widget::text::Text;
+use crate::ui::widget::button::Button;
+use crate::ui::widget::button;
 
 pub struct StartupEngine {
     local_server_button: button::State,
@@ -54,7 +59,7 @@ impl Engine for StartupEngine {
 
         None
     }
-    fn layout(&mut self, window: &Window) -> Element<Message> {
+    fn layout(&mut self, window: &Window) -> Element {
         let StartupEngine {
             local_server_button,
             s2_bux_fr_server_button,
