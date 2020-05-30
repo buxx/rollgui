@@ -1,7 +1,7 @@
+use crate::ui::renderer::Renderer;
 use coffee::graphics::{Point, Rectangle, Sprite};
 use coffee::ui::core::MouseCursor;
 use coffee::ui::widget::checkbox;
-use crate::ui::renderer::Renderer;
 
 const SPRITE: Rectangle<u16> = Rectangle {
     x: 98,
@@ -18,8 +18,7 @@ impl checkbox::Renderer for Renderer {
         text_bounds: Rectangle<f32>,
         is_checked: bool,
     ) -> MouseCursor {
-        let mouse_over = bounds.contains(cursor_position)
-            || text_bounds.contains(cursor_position);
+        let mouse_over = bounds.contains(cursor_position) || text_bounds.contains(cursor_position);
 
         self.sprites.add(Sprite {
             source: Rectangle {

@@ -1,7 +1,7 @@
 use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
+use crate::ui::Element;
 use coffee::graphics::{Frame, Window};
-use coffee::ui::Element;
 use coffee::Timer;
 
 pub mod description;

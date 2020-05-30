@@ -1,10 +1,9 @@
+use crate::ui::renderer::Renderer;
 use coffee::graphics::{
-    Color, HorizontalAlignment, Point, Rectangle, Sprite, Text,
-    VerticalAlignment,
+    Color, HorizontalAlignment, Point, Rectangle, Sprite, Text, VerticalAlignment,
 };
 use coffee::ui::core::MouseCursor;
 use coffee::ui::widget::state_less_button;
-use crate::ui::renderer::Renderer;
 
 const LEFT: Rectangle<u16> = Rectangle {
     x: 0,
@@ -81,10 +80,7 @@ impl state_less_button::Renderer for Renderer {
                 y: RIGHT.y + class_index * RIGHT.height,
                 ..RIGHT
             },
-            position: Point::new(
-                bounds.x + bounds.width - RIGHT.width as f32,
-                bounds.y,
-            ),
+            position: Point::new(bounds.x + bounds.width - RIGHT.width as f32, bounds.y),
             scale: (1.0, 1.0),
         });
 

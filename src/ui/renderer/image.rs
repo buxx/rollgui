@@ -1,14 +1,9 @@
-use coffee::graphics::{Batch, Image, Point, Rectangle, Sprite};
-use coffee::ui::{image};
 use crate::ui::renderer::Renderer;
+use coffee::graphics::{Batch, Image, Point, Rectangle, Sprite};
+use coffee::ui::image;
 
 impl image::Renderer for Renderer {
-    fn draw(
-        &mut self,
-        bounds: Rectangle<f32>,
-        image: Image,
-        source: Rectangle<u16>,
-    ) {
+    fn draw(&mut self, bounds: Rectangle<f32>, image: Image, source: Rectangle<u16>) {
         let ratio_x = bounds.width / (source.width as f32);
         let ratio_y = bounds.height / (source.height as f32);
         let center = bounds.center();

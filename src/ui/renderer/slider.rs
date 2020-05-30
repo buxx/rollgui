@@ -1,7 +1,7 @@
+use crate::ui::renderer::Renderer;
 use coffee::graphics::{Point, Rectangle, Sprite};
 use coffee::ui::core::MouseCursor;
-use coffee::ui::{slider};
-use crate::ui::renderer::Renderer;
+use coffee::ui::slider;
 
 use std::ops::RangeInclusive;
 
@@ -30,10 +30,7 @@ impl slider::Renderer for Renderer {
     ) -> MouseCursor {
         self.sprites.add(Sprite {
             source: RAIL,
-            position: Point::new(
-                bounds.x + MARKER.width as f32 / 2.0,
-                bounds.y + 12.5,
-            ),
+            position: Point::new(bounds.x + MARKER.width as f32 / 2.0, bounds.y + 12.5),
             scale: (bounds.width - MARKER.width as f32, 1.0),
         });
 

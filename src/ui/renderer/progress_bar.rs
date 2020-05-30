@@ -1,6 +1,6 @@
-use coffee::graphics::{Point, Rectangle, Sprite};
-use coffee::ui::{progress_bar};
 use crate::ui::renderer::Renderer;
+use coffee::graphics::{Point, Rectangle, Sprite};
+use coffee::ui::progress_bar;
 
 const LEFT: Rectangle<u16> = Rectangle {
     x: 0,
@@ -50,9 +50,7 @@ impl progress_bar::Renderer for Renderer {
         }
 
         if progress > left_width_f32 + background_width {
-            let area = bound(
-                (progress - left_width_f32 - background_width) / left_width_f32,
-            );
+            let area = bound((progress - left_width_f32 - background_width) / left_width_f32);
             self.sprites.add(right_sprite(bounds, active_class, area));
         }
     }
@@ -79,11 +77,7 @@ fn left_sprite(bounds: Rectangle<f32>, class_index: u16, area: f32) -> Sprite {
     }
 }
 
-fn background_sprite(
-    bounds: Rectangle<f32>,
-    class_index: u16,
-    area: f32,
-) -> Sprite {
+fn background_sprite(bounds: Rectangle<f32>, class_index: u16, area: f32) -> Sprite {
     Sprite {
         source: Rectangle {
             x: BACKGROUND.x,
@@ -106,10 +100,7 @@ fn right_sprite(bounds: Rectangle<f32>, class_index: u16, area: f32) -> Sprite {
             width: (RIGHT.width as f32 * area) as u16,
             height: RIGHT.height,
         },
-        position: Point::new(
-            bounds.x + bounds.width - RIGHT.width as f32,
-            bounds.y,
-        ),
+        position: Point::new(bounds.x + bounds.width - RIGHT.width as f32, bounds.y),
         scale: (1.0, 1.0),
     }
 }

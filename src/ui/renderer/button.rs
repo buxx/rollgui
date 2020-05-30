@@ -1,10 +1,9 @@
-use coffee::graphics::{
-    Color, HorizontalAlignment, Point, Rectangle, Sprite, Text,
-    VerticalAlignment,
-};
-use coffee::ui::core::MouseCursor;
-use coffee::ui::{button};
 use crate::ui::renderer::Renderer;
+use coffee::graphics::{
+    Color, HorizontalAlignment, Point, Rectangle, Sprite, Text, VerticalAlignment,
+};
+use coffee::ui::button;
+use coffee::ui::core::MouseCursor;
 
 const LEFT: Rectangle<u16> = Rectangle {
     x: 0,
@@ -81,10 +80,7 @@ impl button::Renderer for Renderer {
                 y: RIGHT.y + class_index * RIGHT.height,
                 ..RIGHT
             },
-            position: Point::new(
-                bounds.x + bounds.width - RIGHT.width as f32,
-                bounds.y,
-            ),
+            position: Point::new(bounds.x + bounds.width - RIGHT.width as f32, bounds.y),
             scale: (1.0, 1.0),
         });
 

@@ -5,9 +5,9 @@ mod panel;
 mod progress_bar;
 mod radio;
 mod slider;
+mod state_less_button;
 mod text;
 mod text_input;
-mod state_less_button;
 
 use coffee::graphics::{Batch, Color, Font, Frame, Image, Mesh, Shape};
 use coffee::load::{Join, Task};
@@ -128,9 +128,7 @@ impl Default for Configuration {
             sprites: Task::using_gpu(|gpu| {
                 Image::from_image(
                     gpu,
-                    &::image::load_from_memory(include_bytes!(
-                        "../../resources/ui.png"
-                    ))?,
+                    &::image::load_from_memory(include_bytes!("../../resources/ui.png"))?,
                 )
             }),
             font: Font::load_from_bytes(include_bytes!(

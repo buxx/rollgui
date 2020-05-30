@@ -1,6 +1,6 @@
+use crate::ui::renderer::Renderer;
 use coffee::graphics::{Point, Rectangle, Sprite};
 use coffee::ui::widget::panel;
-use crate::ui::renderer::Renderer;
 
 const PANEL_WIDTH: u16 = 28;
 const PANEL_HEIGHT: u16 = 34;
@@ -87,10 +87,7 @@ impl panel::Renderer for Renderer {
 
         self.sprites.add(Sprite {
             source: TOP_RIGHT,
-            position: Point::new(
-                bounds.x + bounds.width - TOP_RIGHT.width as f32,
-                bounds.y,
-            ),
+            position: Point::new(bounds.x + bounds.width - TOP_RIGHT.width as f32, bounds.y),
             ..Sprite::default()
         });
 
@@ -99,8 +96,7 @@ impl panel::Renderer for Renderer {
             position: Point::new(bounds.x, bounds.y + TOP_BORDER.height as f32),
             scale: (
                 bounds.width,
-                bounds.height
-                    - (TOP_BORDER.height + BOTTOM_BORDER.height) as f32,
+                bounds.height - (TOP_BORDER.height + BOTTOM_BORDER.height) as f32,
             ),
         });
 
@@ -121,8 +117,7 @@ impl panel::Renderer for Renderer {
             ),
             scale: (
                 1.0,
-                bounds.height
-                    - (TOP_BORDER.height + BOTTOM_RIGHT.height) as f32,
+                bounds.height - (TOP_BORDER.height + BOTTOM_RIGHT.height) as f32,
             ),
         });
 

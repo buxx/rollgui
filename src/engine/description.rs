@@ -4,12 +4,14 @@ use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
 use crate::server::client::ClientError;
 use crate::server::Server;
+use crate::ui::Column;
+use crate::ui::Element;
 use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
 use coffee::input::keyboard;
 use coffee::ui::widget::state_less_button;
 use coffee::ui::widget::state_less_button::StateLessButton;
 use coffee::ui::widget::text_input::TextInput;
-use coffee::ui::{button, Align, Button, Checkbox, Column, Element, Justify, Radio, Text};
+use coffee::ui::{button, Align, Button, Checkbox, Justify, Radio, Text};
 use coffee::Timer;
 use serde_json::{Map, Number, Value};
 use std::collections::HashMap;
@@ -606,9 +608,9 @@ impl Engine for DescriptionEngine {
 
             for item in items.iter() {
                 if part_is_pure_text(item) {
-                    content = content.push(default_text_style(Text::new(&get_part_pure_text_text(
-                        item,
-                    ))));
+                    content = content.push(default_text_style(Text::new(
+                        &get_part_pure_text_text(item),
+                    )));
                     continue;
                 }
 
@@ -658,9 +660,14 @@ impl Engine for DescriptionEngine {
                                 },
                             ))
                         } else if part_is_link(form_item) {
-                            let label = form_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
+                            let label =
+                                form_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
                             let display_label = if item.text.is_some() && item.label.is_some() {
-                                format!("{}: {}", item.label.as_ref().unwrap().clone(), item.text.as_ref().unwrap().clone())
+                                format!(
+                                    "{}: {}",
+                                    item.label.as_ref().unwrap().clone(),
+                                    item.text.as_ref().unwrap().clone()
+                                )
                             } else {
                                 label.clone()
                             };
@@ -672,8 +679,8 @@ impl Engine for DescriptionEngine {
                                     Message::LinkButtonPressed(id),
                                     Message::LinkButtonReleased(id),
                                 )
-                                    .width(768)
-                                    .class(state_less_button::Class::Primary),
+                                .width(768)
+                                .class(state_less_button::Class::Primary),
                             );
                         } else if part_is_choices(form_item) {
                             let radio_id = *self
@@ -710,7 +717,8 @@ impl Engine for DescriptionEngine {
                                 },
                             ));
 
-                            let mut choices: Vec<String> = form_item.choices.as_ref().unwrap().clone();
+                            let mut choices: Vec<String> =
+                                form_item.choices.as_ref().unwrap().clone();
                             let current_value = self.search_by_str_values.get(&id);
                             if current_value.is_some() {
                                 choices = choices
@@ -736,8 +744,8 @@ impl Engine for DescriptionEngine {
                                         Message::SearchByStrButtonPressed(id, choice_id),
                                         Message::SearchByStrButtonReleased(id, choice_id),
                                     )
-                                        .width(768)
-                                        .class(state_less_button::Class::Positive),
+                                    .width(768)
+                                    .class(state_less_button::Class::Positive),
                                 );
                             }
                         }
@@ -749,7 +757,11 @@ impl Engine for DescriptionEngine {
                         .unwrap_or(item.text.as_ref().unwrap_or(&"Continuer".to_string()))
                         .clone();
                     let display_label = if item.text.is_some() && item.label.is_some() {
-                        format!("{}: {}", item.label.as_ref().unwrap().clone(), item.text.as_ref().unwrap().clone())
+                        format!(
+                            "{}: {}",
+                            item.label.as_ref().unwrap().clone(),
+                            item.text.as_ref().unwrap().clone()
+                        )
                     } else {
                         label.clone()
                     };
@@ -775,8 +787,8 @@ impl Engine for DescriptionEngine {
                                         Message::GroupLinkButtonPressed(group_button_id),
                                         Message::GroupLinkButtonReleased(group_button_id),
                                     )
-                                        .width(768)
-                                        .class(state_less_button::Class::Primary),
+                                    .width(768)
+                                    .class(state_less_button::Class::Primary),
                                 );
                                 replaced_by_group_names.push(link_group_name.clone());
                             }
@@ -793,21 +805,20 @@ impl Engine for DescriptionEngine {
                                 Message::LinkButtonPressed(id),
                                 Message::LinkButtonReleased(id),
                             )
-                                .width(768)
-                                .class(state_less_button::Class::Primary),
+                            .width(768)
+                            .class(state_less_button::Class::Primary),
                         );
                     }
                 } else if part_is_go_back_to_zone(item) {
-                    back_to_zone_button = Some(
-                        item.name
-                            .as_ref()
-                            .unwrap_or(
-                                item.text
-                                    .as_ref()
-                                    .unwrap_or(&"Retourner sur l'écran de déplacements".to_string()),
-                            )
-                            .clone(),
-                    );
+                    back_to_zone_button =
+                        Some(
+                            item.name
+                                .as_ref()
+                                .unwrap_or(item.text.as_ref().unwrap_or(
+                                    &"Retourner sur l'écran de déplacements".to_string(),
+                                ))
+                                .clone(),
+                        );
                 }
             }
 

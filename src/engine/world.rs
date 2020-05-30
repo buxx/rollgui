@@ -5,12 +5,14 @@ use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
 use crate::server::Server;
 use crate::sheet::TileSheet;
+use crate::ui::Column;
+use crate::ui::Element;
 use crate::util::Blinker;
 use coffee::graphics::{
     Batch, Color, Frame, HorizontalAlignment, Sprite, VerticalAlignment, Window,
 };
 use coffee::input::keyboard;
-use coffee::ui::{Column, Element, Text};
+use coffee::ui::Text;
 use coffee::{graphics, Timer};
 use std::collections::HashMap;
 
