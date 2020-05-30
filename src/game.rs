@@ -19,11 +19,12 @@ use crate::ui::{Column, Element};
 use crate::{config, event, server, util};
 use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
 use coffee::load::{loading_screen, Task};
-use coffee::ui::{Align, Justify, Text, UserInterface};
+use coffee::ui::{Align, Justify, UserInterface};
 use coffee::{graphics, Game, Timer};
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
 use std::error::Error;
+use crate::ui::widget::text::Text;
 
 // TODO: dynamic from server (and tilesheet)
 pub const TILE_WIDTH: i16 = 16;

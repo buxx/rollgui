@@ -229,10 +229,7 @@ pub trait Renderer {
     ) -> MouseCursor;
 }
 
-impl<'a> From<StateLessButton> for Element<'a>
-where
-    dyn Renderer: self::Renderer,
-{
+impl<'a> From<StateLessButton> for Element<'a> {
     fn from(button: StateLessButton) -> Element<'a> {
         Element::new(button)
     }

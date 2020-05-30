@@ -5,8 +5,9 @@ use crate::ui::Column;
 use crate::ui::Element;
 use coffee::graphics::{Color, Frame, Window};
 use coffee::input::keyboard;
-use coffee::ui::{button, Align, Button, Justify, Text};
+use coffee::ui::{button, Align, Button, Justify};
 use coffee::Timer;
+use crate::ui::widget::text::Text;
 
 pub struct ExitEngine {
     confirm_button: button::State,

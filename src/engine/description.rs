@@ -8,14 +8,15 @@ use crate::ui::Column;
 use crate::ui::Element;
 use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
 use coffee::input::keyboard;
-use coffee::ui::widget::state_less_button;
-use coffee::ui::widget::state_less_button::StateLessButton;
-use coffee::ui::widget::text_input::TextInput;
-use coffee::ui::{button, Align, Button, Checkbox, Justify, Radio, Text};
+use coffee::ui::{button, Align, Button, Checkbox, Justify, Radio};
 use coffee::Timer;
 use serde_json::{Map, Number, Value};
 use std::collections::HashMap;
 use std::time::Instant;
+use crate::ui::widget::text::Text;
+use crate::ui::widget::text_input::TextInput;
+use crate::ui::widget::state_less_button::StateLessButton;
+use crate::ui::widget::state_less_button;
 
 const BLINK_MS: u128 = 250;
 

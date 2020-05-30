@@ -76,7 +76,7 @@ where
 {
     fn node(&self, renderer: &renderer::Renderer) -> Node {
         // FIXME BS NOW: Whien it is called ?!
-        Row::<(), renderer::Renderer>::new()
+        Row::new()
             .spacing(15)
             .align_items(Align::Center)
             .push(Text::new(format!("{}: {}", self.label, self.value).as_str()))
@@ -154,7 +154,6 @@ pub trait Renderer {
 impl<'a, I: 'a> From<TextInput<I>> for Element<'a>
 where
     I: Copy,
-    dyn Renderer: self::Renderer + text::Renderer,
 {
     fn from(text_input: TextInput<I>) -> Element<'a> {
         Element::new(text_input)

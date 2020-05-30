@@ -12,9 +12,9 @@ use coffee::graphics::{
     Batch, Color, Frame, HorizontalAlignment, Sprite, VerticalAlignment, Window,
 };
 use coffee::input::keyboard;
-use coffee::ui::Text;
 use coffee::{graphics, Timer};
 use std::collections::HashMap;
+use crate::ui::widget::text::Text;
 
 pub struct WorldEngine {
     server: Server,

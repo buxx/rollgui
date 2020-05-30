@@ -19,12 +19,13 @@ use crate::ui::Row;
 use crate::{event, util};
 use coffee::graphics::{Batch, Color, Frame, Sprite, Window};
 use coffee::input::keyboard;
-use coffee::ui::widget::state_less_button;
-use coffee::ui::widget::state_less_button::StateLessButton;
-use coffee::ui::{button, Align, Button, Text};
+use coffee::ui::{button, Align, Button};
 use coffee::{graphics, Timer};
 use std::collections::HashMap;
 use std::time::Instant;
+use crate::ui::widget::text::Text;
+use crate::ui::widget::state_less_button::StateLessButton;
+use crate::ui::widget::state_less_button;
 
 const START_SCREEN_X: i16 = 400;
 const START_SCREEN_Y: i16 = 0;
