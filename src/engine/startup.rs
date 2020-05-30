@@ -56,7 +56,7 @@ impl Engine for StartupEngine {
 
         None
     }
-    fn layout(&mut self, window: &Window) -> Element<Message> {
+    fn layout(&mut self, window: &Window) -> Element {
         let StartupEngine {
             local_server_button,
             s2_bux_fr_server_button,

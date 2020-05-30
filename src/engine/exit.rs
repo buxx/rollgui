@@ -52,7 +52,7 @@ impl Engine for ExitEngine {
 
         None
     }
-    fn layout(&mut self, window: &Window) -> Element<Message> {
+    fn layout(&mut self, window: &Window) -> Element {
         let ExitEngine {
             confirm_button,
             cancel_button,

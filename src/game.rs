@@ -386,7 +386,7 @@ impl UserInterface for MyGame {
         }
     }
 
-    fn layout(&mut self, window: &Window) -> Element<Message> {
+    fn layout(&mut self, window: &Window) -> Element {
         if self.pending_action.is_some() {
             self.loading_displayed = true;
             Column::new()

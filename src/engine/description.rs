@@ -563,7 +563,7 @@ impl Engine for DescriptionEngine {
         None
     }
 
-    fn layout(&mut self, window: &Window) -> Element<Message> {
+    fn layout(&mut self, window: &Window) -> Element {
         if self.pending_request.is_some() {
             self.loading_displayed = true;
             Column::new()

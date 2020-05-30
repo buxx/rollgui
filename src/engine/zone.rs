@@ -680,7 +680,7 @@ impl Engine for ZoneEngine {
         None
     }
 
-    fn layout(&mut self, window: &Window) -> Element<Message> {
+    fn layout(&mut self, window: &Window) -> Element {
         let event_label = if self.player.unread_event && self.menu_blinker.visible(500, 'E') {
             "*Événements*"
         } else {

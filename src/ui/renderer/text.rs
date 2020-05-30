@@ -1,7 +1,7 @@
 use crate::ui::renderer::Renderer;
 use coffee::graphics::{self, Color, HorizontalAlignment, Point, Rectangle, VerticalAlignment};
 use coffee::ui::core::{Node, Number, Size, Style};
-use coffee::ui::widget::text;
+use crate::ui::widget::text;
 
 use std::cell::RefCell;
 use std::f32;

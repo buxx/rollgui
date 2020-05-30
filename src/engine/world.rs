@@ -173,7 +173,7 @@ impl Engine for WorldEngine {
         None
     }
 
-    fn layout(&mut self, window: &Window) -> Element<Message> {
+    fn layout(&mut self, window: &Window) -> Element {
         Column::new()
             .width(window.width() as u32)
             .height(window.height() as u32)

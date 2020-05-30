@@ -3,7 +3,7 @@ use coffee::graphics::{
     Color, HorizontalAlignment, Point, Rectangle, Sprite, Text, VerticalAlignment,
 };
 use coffee::ui::core::MouseCursor;
-use coffee::ui::widget::state_less_button;
+use crate::ui::widget::state_less_button;
 
 const LEFT: Rectangle<u16> = Rectangle {
     x: 0,
