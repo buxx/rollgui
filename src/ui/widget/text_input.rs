@@ -71,7 +71,7 @@ where
     I: Copy,
 {
     fn node(&self, renderer: &renderer::Renderer) -> Node {
-        // FIXME BS NOW: Whien it is called ?!
+        // FIXME BS NOW: When it is called ?!
         Row::new()
             .spacing(15)
             .align_items(Align::Center)

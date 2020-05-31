@@ -63,6 +63,7 @@ pub struct DescriptionEngine {
     loading_displayed: bool,
     force_back_startup: bool,
     start_items_from: i32,
+    submitable: bool,
 }
 
 impl DescriptionEngine {
@@ -77,6 +78,7 @@ impl DescriptionEngine {
         let mut text_input_names = HashMap::new();
         let mut text_input_types = HashMap::new();
         let mut text_input_values = HashMap::new();
+        let mut text_input_selected: i32 = -1;
         let mut link_group_name_ids = HashMap::new();
         let mut checkbox_values = HashMap::new();
         let mut checkbox_ids = HashMap::new();
@@ -99,9 +101,11 @@ impl DescriptionEngine {
         let mut search_by_str_counter: i32 = 0;
         let mut search_by_str_button_counter: i32 = 0;
         let mut search_by_str_selected = -1;
+        let mut submitable = false;
 
         for item in description.items.iter() {
             if part_is_form(item) {
+                submitable = true;
                 for form_item in item.items.iter() {
                     if part_is_input(form_item) {
                         text_input_ids
@@ -120,6 +124,11 @@ impl DescriptionEngine {
                             text_input_counter,
                             form_item.type_.as_ref().unwrap().clone(),
                         );
+
+                        if text_input_selected == -1 && search_by_str_selected == -1 {
+                            text_input_selected = text_input_counter;
+                        }
+
                         text_input_counter += 1;
                     } else if part_is_checkbox(form_item) {
                         checkbox_ids
@@ -171,7 +180,7 @@ impl DescriptionEngine {
                             search_by_str_button_counter += 1;
                         }
 
-                        if search_by_str_selected == -1 {
+                        if search_by_str_selected == -1 && text_input_selected == -1 {
                             search_by_str_selected = search_by_str_counter;
                         }
 
@@ -205,7 +214,7 @@ impl DescriptionEngine {
             description,
             server,
             error_message: None,
-            text_input_selected: -1,
+            text_input_selected,
             text_input_ids,
             text_input_types,
             text_input_names,
@@ -249,6 +258,7 @@ impl DescriptionEngine {
             loading_displayed: false,
             force_back_startup,
             start_items_from: 0,
+            submitable,
         }
     }
 
@@ -359,6 +369,21 @@ impl DescriptionEngine {
             }
         }
         None
+    }
+
+    fn submit_form(&mut self) {
+        let form_data = self.get_form_data();
+        let force_in_query = self.form_data_in_query();
+        let form_action = self.get_form_action().unwrap();
+        self.error_message = None;
+
+        let (final_form_query, final_form_data) = if force_in_query {
+            (form_data.clone(), Map::new())
+        } else {
+            (Map::new(), form_data.clone())
+        };
+
+        self.pending_request = Some((form_action, final_form_data, final_form_query));
     }
 }
 
@@ -486,6 +511,17 @@ impl Engine for DescriptionEngine {
                 }
                 return Some(MainMessage::DescriptionToZone);
             }
+            Some(keyboard::KeyCode::Return) => {
+                input.key_code = None;
+                if self.submitable {
+                    self.submit_form();
+                }
+            }
+            Some(keyboard::KeyCode::Tab) => {
+                if self.text_input_names.contains_key(&(self.text_input_selected + 1)) {
+                    self.text_input_selected += 1;
+                }
+            }
             _ => {}
         }
 
@@ -502,6 +538,7 @@ impl Engine for DescriptionEngine {
             self.start_items_from - input.mouse_wheel.y.round() as i32,
         );
         input.mouse_wheel = Point::new(0.0, 0.0);
+
         None
     }
 
@@ -529,18 +566,7 @@ impl Engine for DescriptionEngine {
                 );
             }
             Message::SubmitButtonPressed => {
-                let form_data = self.get_form_data();
-                let force_in_query = self.form_data_in_query();
-                let form_action = self.get_form_action().unwrap();
-                self.error_message = None;
-
-                let (final_form_query, final_form_data) = if force_in_query {
-                    (form_data.clone(), Map::new())
-                } else {
-                    (Map::new(), form_data.clone())
-                };
-
-                self.pending_request = Some((form_action, final_form_data, final_form_query));
+                self.submit_form();
             }
             Message::LinkButtonPressed(id) => {
                 self.link_button_pressed = id;
@@ -554,8 +580,8 @@ impl Engine for DescriptionEngine {
                     back_url: self.future_back_url.clone(),
                 });
             }
-            Message::GroupLinkButtonReleased(url) => {
-                self.current_link_group_name = Some(url.clone());
+            Message::GroupLinkButtonReleased(label) => {
+                self.current_link_group_name = Some(label.clone());
             }
             Message::GoBackZoneButtonPressed => return Some(MainMessage::DescriptionToZone),
             Message::GoBackFromGroupButtonPressed => {
@@ -808,7 +834,7 @@ impl Engine for DescriptionEngine {
                                         &link_group_name,
                                         Message::GroupLinkButtonPressed(group_button_id),
                                         Message::GroupLinkButtonReleased(
-                                            item.form_action.as_ref().unwrap().clone(),
+                                            link_group_name.clone(),
                                         ),
                                     )
                                     .width(768)
@@ -875,11 +901,12 @@ impl Engine for DescriptionEngine {
                 );
             }
 
+            let submit_info = if must_add_submit {", Entrer: Valider"} else {""};
             let info = Column::new()
                 .max_width(window.width() as u32)
                 .height(20)
                 .push(
-                    Text::new("Echap: retour, ↑/↓/roulette: défilement")
+                    Text::new(&format!("Echap: retour, ↑/↓/roulette: défilement{}", submit_info))
                         .size(20)
                         .color(Color::WHITE)
                         .horizontal_alignment(HorizontalAlignment::Right)
