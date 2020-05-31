@@ -5,7 +5,7 @@ authors = ["Bastien Sevajol <bastien.sevajol@algoo.fr>"]
 edition = "2018"
 
 [dependencies]
-coffee = { git = "https://github.com/buxx/coffee.git", rev = "a2b1a0966c738757493ac5f412e67f9745561e79", features = ["opengl"] }
+coffee = { version = "0.4.1", features = ["opengl"] }
 rand = "0.6"
 pickledb = "0.4.0"
 websocket = "0.24.0"
