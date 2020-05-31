@@ -143,7 +143,7 @@ impl<'a> Widget<message::Message, renderer::Renderer> for Button<'a> {
                 button: mouse::Button::Left,
                 state,
             }) => {
-                if let Some(on_press) = self.on_press {
+                if let Some(on_press) = self.on_press.clone() {
                     let bounds = layout.bounds();
 
                     match state {

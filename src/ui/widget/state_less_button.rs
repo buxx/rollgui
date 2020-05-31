@@ -141,12 +141,12 @@ impl Widget<message::Message, renderer::Renderer> for StateLessButton {
                 match state {
                     ButtonState::Pressed => {
                         if on_it {
-                            messages.push(self.on_press);
+                            messages.push(self.on_press.clone());
                         }
                     }
                     ButtonState::Released => {
                         if on_it && self.pressed {
-                            messages.push(self.on_release);
+                            messages.push(self.on_release.clone());
                         }
                     }
                 }

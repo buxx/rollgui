@@ -128,7 +128,7 @@ impl Widget<message::Message, renderer::Renderer> for Radio {
                 state: ButtonState::Pressed,
             }) => {
                 if layout.bounds().contains(cursor_position) {
-                    messages.push(self.on_click);
+                    messages.push(self.on_click.clone());
                 }
             }
             _ => {}
