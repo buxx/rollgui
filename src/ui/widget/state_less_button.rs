@@ -7,14 +7,12 @@
 
 use coffee::graphics::{Point, Rectangle};
 use coffee::input::{mouse, ButtonState};
-use coffee::ui::core::{
-    Align, Event, Hasher, Layout, MouseCursor, Node, Style, Widget,
-};
+use coffee::ui::core::{Align, Event, Hasher, Layout, MouseCursor, Node, Style, Widget};
 
-use std::hash::Hash;
-use crate::ui::Element;
 use crate::message;
 use crate::ui::renderer;
+use crate::ui::Element;
+use std::hash::Hash;
 
 /// A generic widget that produces a message when clicked.
 ///
@@ -69,7 +67,12 @@ impl StateLessButton {
     /// [`Button`]: struct.Button.html
     /// [`Class`]: enum.Class.html
     /// [`Class::Primary`]: enum.Class.html#variant.Primary
-    pub fn new(pressed: bool, label: &str, on_press: message::Message, on_release: message::Message) -> Self {
+    pub fn new(
+        pressed: bool,
+        label: &str,
+        on_press: message::Message,
+        on_release: message::Message,
+    ) -> Self {
         StateLessButton {
             pressed,
             label: String::from(label),
@@ -150,7 +153,6 @@ impl Widget<message::Message, renderer::Renderer> for StateLessButton {
                         }
                     }
                 }
-
             }
             _ => {}
         }

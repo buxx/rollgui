@@ -1,7 +1,7 @@
 use crate::ui::renderer::Renderer;
+use crate::ui::widget::radio;
 use coffee::graphics::{Point, Rectangle, Sprite};
 use coffee::ui::core::MouseCursor;
-use crate::ui::widget::radio;
 
 const SPRITE: Rectangle<u16> = Rectangle {
     x: 98,

@@ -1,19 +1,15 @@
 //! Create text input.
-use coffee::graphics::{
-    Color, HorizontalAlignment, Point, Rectangle, VerticalAlignment,
-};
-use coffee::input::{mouse, ButtonState};
-use coffee::ui::core::{
-    Align, Event, Hasher, Layout, MouseCursor, Node, Widget,
-};
-use crate::ui::Element;
-use crate::ui::renderer;
-use crate::ui::Row;
 use crate::message;
+use crate::ui::renderer;
+use crate::ui::Element;
+use crate::ui::Row;
+use coffee::graphics::{Color, HorizontalAlignment, Point, Rectangle, VerticalAlignment};
+use coffee::input::{mouse, ButtonState};
+use coffee::ui::core::{Align, Event, Hasher, Layout, MouseCursor, Node, Widget};
 
-use std::hash::Hash;
-use crate::ui::widget::text::Text;
 use crate::ui::widget::text;
+use crate::ui::widget::text::Text;
+use std::hash::Hash;
 
 /// A text input.
 pub struct TextInput<Id> {
@@ -79,7 +75,9 @@ where
         Row::new()
             .spacing(15)
             .align_items(Align::Center)
-            .push(Text::new(format!("{}: {}", self.label, self.value).as_str()))
+            .push(Text::new(
+                format!("{}: {}", self.label, self.value).as_str(),
+            ))
             .node(renderer)
     }
 
@@ -110,7 +108,7 @@ where
         cursor_position: Point,
     ) -> MouseCursor {
         let hover = layout.bounds().contains(cursor_position);
-        let color = if hover {self.hover_color} else {self.color};
+        let color = if hover { self.hover_color } else { self.color };
         let mut text = format!("{}: {}", self.label, self.value);
         if let Some(blink_char) = self.blink_char {
             text.push(blink_char);
@@ -137,7 +135,6 @@ where
         self.label.hash(state);
     }
 }
-
 
 /// todo doc
 pub trait Renderer {

@@ -8,13 +8,11 @@
 
 use coffee::graphics::{Point, Rectangle};
 use coffee::input::{mouse, ButtonState};
-use coffee::ui::core::{
-    Align, Event, Hasher, Layout, MouseCursor, Node, Style, Widget,
-};
+use coffee::ui::core::{Align, Event, Hasher, Layout, MouseCursor, Node, Style, Widget};
 
-use std::hash::Hash;
 use crate::message;
 use crate::ui::{renderer, Element};
+use std::hash::Hash;
 
 /// A generic widget that produces a message when clicked.
 ///
@@ -148,12 +146,11 @@ impl<'a> Widget<message::Message, renderer::Renderer> for Button<'a> {
 
                     match state {
                         ButtonState::Pressed => {
-                            self.state.is_pressed =
-                                bounds.contains(cursor_position);
+                            self.state.is_pressed = bounds.contains(cursor_position);
                         }
                         ButtonState::Released => {
-                            let is_clicked = self.state.is_pressed
-                                && bounds.contains(cursor_position);
+                            let is_clicked =
+                                self.state.is_pressed && bounds.contains(cursor_position);
 
                             self.state.is_pressed = false;
 

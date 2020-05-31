@@ -1,7 +1,7 @@
 use crate::ui::renderer::Renderer;
+use crate::ui::widget::text_input;
 use coffee::graphics::{Point, Rectangle};
 use coffee::ui::core::MouseCursor;
-use crate::ui::widget::text_input;
 
 impl text_input::Renderer for Renderer {
     fn draw(

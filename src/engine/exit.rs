@@ -1,15 +1,15 @@
 use crate::engine::Engine;
 use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
+use crate::ui::widget::button;
+use crate::ui::widget::button::Button;
+use crate::ui::widget::text::Text;
 use crate::ui::Column;
 use crate::ui::Element;
 use coffee::graphics::{Color, Frame, Window};
 use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
 use coffee::Timer;
-use crate::ui::widget::text::Text;
-use crate::ui::widget::button::Button;
-use crate::ui::widget::button;
 
 pub struct ExitEngine {
     confirm_button: button::State,

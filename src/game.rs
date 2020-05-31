@@ -15,6 +15,7 @@ use crate::message::{MainMessage, Message};
 use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles as ZoneTiles;
 use crate::ui::renderer::Renderer;
+use crate::ui::widget::text::Text;
 use crate::ui::{Column, Element};
 use crate::{config, event, server, util};
 use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
@@ -24,7 +25,6 @@ use coffee::{graphics, Game, Timer};
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
 use std::error::Error;
-use crate::ui::widget::text::Text;
 
 // TODO: dynamic from server (and tilesheet)
 pub const TILE_WIDTH: i16 = 16;

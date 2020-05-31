@@ -1,7 +1,7 @@
 use crate::ui::renderer::Renderer;
+use crate::ui::widget::text;
 use coffee::graphics::{self, Color, HorizontalAlignment, Point, Rectangle, VerticalAlignment};
 use coffee::ui::core::{Node, Number, Size, Style};
-use crate::ui::widget::text;
 use coffee::ui::widget::text as coffee_text;
 
 use std::cell::RefCell;
@@ -79,7 +79,6 @@ impl text::Renderer for Renderer {
         });
     }
 }
-
 
 impl coffee_text::Renderer for Renderer {
     fn node(&self, style: Style, content: &str, size: f32) -> Node {

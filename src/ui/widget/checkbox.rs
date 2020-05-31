@@ -1,17 +1,13 @@
 //! Show toggle controls using checkboxes.
 use std::hash::Hash;
 
-use coffee::graphics::{
-    Color, HorizontalAlignment, Point, Rectangle, VerticalAlignment,
-};
-use coffee::input::{mouse, ButtonState};
-use coffee::ui::core::{
-    Align, Event, Hasher, Layout, MouseCursor, Node, Widget,
-};
 use crate::message;
 use crate::ui::widget::text;
-use crate::ui::{renderer, Row, Column, Element};
 use crate::ui::widget::text::Text;
+use crate::ui::{renderer, Column, Element, Row};
+use coffee::graphics::{Color, HorizontalAlignment, Point, Rectangle, VerticalAlignment};
+use coffee::input::{mouse, ButtonState};
+use coffee::ui::core::{Align, Event, Hasher, Layout, MouseCursor, Node, Widget};
 
 /// A box that can be checked.
 ///

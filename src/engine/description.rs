@@ -4,23 +4,23 @@ use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
 use crate::server::client::ClientError;
 use crate::server::Server;
+use crate::ui::widget::button::Button;
+use crate::ui::widget::checkbox::Checkbox;
+use crate::ui::widget::radio::Radio;
+use crate::ui::widget::state_less_button::StateLessButton;
+use crate::ui::widget::text::Text;
+use crate::ui::widget::text_input::TextInput;
+use crate::ui::widget::{button, state_less_button};
 use crate::ui::Column;
 use crate::ui::Element;
-use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window, Point};
-use coffee::input::{keyboard};
+use coffee::graphics::{Color, Frame, HorizontalAlignment, Point, VerticalAlignment, Window};
+use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
 use coffee::Timer;
 use serde_json::{Map, Number, Value};
+use std::cmp::max;
 use std::collections::HashMap;
 use std::time::Instant;
-use crate::ui::widget::text::Text;
-use crate::ui::widget::text_input::TextInput;
-use crate::ui::widget::state_less_button::StateLessButton;
-use crate::ui::widget::{state_less_button, button};
-use crate::ui::widget::checkbox::Checkbox;
-use crate::ui::widget::radio::Radio;
-use crate::ui::widget::button::Button;
-use std::cmp::max;
 
 const BLINK_MS: u128 = 250;
 
@@ -497,7 +497,10 @@ impl Engine for DescriptionEngine {
             self.start_items_from += 1;
         }
 
-        self.start_items_from = max(0, self.start_items_from - input.mouse_wheel.y.round() as i32);
+        self.start_items_from = max(
+            0,
+            self.start_items_from - input.mouse_wheel.y.round() as i32,
+        );
         input.mouse_wheel = Point::new(0.0, 0.0);
         None
     }
@@ -552,8 +555,7 @@ impl Engine for DescriptionEngine {
                 });
             }
             Message::GroupLinkButtonReleased(url) => {
-                self.current_link_group_name =
-                    Some(url.clone());
+                self.current_link_group_name = Some(url.clone());
             }
             Message::GoBackZoneButtonPressed => return Some(MainMessage::DescriptionToZone),
             Message::GoBackFromGroupButtonPressed => {
@@ -695,7 +697,9 @@ impl Engine for DescriptionEngine {
                                     self.link_button_pressed == id,
                                     &display_label,
                                     Message::LinkButtonPressed(id),
-                                    Message::LinkButtonReleased(form_item.form_action.as_ref().unwrap().clone()),
+                                    Message::LinkButtonReleased(
+                                        form_item.form_action.as_ref().unwrap().clone(),
+                                    ),
                                 )
                                 .width(768)
                                 .class(state_less_button::Class::Primary),
@@ -803,7 +807,9 @@ impl Engine for DescriptionEngine {
                                         self.link_group_button_pressed == group_button_id,
                                         &link_group_name,
                                         Message::GroupLinkButtonPressed(group_button_id),
-                                        Message::GroupLinkButtonReleased(item.form_action.as_ref().unwrap().clone()),
+                                        Message::GroupLinkButtonReleased(
+                                            item.form_action.as_ref().unwrap().clone(),
+                                        ),
                                     )
                                     .width(768)
                                     .class(state_less_button::Class::Primary),
@@ -821,7 +827,9 @@ impl Engine for DescriptionEngine {
                                 self.link_button_pressed == id,
                                 &display_label,
                                 Message::LinkButtonPressed(id),
-                                Message::LinkButtonReleased(item.form_action.as_ref().unwrap().clone()),
+                                Message::LinkButtonReleased(
+                                    item.form_action.as_ref().unwrap().clone(),
+                                ),
                             )
                             .width(768)
                             .class(state_less_button::Class::Primary),

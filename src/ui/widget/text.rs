@@ -1,15 +1,11 @@
 //! Write some text for your users to read.
-use coffee::graphics::{
-    Color, HorizontalAlignment, Point, Rectangle, VerticalAlignment,
-};
-use coffee::ui::core::{
-    Hasher, Layout, MouseCursor, Node, Style, Widget,
-};
+use coffee::graphics::{Color, HorizontalAlignment, Point, Rectangle, VerticalAlignment};
+use coffee::ui::core::{Hasher, Layout, MouseCursor, Node, Style, Widget};
 
-use std::hash::Hash;
-use crate::ui::Element;
-use crate::ui::renderer;
 use crate::message;
+use crate::ui::renderer;
+use crate::ui::Element;
+use std::hash::Hash;
 
 /// A fragment of text.
 ///
@@ -94,10 +90,7 @@ impl Text {
     ///
     /// [`Text`]: struct.Text.html
     /// [`HorizontalAlignment`]: ../../../graphics/enum.HorizontalAlignment.html
-    pub fn horizontal_alignment(
-        mut self,
-        alignment: HorizontalAlignment,
-    ) -> Self {
+    pub fn horizontal_alignment(mut self, alignment: HorizontalAlignment) -> Self {
         self.horizontal_alignment = alignment;
         self
     }

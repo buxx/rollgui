@@ -1,17 +1,13 @@
 //! Create choices using radio buttons.
-use coffee::graphics::{
-    Color, HorizontalAlignment, Point, Rectangle, VerticalAlignment,
-};
+use coffee::graphics::{Color, HorizontalAlignment, Point, Rectangle, VerticalAlignment};
 use coffee::input::{mouse, ButtonState};
-use coffee::ui::core::{
-    Align, Event, Hasher, Layout, MouseCursor, Node, Widget,
-};
+use coffee::ui::core::{Align, Event, Hasher, Layout, MouseCursor, Node, Widget};
 
-use std::hash::Hash;
 use crate::message;
-use crate::ui::{renderer, Row, Column, Element};
-use crate::ui::widget::text::Text;
 use crate::ui::widget::text;
+use crate::ui::widget::text::Text;
+use crate::ui::{renderer, Column, Element, Row};
+use std::hash::Hash;
 
 /// A circular button representing a choice.
 ///

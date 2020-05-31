@@ -1,5 +1,5 @@
-use coffee::ui::{core as coffee_core, widget as coffee_widget};
 use crate::message;
+use coffee::ui::{core as coffee_core, widget as coffee_widget};
 
 pub mod renderer;
 pub mod widget;

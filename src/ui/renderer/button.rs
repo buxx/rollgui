@@ -1,7 +1,9 @@
 use crate::ui::renderer::Renderer;
-use coffee::graphics::{Color, HorizontalAlignment, Point, Rectangle, Sprite, VerticalAlignment, Text};
-use coffee::ui::core::MouseCursor;
 use crate::ui::widget::button;
+use coffee::graphics::{
+    Color, HorizontalAlignment, Point, Rectangle, Sprite, Text, VerticalAlignment,
+};
+use coffee::ui::core::MouseCursor;
 
 const LEFT: Rectangle<u16> = Rectangle {
     x: 0,
