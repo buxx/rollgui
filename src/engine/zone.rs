@@ -69,7 +69,6 @@ pub struct ZoneEngine {
     builds_positions: Vec<(i16, i16)>,
     link_button_ids: HashMap<String, i32>,
     link_button_pressed: i32,
-    link_button_urls: HashMap<i32, String>,
 }
 
 impl ZoneEngine {
@@ -132,7 +131,6 @@ impl ZoneEngine {
             builds_positions,
             link_button_ids: HashMap::new(),
             link_button_pressed: -1,
-            link_button_urls: HashMap::new(),
         };
         zone_engine.update_link_button_data();
         zone_engine
@@ -141,25 +139,20 @@ impl ZoneEngine {
     fn update_link_button_data(&mut self) {
         let mut link_button_counter: i32 = 0;
         self.link_button_ids = HashMap::new();
-        self.link_button_urls = HashMap::new();
 
         for (text, url) in self.resume_text.iter() {
-            if let Some(url_) = url {
+            if let Some(_) = url {
                 self.link_button_ids
                     .insert(text.clone(), link_button_counter);
-                self.link_button_urls
-                    .insert(link_button_counter, url_.clone());
 
                 link_button_counter += 1;
             }
         }
 
         for (text, url) in self.around_text.iter() {
-            if let Some(url_) = url {
+            if let Some(_) = url {
                 self.link_button_ids
                     .insert(text.clone(), link_button_counter);
-                self.link_button_urls
-                    .insert(link_button_counter, url_.clone());
 
                 link_button_counter += 1;
             }
@@ -672,9 +665,9 @@ impl Engine for ZoneEngine {
             Message::LinkButtonPressed(id) => {
                 self.link_button_pressed = id;
             }
-            Message::LinkButtonReleased(id) => {
+            Message::LinkButtonReleased(url) => {
                 return Some(MainMessage::ToDescriptionWithUrl {
-                    url: self.link_button_urls.get(&id).unwrap().clone(),
+                    url: url.clone(),
                     back_url: None,
                 });
             }
@@ -804,14 +797,14 @@ impl Engine for ZoneEngine {
             .width((START_SCREEN_X / 2) as u32)
             .height(window.height() as u32);
         for (text, url) in self.resume_text.iter() {
-            if url.is_some() {
+            if let Some(url) = url {
                 let id = self.link_button_ids.get(text).unwrap().clone();
                 right_menu = right_menu.push(
                     StateLessButton::new(
                         self.link_button_pressed == id,
                         &text,
                         Message::LinkButtonPressed(id),
-                        Message::LinkButtonReleased(id),
+                        Message::LinkButtonReleased(url.clone()),
                     )
                     .width(175)
                     .class(state_less_button::Class::Positive),
@@ -821,14 +814,14 @@ impl Engine for ZoneEngine {
             }
         }
         for (text, url) in self.around_text.iter() {
-            if url.is_some() {
+            if let Some(url) = url {
                 let id = self.link_button_ids.get(text).unwrap().clone();
                 right_menu = right_menu.push(
                     StateLessButton::new(
                         self.link_button_pressed == id,
                         &text,
                         Message::LinkButtonPressed(id),
-                        Message::LinkButtonReleased(id),
+                        Message::LinkButtonReleased(url.clone()),
                     )
                     .width(175)
                     .class(state_less_button::Class::Positive),

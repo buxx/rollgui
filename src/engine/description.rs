@@ -34,13 +34,11 @@ pub struct DescriptionEngine {
     text_input_types: HashMap<i32, String>,
     link_button_ids: HashMap<String, i32>,
     link_button_pressed: i32,
-    link_button_urls: HashMap<i32, String>,
     blink_time: Instant,
     submit_button: button::State,
     go_back_zone_button: button::State,
     current_link_group_name: Option<String>,
     link_group_name_ids: HashMap<String, i32>,
-    link_group_name_names: HashMap<i32, String>,
     link_group_button_pressed: i32,
     back_from_group_by_button: button::State,
     checkbox_ids: HashMap<String, i32>,
@@ -67,13 +65,11 @@ pub struct DescriptionEngine {
 impl DescriptionEngine {
     pub fn new(description: Description, server: Server, back_url: Option<String>) -> Self {
         let mut link_button_ids = HashMap::new();
-        let mut link_button_urls = HashMap::new();
         let mut text_input_ids = HashMap::new();
         let mut text_input_names = HashMap::new();
         let mut text_input_types = HashMap::new();
         let mut text_input_values = HashMap::new();
         let mut link_group_name_ids = HashMap::new();
-        let mut link_group_name_names = HashMap::new();
         let mut checkbox_values = HashMap::new();
         let mut checkbox_ids = HashMap::new();
         let mut checkbox_names = HashMap::new();
@@ -133,10 +129,6 @@ impl DescriptionEngine {
                             .unwrap_or(form_item.text.as_ref().unwrap_or(&" ".to_string()))
                             .clone();
                         link_button_ids.insert(label, link_button_counter);
-                        link_button_urls.insert(
-                            link_button_counter,
-                            form_item.form_action.as_ref().unwrap().clone(),
-                        );
                         link_button_counter += 1;
                     } else if part_is_choices(form_item) {
                         choice_ids.insert(form_item.name.as_ref().unwrap().clone(), choice_counter);
@@ -186,15 +178,10 @@ impl DescriptionEngine {
                         .clone(),
                     link_button_counter,
                 );
-                link_button_urls.insert(
-                    link_button_counter,
-                    item.form_action.as_ref().unwrap().clone(),
-                );
 
                 // Assume link group names are not in forms
                 if let Some(link_group_name) = item.link_group_name.as_ref() {
                     link_group_name_ids.insert(link_group_name.clone(), link_button_counter);
-                    link_group_name_names.insert(link_button_counter, link_group_name.clone());
                 }
                 link_button_counter += 1;
             }
@@ -217,13 +204,11 @@ impl DescriptionEngine {
             text_input_values,
             link_button_ids,
             link_button_pressed: -1,
-            link_button_urls,
             blink_time: Instant::now(),
             submit_button: button::State::new(),
             go_back_zone_button: button::State::new(),
             current_link_group_name: None,
             link_group_name_ids,
-            link_group_name_names,
             link_group_button_pressed: -1,
             back_from_group_by_button: button::State::new(),
             checkbox_ids,
@@ -537,15 +522,15 @@ impl Engine for DescriptionEngine {
             Message::GroupLinkButtonPressed(id) => {
                 self.link_group_button_pressed = id;
             }
-            Message::LinkButtonReleased(id) => {
+            Message::LinkButtonReleased(url) => {
                 return Some(MainMessage::ToDescriptionWithUrl {
-                    url: self.link_button_urls.get(&id).unwrap().clone(),
+                    url: url.clone(),
                     back_url: self.future_back_url.clone(),
                 });
             }
-            Message::GroupLinkButtonReleased(id) => {
+            Message::GroupLinkButtonReleased(url) => {
                 self.current_link_group_name =
-                    Some(self.link_group_name_names.get(&id).unwrap().clone());
+                    Some(url.clone());
             }
             Message::GoBackZoneButtonPressed => return Some(MainMessage::DescriptionToZone),
             Message::GoBackFromGroupButtonPressed => {
@@ -681,7 +666,7 @@ impl Engine for DescriptionEngine {
                                     self.link_button_pressed == id,
                                     &display_label,
                                     Message::LinkButtonPressed(id),
-                                    Message::LinkButtonReleased(id),
+                                    Message::LinkButtonReleased(form_item.form_action.as_ref().unwrap().clone()),
                                 )
                                 .width(768)
                                 .class(state_less_button::Class::Primary),
@@ -789,7 +774,7 @@ impl Engine for DescriptionEngine {
                                         self.link_group_button_pressed == group_button_id,
                                         &link_group_name,
                                         Message::GroupLinkButtonPressed(group_button_id),
-                                        Message::GroupLinkButtonReleased(group_button_id),
+                                        Message::GroupLinkButtonReleased(item.form_action.as_ref().unwrap().clone()),
                                     )
                                     .width(768)
                                     .class(state_less_button::Class::Primary),
@@ -807,7 +792,7 @@ impl Engine for DescriptionEngine {
                                 self.link_button_pressed == id,
                                 &display_label,
                                 Message::LinkButtonPressed(id),
-                                Message::LinkButtonReleased(id),
+                                Message::LinkButtonReleased(item.form_action.as_ref().unwrap().clone()),
                             )
                             .width(768)
                             .class(state_less_button::Class::Primary),
