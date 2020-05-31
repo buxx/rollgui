@@ -6,8 +6,8 @@ use crate::server::client::ClientError;
 use crate::server::Server;
 use crate::ui::Column;
 use crate::ui::Element;
-use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
-use coffee::input::keyboard;
+use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window, Point};
+use coffee::input::{keyboard};
 use coffee::ui::{Align, Justify};
 use coffee::Timer;
 use serde_json::{Map, Number, Value};
@@ -20,6 +20,7 @@ use crate::ui::widget::{state_less_button, button};
 use crate::ui::widget::checkbox::Checkbox;
 use crate::ui::widget::radio::Radio;
 use crate::ui::widget::button::Button;
+use std::cmp::max;
 
 const BLINK_MS: u128 = 250;
 
@@ -61,6 +62,7 @@ pub struct DescriptionEngine {
     pending_request: Option<(String, Map<String, Value>, Map<String, Value>)>,
     loading_displayed: bool,
     force_back_startup: bool,
+    start_items_from: i32,
 }
 
 impl DescriptionEngine {
@@ -246,6 +248,7 @@ impl DescriptionEngine {
             pending_request: None,
             loading_displayed: false,
             force_back_startup,
+            start_items_from: 0,
         }
     }
 
@@ -486,6 +489,16 @@ impl Engine for DescriptionEngine {
             _ => {}
         }
 
+        if input.keys_pressed.contains(&keyboard::KeyCode::Up) {
+            self.start_items_from = max(0, self.start_items_from - 1);
+        }
+
+        if input.keys_pressed.contains(&keyboard::KeyCode::Down) {
+            self.start_items_from += 1;
+        }
+
+        self.start_items_from = max(0, self.start_items_from - input.mouse_wheel.y.round() as i32);
+        input.mouse_wheel = Point::new(0.0, 0.0);
         None
     }
 
@@ -587,6 +600,12 @@ impl Engine for DescriptionEngine {
                 .unwrap_or(&"Sans titre".to_string())
                 .clone();
             let items = description.items;
+
+            if self.start_items_from as usize >= items.len() {
+                self.start_items_from = items.len() as i32 - 1;
+            }
+            let items = &items[self.start_items_from as usize..];
+
             let blink_char = self.get_blink_char();
             let mut must_add_submit = false;
             let mut submit_label = String::from("Enregistrer");
@@ -852,7 +871,7 @@ impl Engine for DescriptionEngine {
                 .max_width(window.width() as u32)
                 .height(20)
                 .push(
-                    Text::new("Echap: retour")
+                    Text::new("Echap: retour, ↑/↓/roulette: défilement")
                         .size(20)
                         .color(Color::WHITE)
                         .horizontal_alignment(HorizontalAlignment::Right)
@@ -861,7 +880,6 @@ impl Engine for DescriptionEngine {
 
             Column::new()
                 .width(window.width() as u32)
-                .height(window.height() as u32)
                 .padding(0)
                 .spacing(2)
                 .align_items(Align::Center)
