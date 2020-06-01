@@ -11,8 +11,8 @@ use crate::ui::widget::state_less_button::StateLessButton;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::text_input::TextInput;
 use crate::ui::widget::{button, state_less_button};
-use crate::ui::{Column, Row};
 use crate::ui::Element;
+use crate::ui::{Column, Row};
 use coffee::graphics::{Color, Frame, HorizontalAlignment, Point, VerticalAlignment, Window};
 use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
@@ -518,7 +518,10 @@ impl Engine for DescriptionEngine {
                 }
             }
             Some(keyboard::KeyCode::Tab) => {
-                if self.text_input_names.contains_key(&(self.text_input_selected + 1)) {
+                if self
+                    .text_input_names
+                    .contains_key(&(self.text_input_selected + 1))
+                {
                     self.text_input_selected += 1;
                 }
             }
@@ -642,7 +645,7 @@ impl Engine for DescriptionEngine {
             let text_input_selected = self.text_input_selected.clone();
             let mut back_to_zone_button: Option<String> = None;
             let mut replaced_by_group_names: Vec<String> = vec![];
-            let mut ignore_checkbox_ids: Vec<i32> = vec!();
+            let mut ignore_checkbox_ids: Vec<i32> = vec![];
 
             let mut content = Column::new()
                 .max_width(768)
@@ -709,7 +712,9 @@ impl Engine for DescriptionEngine {
                                         let label_ = form_item_
                                             .label
                                             .as_ref()
-                                            .unwrap_or(form_item_.text.as_ref().unwrap_or(&"".to_string()))
+                                            .unwrap_or(
+                                                form_item_.text.as_ref().unwrap_or(&"".to_string()),
+                                            )
                                             .clone();
 
                                         if id_ == id {
@@ -740,7 +745,8 @@ impl Engine for DescriptionEngine {
                                         }
                                     } else {
                                         if started {
-                                            content = content.push(Row::new().push(column1).push(column2));
+                                            content = content
+                                                .push(Row::new().push(column1).push(column2));
                                             break;
                                         }
                                     }
@@ -787,42 +793,38 @@ impl Engine for DescriptionEngine {
 
                             for choice in chunk1 {
                                 let value_id = self.choice_values_ids.get(choice).unwrap();
-                                column1 = column1.push(
-                                    Radio::new(
-                                        value_id,
-                                        choice,
-                                        self.choice_values_ids
-                                            .get(self.choice_values.get(&radio_id).unwrap()),
-                                        move |value_id| Message::ChoicePressed(radio_id, *value_id),
-                                    )
-                                );
+                                column1 = column1.push(Radio::new(
+                                    value_id,
+                                    choice,
+                                    self.choice_values_ids
+                                        .get(self.choice_values.get(&radio_id).unwrap()),
+                                    move |value_id| Message::ChoicePressed(radio_id, *value_id),
+                                ));
                             }
                             for choice in chunk2 {
                                 let value_id = self.choice_values_ids.get(choice).unwrap();
-                                column2 = column2.push(
-                                    Radio::new(
-                                        value_id,
-                                        choice,
-                                        self.choice_values_ids
-                                            .get(self.choice_values.get(&radio_id).unwrap()),
-                                        move |value_id| Message::ChoicePressed(radio_id, *value_id),
-                                    )
-                                );
+                                column2 = column2.push(Radio::new(
+                                    value_id,
+                                    choice,
+                                    self.choice_values_ids
+                                        .get(self.choice_values.get(&radio_id).unwrap()),
+                                    move |value_id| Message::ChoicePressed(radio_id, *value_id),
+                                ));
                             }
 
                             let row = Row::new().push(column1).push(column2);
                             content = content.push(row);
 
-                            // for choice in choices.iter() {
-                            //     let value_id = self.choice_values_ids.get(choice).unwrap();
-                            //     content = content.push(Radio::new(
-                            //         value_id,
-                            //         choice,
-                            //         self.choice_values_ids
-                            //             .get(self.choice_values.get(&radio_id).unwrap()),
-                            //         move |value_id| Message::ChoicePressed(radio_id, *value_id),
-                            //     ));
-                            // }
+                        // for choice in choices.iter() {
+                        //     let value_id = self.choice_values_ids.get(choice).unwrap();
+                        //     content = content.push(Radio::new(
+                        //         value_id,
+                        //         choice,
+                        //         self.choice_values_ids
+                        //             .get(self.choice_values.get(&radio_id).unwrap()),
+                        //         move |value_id| Message::ChoicePressed(radio_id, *value_id),
+                        //     ));
+                        // }
                         } else if part_is_search_by_str(form_item) {
                             let id = self
                                 .search_by_str_ids
@@ -911,9 +913,7 @@ impl Engine for DescriptionEngine {
                                         self.link_group_button_pressed == group_button_id,
                                         &link_group_name,
                                         Message::GroupLinkButtonPressed(group_button_id),
-                                        Message::GroupLinkButtonReleased(
-                                            link_group_name.clone(),
-                                        ),
+                                        Message::GroupLinkButtonReleased(link_group_name.clone()),
                                     )
                                     .width(768)
                                     .class(state_less_button::Class::Primary),
@@ -979,22 +979,29 @@ impl Engine for DescriptionEngine {
                 );
             }
 
-            let submit_info = if must_add_submit {", Entrer: Valider"} else {""};
+            let submit_info = if must_add_submit {
+                ", Entrer: Valider"
+            } else {
+                ""
+            };
             let info = Column::new()
                 .max_width(window.width() as u32)
                 .height(20)
                 .push(
-                    Text::new(&format!("Echap: retour, ↑/↓/roulette: défilement{}", submit_info))
-                        .size(20)
-                        .color(Color::WHITE)
-                        .horizontal_alignment(HorizontalAlignment::Right)
-                        .vertical_alignment(VerticalAlignment::Top),
+                    Text::new(&format!(
+                        "Echap: retour, ↑/↓/roulette: défilement{}",
+                        submit_info
+                    ))
+                    .size(20)
+                    .color(Color::WHITE)
+                    .horizontal_alignment(HorizontalAlignment::Right)
+                    .vertical_alignment(VerticalAlignment::Top),
                 );
 
             content = content.push(
                 Row::new()
                     .push(Column::new().push(Text::new("Toto1")))
-                    .push(Column::new().push(Text::new("Toto2")))
+                    .push(Column::new().push(Text::new("Toto2"))),
             );
 
             Column::new()
