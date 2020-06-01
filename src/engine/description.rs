@@ -11,7 +11,7 @@ use crate::ui::widget::state_less_button::StateLessButton;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::text_input::TextInput;
 use crate::ui::widget::{button, state_less_button};
-use crate::ui::Column;
+use crate::ui::{Column, Row};
 use crate::ui::Element;
 use coffee::graphics::{Color, Frame, HorizontalAlignment, Point, VerticalAlignment, Window};
 use coffee::input::keyboard;
@@ -388,7 +388,7 @@ impl DescriptionEngine {
 }
 
 fn part_is_pure_text(part: &Part) -> bool {
-    part.text.is_some() && !part.is_link
+    (part.text.is_some() || part.label.is_some()) && !part.is_link
 }
 
 fn get_part_pure_text_text(part: &Part) -> String {
@@ -642,6 +642,7 @@ impl Engine for DescriptionEngine {
             let text_input_selected = self.text_input_selected.clone();
             let mut back_to_zone_button: Option<String> = None;
             let mut replaced_by_group_names: Vec<String> = vec![];
+            let mut ignore_checkbox_ids: Vec<i32> = vec!();
 
             let mut content = Column::new()
                 .max_width(768)
@@ -694,17 +695,57 @@ impl Engine for DescriptionEngine {
                         } else if part_is_checkbox(form_item) {
                             let name = form_item.name.as_ref().unwrap().clone();
                             let id = self.checkbox_ids.get(&name).unwrap().clone();
-                            content = content.push(Checkbox::new(
-                                self.checkbox_values.get(&id).is_some(),
-                                &label,
-                                move |c| {
-                                    if c {
-                                        Message::CheckBoxChecked(id)
+
+                            if !ignore_checkbox_ids.contains(&id) {
+                                let mut column1 = Column::new();
+                                let mut column2 = Column::new();
+
+                                let mut started = false;
+                                let mut counter = 0;
+                                for form_item_ in item.items.iter() {
+                                    if part_is_checkbox(form_item_) {
+                                        let name_ = form_item_.name.as_ref().unwrap().clone();
+                                        let id_ = self.checkbox_ids.get(&name_).unwrap().clone();
+                                        let label_ = form_item_
+                                            .label
+                                            .as_ref()
+                                            .unwrap_or(form_item_.text.as_ref().unwrap_or(&"".to_string()))
+                                            .clone();
+
+                                        if id_ == id {
+                                            started = true;
+                                        }
+
+                                        if started && !ignore_checkbox_ids.contains(&id_) {
+                                            let checkbox = Checkbox::new(
+                                                self.checkbox_values.get(&id_).is_some(),
+                                                &label_,
+                                                move |c| {
+                                                    if c {
+                                                        Message::CheckBoxChecked(id_)
+                                                    } else {
+                                                        Message::CheckBoxUnchecked(id_)
+                                                    }
+                                                },
+                                            );
+
+                                            if (counter % 2) == 0 {
+                                                column1 = column1.push(checkbox);
+                                            } else {
+                                                column2 = column2.push(checkbox);
+                                            }
+
+                                            counter += 1;
+                                            ignore_checkbox_ids.push(id_);
+                                        }
                                     } else {
-                                        Message::CheckBoxUnchecked(id)
+                                        if started {
+                                            content = content.push(Row::new().push(column1).push(column2));
+                                            break;
+                                        }
                                     }
-                                },
-                            ))
+                                }
+                            }
                         } else if part_is_link(form_item) {
                             let label =
                                 form_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
@@ -735,16 +776,53 @@ impl Engine for DescriptionEngine {
                                 .choice_ids
                                 .get(form_item.name.as_ref().unwrap())
                                 .unwrap();
-                            for choice in form_item.choices.as_ref().unwrap().iter() {
+
+                            let choices = form_item.choices.as_ref().unwrap();
+                            let count_by_column = (choices.len() as f32 / 2.0).ceil() as i32;
+                            let mut column1 = Column::new();
+                            let mut column2 = Column::new();
+                            let mut choices_chunks = choices.chunks(count_by_column as usize);
+                            let chunk1 = choices_chunks.next().unwrap();
+                            let chunk2 = choices_chunks.next().unwrap();
+
+                            for choice in chunk1 {
                                 let value_id = self.choice_values_ids.get(choice).unwrap();
-                                content = content.push(Radio::new(
-                                    value_id,
-                                    choice,
-                                    self.choice_values_ids
-                                        .get(self.choice_values.get(&radio_id).unwrap()),
-                                    move |value_id| Message::ChoicePressed(radio_id, *value_id),
-                                ));
+                                column1 = column1.push(
+                                    Radio::new(
+                                        value_id,
+                                        choice,
+                                        self.choice_values_ids
+                                            .get(self.choice_values.get(&radio_id).unwrap()),
+                                        move |value_id| Message::ChoicePressed(radio_id, *value_id),
+                                    )
+                                );
                             }
+                            for choice in chunk2 {
+                                let value_id = self.choice_values_ids.get(choice).unwrap();
+                                column2 = column2.push(
+                                    Radio::new(
+                                        value_id,
+                                        choice,
+                                        self.choice_values_ids
+                                            .get(self.choice_values.get(&radio_id).unwrap()),
+                                        move |value_id| Message::ChoicePressed(radio_id, *value_id),
+                                    )
+                                );
+                            }
+
+                            let row = Row::new().push(column1).push(column2);
+                            content = content.push(row);
+
+                            // for choice in choices.iter() {
+                            //     let value_id = self.choice_values_ids.get(choice).unwrap();
+                            //     content = content.push(Radio::new(
+                            //         value_id,
+                            //         choice,
+                            //         self.choice_values_ids
+                            //             .get(self.choice_values.get(&radio_id).unwrap()),
+                            //         move |value_id| Message::ChoicePressed(radio_id, *value_id),
+                            //     ));
+                            // }
                         } else if part_is_search_by_str(form_item) {
                             let id = self
                                 .search_by_str_ids
@@ -912,6 +990,12 @@ impl Engine for DescriptionEngine {
                         .horizontal_alignment(HorizontalAlignment::Right)
                         .vertical_alignment(VerticalAlignment::Top),
                 );
+
+            content = content.push(
+                Row::new()
+                    .push(Column::new().push(Text::new("Toto1")))
+                    .push(Column::new().push(Text::new("Toto2")))
+            );
 
             Column::new()
                 .width(window.width() as u32)
