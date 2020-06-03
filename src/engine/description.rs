@@ -204,6 +204,16 @@ impl DescriptionEngine {
             }
         }
 
+        for link_item in description.footer_links.iter() {
+            let label = link_item
+                .label
+                .as_ref()
+                .unwrap_or(link_item.text.as_ref().unwrap_or(&" ".to_string()))
+                .clone();
+            link_button_ids.insert(label, link_button_counter);
+            link_button_counter += 1;
+        }
+
         let future_back_url = if description.can_be_back_url {
             description.origin_url.clone()
         } else {
@@ -388,7 +398,7 @@ impl DescriptionEngine {
 }
 
 fn part_is_pure_text(part: &Part) -> bool {
-    (part.text.is_some() || part.label.is_some()) && !part.is_link
+    part.text.is_some() && !part.is_link
 }
 
 fn get_part_pure_text_text(part: &Part) -> String {
@@ -635,7 +645,11 @@ impl Engine for DescriptionEngine {
             if self.start_items_from as usize >= items.len() {
                 self.start_items_from = items.len() as i32 - 1;
             }
-            let items = &items[self.start_items_from as usize..];
+            let items = if items.len() != 0 {
+                &items[self.start_items_from as usize..]
+            } else {
+                &items
+            };
 
             let blink_char = self.get_blink_char();
             let mut must_add_submit = false;
@@ -961,6 +975,27 @@ impl Engine for DescriptionEngine {
                 );
             }
 
+            for link_item in description.footer_links.iter() {
+                let label = link_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
+                if link_item.go_back_zone {
+                    back_to_zone_button = Some(label.clone());
+                    break;
+                }
+                let id = *self.link_button_ids.get(&label).unwrap();
+                content = content.push(
+                    StateLessButton::new(
+                        self.link_button_pressed == id,
+                        &label,
+                        Message::LinkButtonPressed(id),
+                        Message::LinkButtonReleased(
+                            link_item.form_action.as_ref().unwrap().clone(),
+                        ),
+                    )
+                    .width(768)
+                    .class(state_less_button::Class::Primary),
+                );
+            }
+
             if self.current_link_group_name.is_some() {
                 content = content.push(
                     Button::new(&mut self.back_from_group_by_button, "Retour")
@@ -997,12 +1032,6 @@ impl Engine for DescriptionEngine {
                     .horizontal_alignment(HorizontalAlignment::Right)
                     .vertical_alignment(VerticalAlignment::Top),
                 );
-
-            content = content.push(
-                Row::new()
-                    .push(Column::new().push(Text::new("Toto1")))
-                    .push(Column::new().push(Text::new("Toto2"))),
-            );
 
             Column::new()
                 .width(window.width() as u32)

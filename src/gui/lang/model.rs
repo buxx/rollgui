@@ -28,6 +28,7 @@ pub struct Description {
     pub origin_url: Option<String>,
     pub title: Option<String>,
     pub items: Vec<Part>,
+    pub footer_links: Vec<Part>,
     pub image: Option<String>,
     pub image_id: Option<i32>,
     pub image_extension: Option<String>,
