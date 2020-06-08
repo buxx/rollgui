@@ -126,7 +126,7 @@ impl Level {
     }
 
     pub fn get_successors(&self, tiles: &Tiles, row_i: i16, col_i: i16) -> Vec<((i16, i16), u32)> {
-        let mut successors = vec!();
+        let mut successors = vec![];
 
         for (modifier_row_i, modifier_col_i) in [
             (-1, -1),
@@ -138,7 +138,9 @@ impl Level {
             (1, 1),
             (1, -1),
             (1, 0),
-        ].iter() {
+        ]
+        .iter()
+        {
             let new_row_i = row_i + *modifier_row_i;
             let new_col_i = col_i + *modifier_col_i;
             if tiles.browseable(&self.tile_id(new_row_i, new_col_i)) {

@@ -22,12 +22,12 @@ use crate::ui::Column;
 use crate::ui::Element;
 use crate::ui::Row;
 use crate::{event, util};
-use pathfinding::prelude::{absdiff, astar};
 use coffee::graphics::{Batch, Color, Frame, Sprite, Window};
 use coffee::input::keyboard;
 use coffee::input::mouse;
 use coffee::ui::Align;
 use coffee::{graphics, Timer};
+use pathfinding::prelude::{absdiff, astar};
 use std::collections::HashMap;
 use std::time::Instant;
 
@@ -429,41 +429,47 @@ impl ZoneEngine {
         (row_i, col_i)
     }
 
-    fn get_move_modifier_for_around(&self, current_row_i: i16, current_col_i: i16, row_i: i16, col_i: i16) -> (i16, i16) {
+    fn get_move_modifier_for_around(
+        &self,
+        current_row_i: i16,
+        current_col_i: i16,
+        row_i: i16,
+        col_i: i16,
+    ) -> (i16, i16) {
         if current_row_i - 1 == row_i && current_col_i - 1 == col_i {
-            return (-1, -1)
+            return (-1, -1);
         }
 
         if current_row_i - 1 == row_i && current_col_i == col_i {
-            return (0, -1)
+            return (0, -1);
         }
 
         if current_row_i - 1 == row_i && current_col_i + 1 == col_i {
-            return (1, -1)
+            return (1, -1);
         }
 
         if current_row_i == row_i && current_col_i - 1 == col_i {
-            return (-1, 0)
+            return (-1, 0);
         }
 
         if current_row_i == row_i && current_col_i + 1 == col_i {
-            return (1, 0)
+            return (1, 0);
         }
 
         if current_row_i == row_i && current_col_i == col_i {
-            return (0, 0)
+            return (0, 0);
         }
 
         if current_row_i + 1 == row_i && current_col_i - 1 == col_i {
-            return (-1, 1)
+            return (-1, 1);
         }
 
         if current_row_i + 1 == row_i && current_col_i == col_i {
-            return (0, 1)
+            return (0, 1);
         }
 
         if current_row_i + 1 == row_i && current_col_i + 1 == col_i {
-            return (1, 1)
+            return (1, 1);
         }
 
         eprintln!("Around position must used !");
@@ -568,19 +574,32 @@ impl Engine for ZoneEngine {
                 let (to_row_i, to_col_i) = self.xy_to_zone_coords(click_x, click_y);
 
                 // FIXME BS NOW: Experimental
-                let player_position = (self.player.position.0 as i16, self.player.position.1 as i16);
+                let player_position =
+                    (self.player.position.0 as i16, self.player.position.1 as i16);
                 if let Some(result) = astar(
                     &player_position,
-                    |(row_i, col_i)| self.level.get_successors(&self.tiles,row_i.clone(), col_i.clone()),
-                    |(row_i, col_i)| ((absdiff(row_i.clone(), to_row_i) + absdiff(col_i.clone(), to_col_i)) as u32) / 3,
-                   |(row_i, col_i)| (row_i.clone(), col_i) == (to_row_i, &to_col_i)
+                    |(row_i, col_i)| {
+                        self.level
+                            .get_successors(&self.tiles, row_i.clone(), col_i.clone())
+                    },
+                    |(row_i, col_i)| {
+                        ((absdiff(row_i.clone(), to_row_i) + absdiff(col_i.clone(), to_col_i))
+                            as u32)
+                            / 3
+                    },
+                    |(row_i, col_i)| (row_i.clone(), col_i) == (to_row_i, &to_col_i),
                 ) {
-                    let mut moves = vec!();
+                    let mut moves = vec![];
                     let mut current_position = player_position.clone();
                     self.player.x = current_position.1 * TILE_HEIGHT;
                     self.player.y = current_position.0 * TILE_WIDTH;
                     for next_move in result.0 {
-                        let modifier = self.get_move_modifier_for_around(current_position.0, current_position.1, next_move.0, next_move.1);
+                        let modifier = self.get_move_modifier_for_around(
+                            current_position.0,
+                            current_position.1,
+                            next_move.0,
+                            next_move.1,
+                        );
                         // FIXME BS: Can work only with tile squares !
                         for _ in 0..TILE_WIDTH {
                             moves.push(modifier.clone());
