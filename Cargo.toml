@@ -15,3 +15,4 @@ serde_json = "1.0.44"
 reqwest = { version = "0.10.1", features = ["blocking", "json"] }
 url = "2.1.1"
 image = "0.21"
+pathfinding = "2.0.4"

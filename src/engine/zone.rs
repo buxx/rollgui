@@ -22,8 +22,10 @@ use crate::ui::Column;
 use crate::ui::Element;
 use crate::ui::Row;
 use crate::{event, util};
+use pathfinding::prelude::{absdiff, astar};
 use coffee::graphics::{Batch, Color, Frame, Sprite, Window};
 use coffee::input::keyboard;
+use coffee::input::mouse;
 use coffee::ui::Align;
 use coffee::{graphics, Timer};
 use std::collections::HashMap;
@@ -69,6 +71,7 @@ pub struct ZoneEngine {
     builds_positions: Vec<(i16, i16)>,
     link_button_ids: HashMap<String, i32>,
     link_button_pressed: i32,
+    move_requested: Option<Vec<(i16, i16)>>,
 }
 
 impl ZoneEngine {
@@ -131,6 +134,7 @@ impl ZoneEngine {
             builds_positions,
             link_button_ids: HashMap::new(),
             link_button_pressed: -1,
+            move_requested: None,
         };
         zone_engine.update_link_button_data();
         zone_engine
@@ -413,6 +417,58 @@ impl ZoneEngine {
             self.start_zone_row_i += 1;
         }
     }
+
+    fn xy_to_zone_coords(&self, x: i16, y: i16) -> (i16, i16) {
+        let x_from_start_screen = x - START_SCREEN_X;
+        let y_from_start_screen = y - START_SCREEN_Y;
+        let absolute_row_i = y_from_start_screen / TILE_HEIGHT;
+        let absolute_col_i = x_from_start_screen / TILE_WIDTH;
+        let row_i = absolute_row_i + self.start_zone_row_i;
+        let col_i = absolute_col_i + self.start_zone_col_i;
+
+        (row_i, col_i)
+    }
+
+    fn get_move_modifier_for_around(&self, current_row_i: i16, current_col_i: i16, row_i: i16, col_i: i16) -> (i16, i16) {
+        if current_row_i - 1 == row_i && current_col_i - 1 == col_i {
+            return (-1, -1)
+        }
+
+        if current_row_i - 1 == row_i && current_col_i == col_i {
+            return (0, -1)
+        }
+
+        if current_row_i - 1 == row_i && current_col_i + 1 == col_i {
+            return (1, -1)
+        }
+
+        if current_row_i == row_i && current_col_i - 1 == col_i {
+            return (-1, 0)
+        }
+
+        if current_row_i == row_i && current_col_i + 1 == col_i {
+            return (1, 0)
+        }
+
+        if current_row_i == row_i && current_col_i == col_i {
+            return (0, 0)
+        }
+
+        if current_row_i + 1 == row_i && current_col_i - 1 == col_i {
+            return (-1, 1)
+        }
+
+        if current_row_i + 1 == row_i && current_col_i == col_i {
+            return (0, 1)
+        }
+
+        if current_row_i + 1 == row_i && current_col_i + 1 == col_i {
+            return (1, 1)
+        }
+
+        eprintln!("Around position must used !");
+        (0, 0)
+    }
 }
 
 impl Drop for ZoneEngine {
@@ -442,7 +498,6 @@ impl Engine for ZoneEngine {
     }
 
     fn update(&mut self, window: &Window) -> Option<MainMessage> {
-        // FIXME BS NOW: changer ici start_zone_row_i, start_zone_col_i en fonction des changements (deplacement perso, etc)
         self.end_screen_x = window.width() as i16;
         self.end_screen_y = window.height() as i16;
         self.update_zone_display();
@@ -503,18 +558,67 @@ impl Engine for ZoneEngine {
     fn interact(&mut self, input: &mut MyGameInput, _window: &mut Window) -> Option<MainMessage> {
         let mut try_player_moves: Vec<(i16, i16)> = vec![];
 
+        if input.mouse_buttons_pressed.contains(&mouse::Button::Left) {
+            let click_x = input.cursor_position.x.round() as i16;
+            let click_y = input.cursor_position.y.round() as i16;
+
+            // Is that a move click ? Must not be in menu
+            if click_x > START_SCREEN_X && click_y > START_SCREEN_Y {
+                input.mouse_buttons_pressed.clear();
+                let (to_row_i, to_col_i) = self.xy_to_zone_coords(click_x, click_y);
+
+                // FIXME BS NOW: Experimental
+                let player_position = (self.player.position.0 as i16, self.player.position.1 as i16);
+                if let Some(result) = astar(
+                    &player_position,
+                    |(row_i, col_i)| self.level.get_successors(&self.tiles,row_i.clone(), col_i.clone()),
+                    |(row_i, col_i)| ((absdiff(row_i.clone(), to_row_i) + absdiff(col_i.clone(), to_col_i)) as u32) / 3,
+                   |(row_i, col_i)| (row_i.clone(), col_i) == (to_row_i, &to_col_i)
+                ) {
+                    let mut moves = vec!();
+                    let mut current_position = player_position.clone();
+                    self.player.x = current_position.1 * TILE_HEIGHT;
+                    self.player.y = current_position.0 * TILE_WIDTH;
+                    for next_move in result.0 {
+                        let modifier = self.get_move_modifier_for_around(current_position.0, current_position.1, next_move.0, next_move.1);
+                        // FIXME BS: Can work only with tile squares !
+                        for _ in 0..TILE_WIDTH {
+                            moves.push(modifier.clone());
+                        }
+                        current_position = next_move;
+                    }
+                    self.move_requested = Some(moves);
+                } else {
+                    println!("Impossible move");
+                }
+            }
+        }
+
         if !input.keys_pressed.is_empty() {
             if input.keys_pressed.contains(&keyboard::KeyCode::Right) {
                 try_player_moves.push((1, 0));
+                self.move_requested = None;
             }
             if input.keys_pressed.contains(&keyboard::KeyCode::Left) {
                 try_player_moves.push((-1, 0));
+                self.move_requested = None;
             }
             if input.keys_pressed.contains(&keyboard::KeyCode::Up) {
                 try_player_moves.push((0, -1));
+                self.move_requested = None;
             }
             if input.keys_pressed.contains(&keyboard::KeyCode::Down) {
                 try_player_moves.push((0, 1));
+                self.move_requested = None;
+            }
+        }
+
+        if let Some(move_requested) = self.move_requested.as_ref() {
+            if let Some(next_move) = move_requested.iter().next() {
+                try_player_moves.push(*next_move);
+                self.move_requested.as_mut().unwrap().remove(0);
+            } else {
+                self.move_requested = None;
             }
         }
 
@@ -577,6 +681,10 @@ impl Engine for ZoneEngine {
                 }
             }
         }
+        if !player_have_move.0 {
+            self.move_requested = None;
+        }
+
         None
     }
 
