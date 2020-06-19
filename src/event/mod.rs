@@ -1,3 +1,4 @@
+use crate::entity::build::Build;
 use crate::error::RollingError;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_derive::{Deserialize as DeserializeDerive, Serialize as SerializeDerive};
@@ -10,6 +11,9 @@ pub const CHARACTER_ENTER_ZONE: &str = "CHARACTER_ENTER_ZONE";
 pub const CHARACTER_EXIT_ZONE: &str = "CHARACTER_EXIT_ZONE";
 pub const CLIENT_REQUIRE_AROUND: &str = "CLIENT_REQUIRE_AROUND";
 pub const THERE_IS_AROUND: &str = "THERE_IS_AROUND";
+pub const CLICK_ACTION_EVENT: &str = "CLICK_ACTION_EVENT";
+pub const NEW_RESUME_TEXT: &str = "NEW_RESUME_TEXT";
+pub const NEW_BUILD: &str = "NEW_BUILD";
 
 #[derive(SerializeDerive, DeserializeDerive, Debug)]
 #[serde(untagged)]
@@ -38,6 +42,17 @@ pub enum ZoneEventType {
     },
     ThereIsAround {
         items: Vec<(String, Option<String>)>,
+    },
+    ClickActionEvent {
+        base_url: String,
+        row_i: i16,
+        col_i: i16,
+    },
+    NewResumeText {
+        resume: Vec<(String, Option<String>)>,
+    },
+    NewBuild {
+        build: Build,
     },
 }
 
@@ -99,6 +114,44 @@ impl ZoneEvent {
                 Ok(ZoneEvent {
                     event_type_name: String::from(THERE_IS_AROUND),
                     event_type: ZoneEventType::ThereIsAround { items },
+                })
+            }
+            &NEW_RESUME_TEXT => {
+                let mut items: Vec<(String, Option<String>)> = vec![];
+                for value in data["resume"].as_array().unwrap() {
+                    let vector = value.as_array().unwrap();
+                    let text = vector.get(0).unwrap().as_str().unwrap().to_string();
+                    let mut url: Option<String> = None;
+                    if let Some(txt) = vector.get(1).unwrap().as_str() {
+                        url = Some(txt.to_string());
+                    }
+                    items.push((text, url));
+                }
+
+                Ok(ZoneEvent {
+                    event_type_name: String::from(NEW_RESUME_TEXT),
+                    event_type: ZoneEventType::NewResumeText { resume: items },
+                })
+            }
+            &NEW_BUILD => {
+                let build_data = data["build"].as_object().unwrap();
+                let mut classes: Vec<String> = vec![];
+                for value in build_data["classes"].as_array().unwrap() {
+                    let class = value.as_str().unwrap();
+                    classes.push(class.to_string());
+                }
+
+                Ok(ZoneEvent {
+                    event_type_name: String::from(NEW_BUILD),
+                    event_type: ZoneEventType::NewBuild {
+                        build: Build {
+                            id: build_data["id"].as_i64().unwrap() as i32,
+                            build_id: build_data["build_id"].as_str().unwrap().to_string(),
+                            row_i: build_data["row_i"].as_i64().unwrap() as i32,
+                            col_i: build_data["col_i"].as_i64().unwrap() as i32,
+                            classes,
+                        },
+                    },
                 })
             }
             _ => Err(RollingError {

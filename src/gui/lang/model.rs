@@ -37,4 +37,12 @@ pub struct Description {
     pub redirect: Option<String>,
     pub force_back_url: Option<String>,
     pub can_be_back_url: bool,
+    pub request_clicks: Option<RequestClicks>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct RequestClicks {
+    pub base_url: String,
+    pub cursor_classes: Vec<String>,
+    pub many: bool,
 }

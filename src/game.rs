@@ -9,6 +9,7 @@ use crate::entity::character::Character;
 use crate::entity::player::Player;
 use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
+use crate::gui::lang::model::RequestClicks;
 use crate::input::MyGameInput;
 use crate::level::Level;
 use crate::message::{MainMessage, Message};
@@ -65,7 +66,12 @@ impl MyGame {
         }
     }
 
-    fn setup_startup_to_zone_engine(&mut self, server_ip: String, server_port: u16) {
+    fn setup_startup_to_zone_engine(
+        &mut self,
+        server_ip: String,
+        server_port: u16,
+        request_clicks: Option<RequestClicks>,
+    ) {
         // FIXME BS: manage error cases
         self.server = Some(self.create_server(server_ip, server_port).unwrap());
         let server = self.server.as_ref().unwrap().clone();
@@ -73,7 +79,7 @@ impl MyGame {
         // FIXME BS: manage error cases
         if let Some(player) = self.create_player().unwrap() {
             self.player = Some(player);
-            self.setup_zone_engine();
+            self.setup_zone_engine(request_clicks);
             return;
         }
 
@@ -146,7 +152,7 @@ impl MyGame {
         return Ok(None);
     }
 
-    fn setup_zone_engine(&mut self) {
+    fn setup_zone_engine(&mut self, request_clicks: Option<RequestClicks>) {
         // Player and Server must exist at this step
         let server = self.server.as_ref().unwrap();
         let player = self.player.as_ref().unwrap();
@@ -248,6 +254,7 @@ impl MyGame {
             stuffs,
             resources,
             builds,
+            request_clicks,
         ));
     }
 
@@ -292,7 +299,7 @@ impl Game for MyGame {
                     server_ip,
                     server_port,
                 } => {
-                    self.setup_startup_to_zone_engine(server_ip.clone(), server_port);
+                    self.setup_startup_to_zone_engine(server_ip.clone(), server_port, None);
                 }
                 MainMessage::ToDescriptionWithDescription {
                     description,
@@ -322,6 +329,7 @@ impl Game for MyGame {
                     self.setup_startup_to_zone_engine(
                         self.server.as_ref().unwrap().config.ip.clone(),
                         self.server.as_ref().unwrap().config.port,
+                        None,
                     );
                 }
                 MainMessage::ToDescriptionWithUrl { url, back_url } => {
@@ -340,10 +348,14 @@ impl Game for MyGame {
                         false,
                     ));
                 }
-                MainMessage::DescriptionToZone => {
+                MainMessage::DescriptionToZone { request_clicks } => {
                     // FIXME: manage errors
                     let server = self.server.as_mut().unwrap().clone(); // must succeed
-                    self.setup_startup_to_zone_engine(server.config.ip.clone(), server.config.port);
+                    self.setup_startup_to_zone_engine(
+                        server.config.ip.clone(),
+                        server.config.port,
+                        request_clicks,
+                    );
                 }
                 MainMessage::ToStartup => {
                     self.engine = Box::new(StartupEngine::new());

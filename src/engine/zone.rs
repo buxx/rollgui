@@ -6,6 +6,7 @@ use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
 use crate::event::ZoneEventType;
 use crate::game::{TILE_HEIGHT, TILE_WIDTH};
+use crate::gui::lang::model::RequestClicks;
 use crate::input::MyGameInput;
 use crate::level::Level;
 use crate::message::{MainMessage, Message};
@@ -22,7 +23,7 @@ use crate::ui::Column;
 use crate::ui::Element;
 use crate::ui::Row;
 use crate::{event, util};
-use coffee::graphics::{Batch, Color, Frame, Sprite, Window};
+use coffee::graphics::{Batch, Color, Frame, Point, Sprite, Window};
 use coffee::input::keyboard;
 use coffee::input::mouse;
 use coffee::ui::Align;
@@ -72,6 +73,8 @@ pub struct ZoneEngine {
     link_button_ids: HashMap<String, i32>,
     link_button_pressed: i32,
     move_requested: Option<Vec<(i16, i16)>>,
+    request_clicks: Option<RequestClicks>,
+    cursor_position: Point,
 }
 
 impl ZoneEngine {
@@ -89,6 +92,7 @@ impl ZoneEngine {
         stuffs: HashMap<String, Stuff>,
         resources: Vec<Resource>,
         builds: HashMap<String, Build>,
+        request_clicks: Option<RequestClicks>,
     ) -> Self {
         let mut builds_positions = vec![];
         for (_, build) in builds.iter() {
@@ -135,6 +139,8 @@ impl ZoneEngine {
             link_button_ids: HashMap::new(),
             link_button_pressed: -1,
             move_requested: None,
+            request_clicks,
+            cursor_position: Point::new(0.0, 0.0),
         };
         zone_engine.update_link_button_data();
         zone_engine
@@ -497,6 +503,24 @@ impl Engine for ZoneEngine {
             sprites.extend(self.get_resource_sprites());
             sprites.extend(self.get_characters_sprites());
 
+            if let Some(request_clicks) = &self.request_clicks {
+                let cursor_x = self.cursor_position.x.round() as i16;
+                let cursor_y = self.cursor_position.y.round() as i16;
+                if cursor_x > START_SCREEN_X && cursor_y > START_SCREEN_Y {
+                    for class in request_clicks.cursor_classes.iter().rev() {
+                        if self.tile_sheet.have_id(class) {
+                            let (cursor_row_i, cursor_col_i) =
+                                self.xy_to_zone_coords(cursor_x, cursor_y);
+                            let real_x = self.get_real_x(cursor_col_i * TILE_WIDTH);
+                            let real_y = self.get_real_y(cursor_row_i * TILE_HEIGHT);
+
+                            sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y));
+                            break;
+                        }
+                    }
+                }
+            }
+
             self.tile_sheet_batch.clear();
             self.tile_sheet_batch.extend(sprites);
             self.tile_sheet_batch.draw(&mut frame.as_target());
@@ -554,6 +578,13 @@ impl Engine for ZoneEngine {
                     self.around_text = items;
                     self.update_link_button_data();
                 }
+                ZoneEventType::NewResumeText { resume } => {
+                    self.resume_text = resume;
+                    self.update_link_button_data();
+                }
+                ZoneEventType::NewBuild { build } => {
+                    self.builds.insert(build.id.to_string(), build);
+                }
                 _ => println!("unknown event type {:?}", &event.event_type),
             }
         }
@@ -563,52 +594,68 @@ impl Engine for ZoneEngine {
 
     fn interact(&mut self, input: &mut MyGameInput, _window: &mut Window) -> Option<MainMessage> {
         let mut try_player_moves: Vec<(i16, i16)> = vec![];
+        self.cursor_position = input.cursor_position.clone();
 
         if input.mouse_buttons_pressed.contains(&mouse::Button::Left) {
             let click_x = input.cursor_position.x.round() as i16;
             let click_y = input.cursor_position.y.round() as i16;
+            let (to_row_i, to_col_i) = self.xy_to_zone_coords(click_x, click_y);
+            input.mouse_buttons_pressed.clear();
 
-            // Is that a move click ? Must not be in menu
+            // Is that a move/requested click ? Must not be in menu
             if click_x > START_SCREEN_X && click_y > START_SCREEN_Y {
-                input.mouse_buttons_pressed.clear();
-                let (to_row_i, to_col_i) = self.xy_to_zone_coords(click_x, click_y);
+                if let Some(request_clicks) = &self.request_clicks {
+                    // REQUESTED CLICK
+                    self.socket.send(event::ZoneEvent {
+                        event_type_name: String::from(event::CLICK_ACTION_EVENT),
+                        event_type: event::ZoneEventType::ClickActionEvent {
+                            base_url: request_clicks.base_url.clone(),
+                            row_i: to_row_i,
+                            col_i: to_col_i,
+                        },
+                    });
 
-                // FIXME BS NOW: Experimental
-                let player_position =
-                    (self.player.position.0 as i16, self.player.position.1 as i16);
-                if let Some(result) = astar(
-                    &player_position,
-                    |(row_i, col_i)| {
-                        self.level
-                            .get_successors(&self.tiles, row_i.clone(), col_i.clone())
-                    },
-                    |(row_i, col_i)| {
-                        ((absdiff(row_i.clone(), to_row_i) + absdiff(col_i.clone(), to_col_i))
-                            as u32)
-                            / 3
-                    },
-                    |(row_i, col_i)| (row_i.clone(), col_i) == (to_row_i, &to_col_i),
-                ) {
-                    let mut moves = vec![];
-                    let mut current_position = player_position.clone();
-                    self.player.x = current_position.1 * TILE_HEIGHT;
-                    self.player.y = current_position.0 * TILE_WIDTH;
-                    for next_move in result.0 {
-                        let modifier = self.get_move_modifier_for_around(
-                            current_position.0,
-                            current_position.1,
-                            next_move.0,
-                            next_move.1,
-                        );
-                        // FIXME BS: Can work only with tile squares !
-                        for _ in 0..TILE_WIDTH {
-                            moves.push(modifier.clone());
-                        }
-                        current_position = next_move;
+                    if !request_clicks.many {
+                        self.request_clicks = None;
                     }
-                    self.move_requested = Some(moves);
                 } else {
-                    println!("Impossible move");
+                    // MOVE
+                    let player_position =
+                        (self.player.position.0 as i16, self.player.position.1 as i16);
+                    if let Some(result) = astar(
+                        &player_position,
+                        |(row_i, col_i)| {
+                            self.level
+                                .get_successors(&self.tiles, row_i.clone(), col_i.clone())
+                        },
+                        |(row_i, col_i)| {
+                            ((absdiff(row_i.clone(), to_row_i) + absdiff(col_i.clone(), to_col_i))
+                                as u32)
+                                / 3
+                        },
+                        |(row_i, col_i)| (row_i.clone(), col_i) == (to_row_i, &to_col_i),
+                    ) {
+                        let mut moves = vec![];
+                        let mut current_position = player_position.clone();
+                        self.player.x = current_position.1 * TILE_HEIGHT;
+                        self.player.y = current_position.0 * TILE_WIDTH;
+                        for next_move in result.0 {
+                            let modifier = self.get_move_modifier_for_around(
+                                current_position.0,
+                                current_position.1,
+                                next_move.0,
+                                next_move.1,
+                            );
+                            // FIXME BS: Can work only with tile squares !
+                            for _ in 0..TILE_WIDTH {
+                                moves.push(modifier.clone());
+                            }
+                            current_position = next_move;
+                        }
+                        self.move_requested = Some(moves);
+                    } else {
+                        println!("Impossible move");
+                    }
                 }
             }
         }
@@ -644,7 +691,12 @@ impl Engine for ZoneEngine {
         match input.key_code {
             Some(keyboard::KeyCode::Escape) => {
                 input.key_code = None;
-                return Some(MainMessage::ToExit);
+
+                if self.request_clicks.is_some() {
+                    self.request_clicks = None;
+                } else {
+                    return Some(MainMessage::ToExit);
+                }
             }
             _ => {}
         }

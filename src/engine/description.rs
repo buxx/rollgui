@@ -457,6 +457,12 @@ impl Engine for DescriptionEngine {
             });
         }
 
+        if let Some(request_clicks) = self.description.request_clicks.as_ref() {
+            return Some(MainMessage::DescriptionToZone {
+                request_clicks: Some(request_clicks.clone()),
+            });
+        }
+
         if self.loading_displayed {
             let (url, form_data, form_query) = self.pending_request.as_ref().unwrap().clone();
             self.pending_request = None;
@@ -519,7 +525,9 @@ impl Engine for DescriptionEngine {
                         back_url: None,
                     });
                 }
-                return Some(MainMessage::DescriptionToZone);
+                return Some(MainMessage::DescriptionToZone {
+                    request_clicks: None,
+                });
             }
             Some(keyboard::KeyCode::Return) => {
                 input.key_code = None;
@@ -596,7 +604,11 @@ impl Engine for DescriptionEngine {
             Message::GroupLinkButtonReleased(label) => {
                 self.current_link_group_name = Some(label.clone());
             }
-            Message::GoBackZoneButtonPressed => return Some(MainMessage::DescriptionToZone),
+            Message::GoBackZoneButtonPressed => {
+                return Some(MainMessage::DescriptionToZone {
+                    request_clicks: None,
+                })
+            }
             Message::GoBackFromGroupButtonPressed => {
                 self.current_link_group_name = None;
             }

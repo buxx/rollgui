@@ -38,7 +38,9 @@ impl Engine for ExitEngine {
         match input.key_code {
             Some(keyboard::KeyCode::Escape) => {
                 input.key_code = None;
-                return Some(MainMessage::DescriptionToZone);
+                return Some(MainMessage::DescriptionToZone {
+                    request_clicks: None,
+                });
             }
             _ => {}
         }
@@ -49,7 +51,11 @@ impl Engine for ExitEngine {
     fn react(&mut self, event: Message, _window: &mut Window) -> Option<MainMessage> {
         match event {
             Message::ConfirmButtonPressed => return Some(MainMessage::ToStartup),
-            Message::CancelButtonPressed => return Some(MainMessage::DescriptionToZone),
+            Message::CancelButtonPressed => {
+                return Some(MainMessage::DescriptionToZone {
+                    request_clicks: None,
+                })
+            }
             _ => {}
         }
 

@@ -1,4 +1,4 @@
-use crate::gui::lang::model::Description;
+use crate::gui::lang::model::{Description, RequestClicks};
 
 #[derive(Debug, Clone)]
 pub enum MainMessage {
@@ -10,7 +10,9 @@ pub enum MainMessage {
         server_ip: String,
         server_port: u16,
     },
-    DescriptionToZone,
+    DescriptionToZone {
+        request_clicks: Option<RequestClicks>,
+    },
     NewCharacterId {
         character_id: String,
     },
