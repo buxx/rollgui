@@ -68,8 +68,8 @@ pub struct ZoneEngine {
     characters: HashMap<String, Character>,
     stuffs: HashMap<String, Stuff>,
     resources: Vec<Resource>,
-    builds: HashMap<String, Build>,
-    builds_positions: Vec<(i16, i16)>,
+    builds: HashMap<i32, Build>,
+    builds_positions: HashMap<(i16, i16), Vec<i32>>,
     link_button_ids: HashMap<String, i32>,
     link_button_pressed: i32,
     move_requested: Option<Vec<(i16, i16)>>,
@@ -91,14 +91,9 @@ impl ZoneEngine {
         characters: HashMap<String, Character>,
         stuffs: HashMap<String, Stuff>,
         resources: Vec<Resource>,
-        builds: HashMap<String, Build>,
+        builds: HashMap<i32, Build>,
         request_clicks: Option<RequestClicks>,
     ) -> Self {
-        let mut builds_positions = vec![];
-        for (_, build) in builds.iter() {
-            builds_positions.push((build.row_i as i16, build.col_i as i16));
-        }
-
         let mut zone_engine = Self {
             tiles,
             tile_sheet: TileSheet::new(tile_sheet_image.clone(), tile_width, tile_height),
@@ -135,7 +130,7 @@ impl ZoneEngine {
             stuffs,
             resources,
             builds,
-            builds_positions,
+            builds_positions: HashMap::new(),
             link_button_ids: HashMap::new(),
             link_button_pressed: -1,
             move_requested: None,
@@ -143,7 +138,19 @@ impl ZoneEngine {
             cursor_position: Point::new(0.0, 0.0),
         };
         zone_engine.update_link_button_data();
+        zone_engine.update_builds_data();
         zone_engine
+    }
+
+    fn update_builds_data(&mut self) {
+        for (_, build) in self.builds.iter() {
+            let key = (build.row_i as i16, build.col_i as i16);
+            if self.builds_positions.contains_key(&key) {
+                self.builds_positions.get_mut(&key).unwrap().push(build.id);
+            } else {
+                self.builds_positions.insert(key, vec![build.id]);
+            }
+        }
     }
 
     fn update_link_button_data(&mut self) {
@@ -191,7 +198,9 @@ impl ZoneEngine {
 
                 // If build is here, do not draw tile
                 if replace_by_back.is_none()
-                    && self.builds_positions.contains(&(zone_row_i, zone_col_i))
+                    && self
+                        .builds_positions
+                        .contains_key(&(zone_row_i, zone_col_i))
                 {
                     continue;
                 }
@@ -369,6 +378,25 @@ impl ZoneEngine {
         None
     }
 
+    fn there_is_build_not_browseable(&self, row_i: i16, col_i: i16) -> bool {
+        if let Some(build_ids) = self.builds_positions.get(&(row_i, col_i)) {
+            for build_id in build_ids.iter() {
+                // TODO BS: transport type
+                if !self
+                    .builds
+                    .get(build_id)
+                    .unwrap()
+                    .traversable
+                    .get("WALKING")
+                    .unwrap_or(&true)
+                {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
     fn try_player_moves(&mut self, moves: &Vec<(i16, i16)>) -> (bool, bool) {
         let mut player_have_move = (false, false);
 
@@ -394,7 +422,11 @@ impl ZoneEngine {
             try_next_position.1,
         );
         let next_tile_id = self.level.tile_id(try_next_tile.0, try_next_tile.1);
-        if self.tiles.browseable(&next_tile_id) {
+        let tile_is_browseable = self.tiles.browseable(&next_tile_id);
+        let build_not_browseable =
+            self.there_is_build_not_browseable(try_next_tile.0, try_next_tile.1);
+
+        if tile_is_browseable && !build_not_browseable {
             return self.player.try_move_by(move_.0, move_.1);
         }
         (false, false)
@@ -583,7 +615,8 @@ impl Engine for ZoneEngine {
                     self.update_link_button_data();
                 }
                 ZoneEventType::NewBuild { build } => {
-                    self.builds.insert(build.id.to_string(), build);
+                    self.builds.insert(build.id, build);
+                    self.update_builds_data();
                 }
                 _ => println!("unknown event type {:?}", &event.event_type),
             }

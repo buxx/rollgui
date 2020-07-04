@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Build {
@@ -7,6 +8,7 @@ pub struct Build {
     pub row_i: i32,
     pub col_i: i32,
     pub classes: Vec<String>,
+    pub traversable: HashMap<String, bool>,
 }
 
 impl Build {

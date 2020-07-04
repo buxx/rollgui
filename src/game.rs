@@ -235,9 +235,9 @@ impl MyGame {
             .client
             .get_zone_builds(player.world_position.0, player.world_position.1)
             .unwrap();
-        let mut builds: HashMap<String, Build> = HashMap::new();
+        let mut builds: HashMap<i32, Build> = HashMap::new();
         for build in builds_list.into_iter() {
-            builds.insert(build.id.to_string().clone(), build);
+            builds.insert(build.id, build);
         }
 
         self.engine = Box::new(ZoneEngine::new(

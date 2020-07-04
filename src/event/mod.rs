@@ -3,6 +3,7 @@ use crate::error::RollingError;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_derive::{Deserialize as DeserializeDerive, Serialize as SerializeDerive};
 use serde_json::Value;
+use std::collections::HashMap;
 
 pub const PLAYER_MOVE: &str = "PLAYER_MOVE";
 pub const CLIENT_WANT_CLOSE: &str = "CLIENT_WANT_CLOSE";
@@ -140,6 +141,17 @@ impl ZoneEvent {
                     let class = value.as_str().unwrap();
                     classes.push(class.to_string());
                 }
+                let mut traversable: HashMap<String, bool> = HashMap::new();
+                traversable.insert(
+                    "WALKING".to_string(),
+                    build_data["traversable"]
+                        .as_object()
+                        .unwrap()
+                        .get("WALKING")
+                        .unwrap()
+                        .as_bool()
+                        .unwrap(),
+                );
 
                 Ok(ZoneEvent {
                     event_type_name: String::from(NEW_BUILD),
@@ -150,6 +162,7 @@ impl ZoneEvent {
                             row_i: build_data["row_i"].as_i64().unwrap() as i32,
                             col_i: build_data["col_i"].as_i64().unwrap() as i32,
                             classes,
+                            traversable,
                         },
                     },
                 })
