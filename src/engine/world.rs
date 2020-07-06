@@ -163,6 +163,7 @@ impl Engine for WorldEngine {
         }
 
         if input.key_code == Some(keyboard::KeyCode::Escape) {
+            input.key_code = None;
             return Some(MainMessage::DescriptionToZone {
                 request_clicks: None,
             });
