@@ -598,10 +598,17 @@ impl Engine for ZoneEngine {
                 }
                 ZoneEventType::CharacterExit { character_id } => {
                     if let None = self.characters.remove(&character_id) {
-                        println!(
-                            "{} left zone but was not in list of characters",
-                            &character_id
-                        );
+                        if &character_id == &self.player.id {
+                            println!("Reload zone because player left on server side");
+                            return Some(MainMessage::DescriptionToZone {
+                                request_clicks: None,
+                            });
+                        } else {
+                            println!(
+                                "{} left zone but was not in list of characters",
+                                &character_id
+                            );
+                        }
                     } else {
                         println!("{} exit from zone", &character_id);
                     }
