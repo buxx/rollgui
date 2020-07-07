@@ -75,6 +75,7 @@ pub struct ZoneEngine {
     move_requested: Option<Vec<(i16, i16)>>,
     request_clicks: Option<RequestClicks>,
     cursor_position: Point,
+    player_tile_id: String,
 }
 
 impl ZoneEngine {
@@ -136,6 +137,7 @@ impl ZoneEngine {
             move_requested: None,
             request_clicks,
             cursor_position: Point::new(0.0, 0.0),
+            player_tile_id: String::from("PLAYER"),
         };
         zone_engine.update_link_button_data();
         zone_engine.update_builds_data();
@@ -235,7 +237,7 @@ impl ZoneEngine {
         let mut sprites: Vec<Sprite> = vec![];
 
         sprites.push(self.tile_sheet.create_sprite_for(
-            "PLAYER",
+            &self.player_tile_id,
             self.get_real_x(self.player.x),
             self.get_real_y(self.player.y),
         ));
@@ -704,10 +706,12 @@ impl Engine for ZoneEngine {
             if input.keys_pressed.contains(&keyboard::KeyCode::Right) {
                 try_player_moves.push((1, 0));
                 self.move_requested = None;
+                self.player_tile_id = String::from("PLAYER");
             }
             if input.keys_pressed.contains(&keyboard::KeyCode::Left) {
                 try_player_moves.push((-1, 0));
                 self.move_requested = None;
+                self.player_tile_id = String::from("PLAYER_LEFT");
             }
             if input.keys_pressed.contains(&keyboard::KeyCode::Up) {
                 try_player_moves.push((0, -1));
