@@ -133,6 +133,7 @@ impl Client {
             character.unread_conversation,
             character.unvote_affinity_relation,
             character.unread_transactions,
+            character.pending_actions,
         ))
     }
 
@@ -176,6 +177,7 @@ impl Client {
             character.unread_conversation,
             character.unvote_affinity_relation,
             character.unread_transactions,
+            character.pending_actions,
         ))
     }
 

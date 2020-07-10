@@ -921,6 +921,11 @@ impl Engine for ZoneEngine {
             } else {
                 "Conversations"
             };
+        let actions_label = if self.player.pending_actions != 0 {
+            format!("Actions({})", self.player.pending_actions)
+        } else {
+            "Actions".to_string()
+        };
 
         let left_menu = Column::new()
             .width((START_SCREEN_X / 2) as u32)
@@ -990,7 +995,7 @@ impl Engine for ZoneEngine {
                     .width(175),
             )
             .push(
-                Button::new(&mut self.action_menu_button_state, "Actions")
+                Button::new(&mut self.action_menu_button_state, &actions_label)
                     .class(button::Class::Secondary)
                     .on_press(Message::ActionMenuButtonPressed)
                     .width(175),
