@@ -23,7 +23,7 @@ pub mod world;
 pub fn main() -> Result<()> {
     <game::MyGame as UserInterface>::run(WindowSettings {
         title: String::from("Coffee"),
-        size: (800, 600),
+        size: (1024, 768),
         resizable: true,
         fullscreen: false,
         maximized: false,

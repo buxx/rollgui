@@ -15,7 +15,7 @@ pub struct TileSheet {
     tile_height: i16,
 }
 
-const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 45] = [
+const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 69] = [
     ("SEA", None, (7, 0)),
     ("JUNGLE", None, (7, 4)),
     ("PLAIN", None, (7, 2)),
@@ -41,9 +41,11 @@ const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 45] = [
     ("LEAF_TREE", None, (1, 7)),
     ("TROPICAL_TREE", None, (1, 8)),
     ("DEAD_TREE", None, (0, 8)),
+
     ("PLAYER", None, (6, 0)),
     ("PLAYER_LEFT", None, (6, 1)),
     ("CHARACTER", None, (6, 0)),
+
     ("STUFF_GENERIC", None, (3, 0)),
     ("BOTTLE", None, (3, 1)),
     ("BAG", None, (3, 2)),
@@ -52,15 +54,44 @@ const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 45] = [
     ("SHIELD", None, (3, 5)),
     ("WEAPON", None, (3, 6)),
     ("SPEAR", None, (3, 7)),
-    ("CORPSE", None, (3, 8)),
+    ("CORPSE", None, (3, 11)),
     ("ANIMAL", None, (3, 9)),
     ("CRAFT", None, (3, 10)),
     ("RESOURCE_GENERIC", None, (5, 0)),
+    // ("FRESH_WATER", None, (5, 10)),
+    // ("SALTED_WATER", None, (5, 10)),
+    ("BEACH_SAND", None, (5, 11)),
+    // ("DIRT", None, (5, 9)),
+    ("WET_DIRT", None, (5, 9)),
+    ("WOOD", None, (5, 6)),
+    ("VEGETAL_FOOD_FRESH", None, (5, 3)),
+    ("SHELLFISH_FRESH", None, (5, 1)),
+    ("RAW_MEAT", None, (5, 4)),
+    ("COOKED_MEAT", None, (5, 5)),
+    ("SMOKED_MEAT", None, (5, 5)),
+    ("ANIMAL_SKIN", None, (5, 8)),
+    ("GRAMINEAE", None, (5, 13)),
+    ("BREAD", None, (5, 14)),
+    ("RAW_STONE", None, (5, 12)),
+    ("LEATHER_PIECE", None, (5, 7)),
+
     ("BUILD_GENERIC", None, (4, 1)),
     ("CAMPFIRE", None, (4, 1)),
     ("WALL", None, (4, 2)),
     ("WOOD_FENCE", None, (4, 2)),
-    ("STONE_WALL", None, (4, 2)),
+    ("STONE_WALL", None, (4, 3)),
+    ("LOOM", None, (4, 6)),
+    ("BRUSHWOOD_EDGE", None, (4, 4)),
+    ("DIRT_WALL", None, (4, 5)),
+
+    ("BASKETRY_BAG", None, (3, 12)),
+    ("SKIN_BAG", None, (3, 14)),
+    ("LEATHER_BAG", None, (3, 13)),
+    ("TRAVOIS", None, (3, 20)),
+    ("CLOTH_BAG", None, (3, 15)),
+    ("ANIMAL_SKIN_CLOTHES", None, (3, 17)),
+    ("LEATHER_CLOTHES", None, (3, 16)),
+    ("LEATHER_BRIGANDINE", None, (3, 19)),
 ];
 
 impl TileSheet {

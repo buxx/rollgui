@@ -304,10 +304,15 @@ impl ZoneEngine {
                 continue;
             }
 
-            sprites.push(
-                self.tile_sheet
-                    .create_sprite_for("RESOURCE_GENERIC", real_x, real_y),
-            );
+            // TODO BS 20200722: use class system like for build and stuff
+            if self.tile_sheet.have_id(&resource.id) {
+                sprites.push(self.tile_sheet.create_sprite_for(&resource.id, real_x, real_y));
+            } else {
+                sprites.push(
+                    self.tile_sheet
+                        .create_sprite_for("RESOURCE_GENERIC", real_x, real_y),
+                );
+            }
         }
 
         sprites
