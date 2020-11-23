@@ -4,6 +4,7 @@ import os
 import shutil
 import subprocess
 import typing
+import tempfile
 from json import JSONDecodeError
 
 import requests
@@ -17,9 +18,10 @@ TRACIM_LOGIN = "sevajol.bastien@gmail.com"
 CONFIG = {
     "x86_64-unknown-linux-gnu": ("Rolling_Linux_x86-64", "5", "201"),
     "i686-unknown-linux-gnu": ("Rolling_Linux_i686", "5", "384"),
-    "x86_64-pc-windows-gnu": ("Rolling_Windows_x86-64", "5", "200"),
-    "i686-pc-windows-gnu": ("Rolling_windows_i686", "5", "218"),
+    "x86_64-pc-windows-msvc": ("Rolling_Windows_x86-64", "5", "200"),
+    "i686-pc-windows-msvc": ("Rolling_windows_i686", "5", "218"),
 }
+TMP_DIR = tempfile.gettempdir()
 
 
 def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None, debug: bool = False, upload: bool = False) -> None:
@@ -40,26 +42,29 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
         # zip
         folder_str = "release" if not debug else "debug"
         exe_extension = ".exe" if "windows" in target else ""
-        shutil.rmtree(f"/tmp/rolling/{file_name}", ignore_errors=True)
-        os.makedirs(f"/tmp/rolling/{file_name}")
-        os.makedirs(f"/tmp/rolling/{file_name}/resources")
-        shutil.copy(f"target/{target}/{folder_str}/rollgui{exe_extension}", f"/tmp/rolling/{file_name}")
-        shutil.copy(f"resources/tilesheet.png", f"/tmp/rolling/{file_name}/resources/")
-        shutil.copy(f"resources/ui.png", f"/tmp/rolling/{file_name}/resources/")
+        shutil.rmtree(f"{TMP_DIR}/rolling/{file_name}", ignore_errors=True)
+        os.makedirs(f"{TMP_DIR}/rolling/{file_name}")
+        os.makedirs(f"{TMP_DIR}/rolling/{file_name}/resources")
+        shutil.copy(f"target/{target}/{folder_str}/rollgui{exe_extension}", f"{TMP_DIR}/rolling/{file_name}")
+        shutil.copy(f"resources/tilesheet.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
+        shutil.copy(f"resources/ui.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
+        zip_command = f"cd {TMP_DIR}\rolling && zip -r {file_name}.zip {file_name}"
         if "windows" in target:
-            shutil.copy(f"rollgui.bat", f"/tmp/rolling/{file_name}/")
+            shutil.copy(f"rollgui.bat", f"{TMP_DIR}/rolling/{file_name}/")
+            zip_command = f"cd {TMP_DIR}\\rolling && tar.exe -a -c -f {file_name}.zip {file_name}"
+        print(zip_command)
         subprocess.check_output(
-            f"cd /tmp/rolling && zip -r {file_name}.zip {file_name}",
+            zip_command,
             shell=True,
         )
-        print(f"zip available at /tmp/rolling/{file_name}.zip")
+        print(f"zip available at {TMP_DIR}/rolling/{file_name}.zip")
 
         if not upload:
             return
         print("upload ... ", end="")
 
         # upload
-        with open(f"/tmp/rolling/{file_name}.zip", "rb") as zip_file:
+        with open(f"{TMP_DIR}/rolling/{file_name}.zip", "rb") as zip_file:
             response = requests.put(
                 url=TRACIM_API_URL.format(
                     workspace_id=tracim_workspace_id,
