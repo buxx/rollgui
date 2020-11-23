@@ -32,7 +32,9 @@ use pathfinding::prelude::{absdiff, astar};
 use std::collections::HashMap;
 use std::time::Instant;
 
-const START_SCREEN_X: i16 = 400;
+const START_SCREEN_X: i16 = 0;
+const LEFT_MENU_WIDTH: i16 = 200;
+const RIGHT_MENU_WIDTH: i16 = 200;
 const START_SCREEN_Y: i16 = 0;
 
 pub struct ZoneEngine {
@@ -941,7 +943,7 @@ impl Engine for ZoneEngine {
         };
 
         let left_menu = Column::new()
-            .width((START_SCREEN_X / 2) as u32)
+            .width(LEFT_MENU_WIDTH as u32)
             .height(window.height() as u32)
             // .align_items(Align::Center)
             // .justify_content(Justify::Center)
@@ -1021,7 +1023,7 @@ impl Engine for ZoneEngine {
             );
 
         let mut right_menu = Column::new()
-            .width((START_SCREEN_X / 2) as u32)
+            .width(RIGHT_MENU_WIDTH as u32)
             .height(window.height() as u32);
         for (text, url) in self.resume_text.iter() {
             if let Some(url) = url {
@@ -1058,10 +1060,15 @@ impl Engine for ZoneEngine {
             }
         }
 
+        let center_column = Column::new()
+            .width(window.width() as u32 - LEFT_MENU_WIDTH as u32 - RIGHT_MENU_WIDTH as u32)
+            .height(window.height() as u32);
+
         let layout = Row::new()
             .push(left_menu)
-            .align_items(Align::Stretch)
-            .push(right_menu);
+            .push(center_column)
+            .push(right_menu)
+            .align_items(Align::Stretch);
 
         layout.into()
     }
