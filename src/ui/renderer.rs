@@ -1,4 +1,5 @@
 mod button;
+mod thin_button;
 mod checkbox;
 mod image;
 mod panel;

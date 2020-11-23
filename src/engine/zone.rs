@@ -14,8 +14,8 @@ use crate::server::Server;
 use crate::sheet::TileSheet;
 use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles;
-use crate::ui::widget::button;
-use crate::ui::widget::button::Button;
+use crate::ui::widget::thin_button;
+use crate::ui::widget::thin_button::Button;
 use crate::ui::widget::state_less_button;
 use crate::ui::widget::state_less_button::StateLessButton;
 use crate::ui::widget::text::Text;
@@ -49,18 +49,18 @@ pub struct ZoneEngine {
     player: Player,
     level: Level,
     socket: ZoneSocket,
-    world_menu_button_state: button::State,
-    card_menu_button_state: button::State,
-    events_menu_button_state: button::State,
-    business_menu_button_state: button::State,
-    affinities_menu_button_state: button::State,
-    zone_menu_button_state: button::State,
-    zone_messages_menu_button_state: button::State,
-    conversations_menu_button_state: button::State,
-    inventory_menu_button_state: button::State,
-    action_menu_button_state: button::State,
-    build_menu_button_state: button::State,
-    exit_menu_button_state: button::State,
+    world_menu_button_state: thin_button::State,
+    card_menu_button_state: thin_button::State,
+    events_menu_button_state: thin_button::State,
+    business_menu_button_state: thin_button::State,
+    affinities_menu_button_state: thin_button::State,
+    zone_menu_button_state: thin_button::State,
+    zone_messages_menu_button_state: thin_button::State,
+    conversations_menu_button_state: thin_button::State,
+    inventory_menu_button_state: thin_button::State,
+    action_menu_button_state: thin_button::State,
+    build_menu_button_state: thin_button::State,
+    exit_menu_button_state: thin_button::State,
     resume_text: Vec<(String, Option<String>)>,
     around_text: Vec<(String, Option<String>)>,
     around_wait: Option<Instant>,
@@ -109,18 +109,18 @@ impl ZoneEngine {
             player,
             level,
             socket,
-            world_menu_button_state: button::State::new(),
-            card_menu_button_state: button::State::new(),
-            events_menu_button_state: button::State::new(),
-            business_menu_button_state: button::State::new(),
-            affinities_menu_button_state: button::State::new(),
-            zone_menu_button_state: button::State::new(),
-            zone_messages_menu_button_state: button::State::new(),
-            conversations_menu_button_state: button::State::new(),
-            inventory_menu_button_state: button::State::new(),
-            action_menu_button_state: button::State::new(),
-            build_menu_button_state: button::State::new(),
-            exit_menu_button_state: button::State::new(),
+            world_menu_button_state: thin_button::State::new(),
+            card_menu_button_state: thin_button::State::new(),
+            events_menu_button_state: thin_button::State::new(),
+            business_menu_button_state: thin_button::State::new(),
+            affinities_menu_button_state: thin_button::State::new(),
+            zone_menu_button_state: thin_button::State::new(),
+            zone_messages_menu_button_state: thin_button::State::new(),
+            conversations_menu_button_state: thin_button::State::new(),
+            inventory_menu_button_state: thin_button::State::new(),
+            action_menu_button_state: thin_button::State::new(),
+            build_menu_button_state: thin_button::State::new(),
+            exit_menu_button_state: thin_button::State::new(),
             resume_text,
             around_text: vec![],
             around_wait: None,
@@ -897,35 +897,40 @@ impl Engine for ZoneEngine {
     }
 
     fn layout(&mut self, window: &Window) -> Element {
-        let event_label = if self.player.unread_event && self.menu_blinker.visible(500, 'E') {
-            "*Événements*"
+        let event_class = if self.player.unread_event && self.menu_blinker.visible(500, 'E') {
+            thin_button::Class::Primary
         } else {
-            "Événements"
+            thin_button::Class::Secondary
         };
-        let business_label =
+        let business_class =
             if self.player.unread_transactions && self.menu_blinker.visible(500, 'B') {
-                "*Commerce*"
+                thin_button::Class::Primary
             } else {
-                "Commerce"
+                thin_button::Class::Secondary
             };
-        let affinity_label =
+        let affinity_class =
             if self.player.unvote_affinity_relation && self.menu_blinker.visible(500, 'A') {
-                "*Affinités*"
+                thin_button::Class::Primary
             } else {
-                "Affinités"
+                thin_button::Class::Secondary
             };
-        let zone_message_label =
+        let zone_message_class =
             if self.player.unread_zone_message && self.menu_blinker.visible(500, 'M') {
-                "*Chat*"
+                thin_button::Class::Primary
             } else {
-                "Chat"
+                thin_button::Class::Secondary
             };
-        let conversation_label =
+        let conversation_class =
             if self.player.unread_conversation && self.menu_blinker.visible(500, 'C') {
-                "*Conversations*"
+                thin_button::Class::Primary
             } else {
-                "Conversations"
+                thin_button::Class::Secondary
             };
+        let actions_class = if self.player.pending_actions != 0 {
+            thin_button::Class::Primary
+        } else {
+            thin_button::Class::Secondary
+        };
         let actions_label = if self.player.pending_actions != 0 {
             format!("Actions({})", self.player.pending_actions)
         } else {
@@ -941,79 +946,79 @@ impl Engine for ZoneEngine {
             .spacing(5)
             .push(
                 Button::new(&mut self.world_menu_button_state, "Carte du monde")
-                    .class(button::Class::Secondary)
+                    .class(thin_button::Class::Secondary)
                     .on_press(Message::WorldMenuButtonPressed)
-                    .width(175),
+                    .width(175)
             )
             .push(
                 Button::new(&mut self.card_menu_button_state, "Fiche")
-                    .class(button::Class::Secondary)
+                    .class(thin_button::Class::Secondary)
                     .on_press(Message::CardMenuButtonPressed)
                     .width(175),
             )
             .push(
-                Button::new(&mut self.events_menu_button_state, event_label)
-                    .class(button::Class::Secondary)
+                Button::new(&mut self.events_menu_button_state, "Événements")
+                    .class(event_class)
                     .on_press(Message::EventsMenuButtonPressed)
                     .width(175),
             )
             .push(
-                Button::new(&mut self.business_menu_button_state, business_label)
-                    .class(button::Class::Secondary)
+                Button::new(&mut self.business_menu_button_state, "Commerce")
+                    .class(business_class)
                     .on_press(Message::BusinessMenuButtonPressed)
                     .width(175),
             )
             .push(
-                Button::new(&mut self.affinities_menu_button_state, affinity_label)
-                    .class(button::Class::Secondary)
+                Button::new(&mut self.affinities_menu_button_state, "Affinités")
+                    .class(affinity_class)
                     .on_press(Message::AffinitiesMenuButtonPressed)
                     .width(175),
             )
             .push(
                 Button::new(&mut self.zone_menu_button_state, "Zone")
-                    .class(button::Class::Secondary)
+                    .class(zone_message_class)
                     .on_press(Message::ZoneMenuButtonPressed)
                     .width(175),
             )
             .push(
                 Button::new(
                     &mut self.zone_messages_menu_button_state,
-                    zone_message_label,
+                    "Chat",
                 )
-                .class(button::Class::Secondary)
+                .class(thin_button::Class::Secondary)
                 .on_press(Message::ZoneMessagesMenuButtonPressed)
                 .width(175),
             )
             .push(
                 Button::new(
                     &mut self.conversations_menu_button_state,
-                    conversation_label,
+                    "Conversations",
                 )
-                .class(button::Class::Secondary)
+                .class(conversation_class)
                 .on_press(Message::ConversationsMenuButtonPressed)
                 .width(175),
             )
             .push(
                 Button::new(&mut self.inventory_menu_button_state, "Inventaire")
-                    .class(button::Class::Secondary)
+                    .class(thin_button::Class::Secondary)
                     .on_press(Message::InventoryMenuButtonPressed)
                     .width(175),
             )
             .push(
                 Button::new(&mut self.action_menu_button_state, &actions_label)
-                    .class(button::Class::Secondary)
+                    .class(actions_class)
                     .on_press(Message::ActionMenuButtonPressed)
                     .width(175),
             )
             .push(
                 Button::new(&mut self.build_menu_button_state, "Construire")
-                    .class(button::Class::Secondary)
+                    .class(thin_button::Class::Secondary)
                     .on_press(Message::BuildMenuButtonPressed)
                     .width(175),
             )
             .push(
                 Button::new(&mut self.exit_menu_button_state, "Quitter")
-                    .class(button::Class::Secondary)
+                    .class(thin_button::Class::Secondary)
                     .on_press(Message::ExitMenuButtonPressed)
                     .width(175),
             );
