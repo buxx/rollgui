@@ -41,11 +41,9 @@ const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 69] = [
     ("LEAF_TREE", None, (1, 7)),
     ("TROPICAL_TREE", None, (1, 8)),
     ("DEAD_TREE", None, (0, 8)),
-
     ("PLAYER", None, (6, 0)),
     ("PLAYER_LEFT", None, (6, 1)),
     ("CHARACTER", None, (6, 0)),
-
     ("STUFF_GENERIC", None, (3, 0)),
     ("BOTTLE", None, (3, 1)),
     ("BAG", None, (3, 2)),
@@ -74,7 +72,6 @@ const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 69] = [
     ("BREAD", None, (5, 14)),
     ("RAW_STONE", None, (5, 12)),
     ("LEATHER_PIECE", None, (5, 7)),
-
     ("BUILD_GENERIC", None, (4, 1)),
     ("CAMPFIRE", None, (4, 1)),
     ("WALL", None, (4, 2)),
@@ -83,7 +80,6 @@ const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 69] = [
     ("LOOM", None, (4, 6)),
     ("BRUSHWOOD_EDGE", None, (4, 4)),
     ("DIRT_WALL", None, (4, 5)),
-
     ("BASKETRY_BAG", None, (3, 12)),
     ("SKIN_BAG", None, (3, 14)),
     ("LEATHER_BAG", None, (3, 13)),

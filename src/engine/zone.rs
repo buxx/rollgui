@@ -14,11 +14,11 @@ use crate::server::Server;
 use crate::sheet::TileSheet;
 use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles;
-use crate::ui::widget::thin_button;
-use crate::ui::widget::thin_button::Button;
 use crate::ui::widget::state_less_button;
 use crate::ui::widget::state_less_button::StateLessButton;
 use crate::ui::widget::text::Text;
+use crate::ui::widget::thin_button;
+use crate::ui::widget::thin_button::Button;
 use crate::ui::Column;
 use crate::ui::Element;
 use crate::ui::Row;
@@ -306,7 +306,10 @@ impl ZoneEngine {
 
             // TODO BS 20200722: use class system like for build and stuff
             if self.tile_sheet.have_id(&resource.id) {
-                sprites.push(self.tile_sheet.create_sprite_for(&resource.id, real_x, real_y));
+                sprites.push(
+                    self.tile_sheet
+                        .create_sprite_for(&resource.id, real_x, real_y),
+                );
             } else {
                 sprites.push(
                     self.tile_sheet
@@ -948,7 +951,7 @@ impl Engine for ZoneEngine {
                 Button::new(&mut self.world_menu_button_state, "Carte du monde")
                     .class(thin_button::Class::Secondary)
                     .on_press(Message::WorldMenuButtonPressed)
-                    .width(175)
+                    .width(175),
             )
             .push(
                 Button::new(&mut self.card_menu_button_state, "Fiche")
@@ -981,22 +984,16 @@ impl Engine for ZoneEngine {
                     .width(175),
             )
             .push(
-                Button::new(
-                    &mut self.zone_messages_menu_button_state,
-                    "Chat",
-                )
-                .class(thin_button::Class::Secondary)
-                .on_press(Message::ZoneMessagesMenuButtonPressed)
-                .width(175),
+                Button::new(&mut self.zone_messages_menu_button_state, "Chat")
+                    .class(thin_button::Class::Secondary)
+                    .on_press(Message::ZoneMessagesMenuButtonPressed)
+                    .width(175),
             )
             .push(
-                Button::new(
-                    &mut self.conversations_menu_button_state,
-                    "Conversations",
-                )
-                .class(conversation_class)
-                .on_press(Message::ConversationsMenuButtonPressed)
-                .width(175),
+                Button::new(&mut self.conversations_menu_button_state, "Conversations")
+                    .class(conversation_class)
+                    .on_press(Message::ConversationsMenuButtonPressed)
+                    .width(175),
             )
             .push(
                 Button::new(&mut self.inventory_menu_button_state, "Inventaire")

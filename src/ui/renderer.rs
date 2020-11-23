@@ -1,5 +1,4 @@
 mod button;
-mod thin_button;
 mod checkbox;
 mod image;
 mod panel;
@@ -9,6 +8,7 @@ mod slider;
 mod state_less_button;
 mod text;
 mod text_input;
+mod thin_button;
 
 use coffee::graphics::{Batch, Color, Font, Frame, Image, Mesh, Shape};
 use coffee::load::{Join, Task};
