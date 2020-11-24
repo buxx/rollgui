@@ -14,6 +14,7 @@ use crate::server::Server;
 use crate::sheet::TileSheet;
 use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles;
+use crate::ui::widget::link::Link;
 use crate::ui::widget::state_less_button;
 use crate::ui::widget::state_less_button::StateLessButton;
 use crate::ui::widget::text::Text;
@@ -1029,14 +1030,13 @@ impl Engine for ZoneEngine {
             if let Some(url) = url {
                 let id = self.link_button_ids.get(text).unwrap().clone();
                 right_menu = right_menu.push(
-                    StateLessButton::new(
+                    Link::new(
                         self.link_button_pressed == id,
                         &text,
                         Message::LinkButtonPressed(id),
                         Message::LinkButtonReleased(url.clone()),
                     )
-                    .width(175)
-                    .class(state_less_button::Class::Positive),
+                    .width(175),
                 );
             } else {
                 right_menu = right_menu.push(Text::new(text));

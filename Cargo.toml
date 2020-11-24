@@ -1,6 +1,6 @@
 [package]
 name = "rollgui"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Bastien Sevajol <bastien.sevajol@algoo.fr>"]
 edition = "2018"
 

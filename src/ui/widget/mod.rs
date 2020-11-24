@@ -1,5 +1,6 @@
 pub mod button;
 pub mod checkbox;
+pub mod link;
 pub mod radio;
 pub mod state_less_button;
 pub mod text;

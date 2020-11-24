@@ -8,7 +8,7 @@ use coffee::ui::core::MouseCursor;
 const LEFT: Rectangle<u16> = Rectangle {
     x: 0,
     y: 199,
-    width: 7,
+    width: 2,
     height: 23,
 };
 
@@ -20,10 +20,10 @@ const BACKGROUND: Rectangle<u16> = Rectangle {
 };
 
 const RIGHT: Rectangle<u16> = Rectangle {
-    x: LEFT.height - LEFT.width,
-    y: LEFT.y,
-    width: LEFT.width,
-    height: LEFT.height,
+    x: 47,
+    y: 199,
+    width: 2,
+    height: 23,
 };
 
 impl thin_button::Renderer for Renderer {
@@ -86,7 +86,7 @@ impl thin_button::Renderer for Renderer {
 
         self.font.borrow_mut().add(Text {
             content: label,
-            position: Point::new(bounds.x, bounds.y - 4.0),
+            position: Point::new(bounds.x, bounds.y - 1.0),
             bounds: (bounds.width, bounds.height),
             color: if mouse_over {
                 Color::WHITE
@@ -98,7 +98,7 @@ impl thin_button::Renderer for Renderer {
                     a: 1.0,
                 }
             },
-            size: 15.0,
+            size: 17.0,
             horizontal_alignment: HorizontalAlignment::Center,
             vertical_alignment: VerticalAlignment::Center,
             ..Text::default()
