@@ -47,6 +47,7 @@ pub enum Message {
     SearchByStrButtonReleased(i32, i32),
     GoBackFromGroupButtonPressed,
     GoBackZoneButtonPressed,
+    GoBackButtonPressed(String),
     WorldMenuButtonPressed,
     CardMenuButtonPressed,
     EventsMenuButtonPressed,
@@ -59,4 +60,5 @@ pub enum Message {
     ActionMenuButtonPressed,
     BuildMenuButtonPressed,
     ExitMenuButtonPressed,
+    ToStartupPressed,
 }

@@ -1,6 +1,20 @@
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct TwoFooterObject {
+    back_url: String,
+    back_label: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct ThreeFooterObject {
+    back_url: String,
+    back_label: String,
+    continue_url: String,
+    continue_label: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Part {
     pub text: Option<String>,
     pub is_form: bool,
@@ -12,7 +26,6 @@ pub struct Part {
     pub label: Option<String>,
     pub name: Option<String>,
     pub is_link: bool,
-    pub go_back_zone: bool,
     pub default_value: Option<String>,
     pub link_group_name: Option<String>,
     pub align: Option<String>,
@@ -29,6 +42,8 @@ pub struct Description {
     pub title: Option<String>,
     pub items: Vec<Part>,
     pub footer_links: Vec<Part>,
+    pub back_url: Option<String>,
+    pub back_to_zone: bool,
     pub image: Option<String>,
     pub image_id: Option<i32>,
     pub image_extension: Option<String>,

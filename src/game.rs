@@ -114,7 +114,7 @@ impl MyGame {
                 .unwrap(),
             server.clone(),
             None,
-            false,
+            true,
         ));
     }
 

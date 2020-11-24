@@ -1,5 +1,6 @@
 mod button;
 mod checkbox;
+mod fixed_button;
 mod image;
 mod link;
 mod panel;

@@ -6,11 +6,12 @@ use crate::server::client::ClientError;
 use crate::server::Server;
 use crate::ui::widget::button::Button;
 use crate::ui::widget::checkbox::Checkbox;
+use crate::ui::widget::fixed_button::Button as FixedButton;
 use crate::ui::widget::radio::Radio;
 use crate::ui::widget::state_less_button::StateLessButton;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::text_input::TextInput;
-use crate::ui::widget::{button, state_less_button};
+use crate::ui::widget::{button, fixed_button, state_less_button};
 use crate::ui::Element;
 use crate::ui::{Column, Row};
 use coffee::graphics::{Color, Frame, HorizontalAlignment, Point, VerticalAlignment, Window};
@@ -37,7 +38,8 @@ pub struct DescriptionEngine {
     link_button_pressed: i32,
     blink_time: Instant,
     submit_button: button::State,
-    go_back_zone_button: button::State,
+    zone_button_state: fixed_button::State,
+    back_button_state: fixed_button::State,
     current_link_group_name: Option<String>,
     link_group_name_ids: HashMap<String, i32>,
     link_group_button_pressed: i32,
@@ -233,7 +235,8 @@ impl DescriptionEngine {
             link_button_pressed: -1,
             blink_time: Instant::now(),
             submit_button: button::State::new(),
-            go_back_zone_button: button::State::new(),
+            zone_button_state: fixed_button::State::new(),
+            back_button_state: fixed_button::State::new(),
             current_link_group_name: None,
             link_group_name_ids,
             link_group_button_pressed: -1,
@@ -436,10 +439,6 @@ fn part_is_search_by_str(part: &Part) -> bool {
     part.choices.is_some() && part.search_by_str
 }
 
-fn part_is_go_back_to_zone(part: &Part) -> bool {
-    part.go_back_zone
-}
-
 fn default_text_style(text: Text) -> Text {
     text.size(20).vertical_alignment(VerticalAlignment::Center)
 }
@@ -609,6 +608,13 @@ impl Engine for DescriptionEngine {
                     request_clicks: None,
                 })
             }
+            Message::GoBackButtonPressed(url) => {
+                return Some(MainMessage::ToDescriptionWithUrl {
+                    url: url.clone(),
+                    back_url: self.future_back_url.clone(),
+                });
+            }
+            Message::ToStartupPressed => return Some(MainMessage::ToStartup),
             Message::GoBackFromGroupButtonPressed => {
                 self.current_link_group_name = None;
             }
@@ -669,7 +675,6 @@ impl Engine for DescriptionEngine {
             let text_input_ids = self.text_input_ids.clone();
             let text_input_values = self.text_input_values.clone();
             let text_input_selected = self.text_input_selected.clone();
-            let mut back_to_zone_button: Option<String> = None;
             let mut replaced_by_group_names: Vec<String> = vec![];
             let mut ignore_checkbox_ids: Vec<i32> = vec![];
 
@@ -965,16 +970,6 @@ impl Engine for DescriptionEngine {
                             .class(state_less_button::Class::Primary),
                         );
                     }
-                } else if part_is_go_back_to_zone(item) {
-                    back_to_zone_button =
-                        Some(
-                            item.name
-                                .as_ref()
-                                .unwrap_or(item.text.as_ref().unwrap_or(
-                                    &"Retourner sur l'écran de déplacements".to_string(),
-                                ))
-                                .clone(),
-                        );
                 }
             }
 
@@ -989,10 +984,6 @@ impl Engine for DescriptionEngine {
 
             for link_item in description.footer_links.iter() {
                 let label = link_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
-                if link_item.go_back_zone {
-                    back_to_zone_button = Some(label.clone());
-                    break;
-                }
                 let id = *self.link_button_ids.get(&label).unwrap();
                 content = content.push(
                     StateLessButton::new(
@@ -1017,12 +1008,44 @@ impl Engine for DescriptionEngine {
                 );
             }
 
-            if let Some(label) = back_to_zone_button {
+            // Footer always links
+            if !self.force_back_startup {
+                let back_url = if description.back_url.is_some() {
+                    description.back_url
+                } else {
+                    self.back_url.clone()
+                };
+                let back_message = if back_url.is_some() {
+                    Message::GoBackButtonPressed(back_url.unwrap())
+                } else {
+                    Message::GoBackZoneButtonPressed
+                };
+                let back_column = Column::new()
+                    .push(
+                        FixedButton::new(&mut self.back_button_state, "Retour")
+                            .on_press(back_message)
+                            .width(128)
+                            .class(fixed_button::Class::Back),
+                    )
+                    .align_items(Align::End)
+                    .padding(15);
+                let zone_column = Column::new()
+                    .push(
+                        FixedButton::new(&mut self.zone_button_state, "Zone")
+                            .on_press(Message::GoBackZoneButtonPressed)
+                            .width(128)
+                            .class(fixed_button::Class::Zone),
+                    )
+                    .align_items(Align::Start)
+                    .padding(15);
+                let footer_row = Row::new().push(back_column).push(zone_column);
+                content = content.push(footer_row);
+            } else {
                 content = content.push(
-                    Button::new(&mut self.go_back_zone_button, &label)
-                        .on_press(Message::GoBackZoneButtonPressed)
-                        .width(768)
-                        .class(button::Class::Secondary),
+                    FixedButton::new(&mut self.back_button_state, "Retour")
+                        .on_press(Message::ToStartupPressed)
+                        .width(128)
+                        .class(fixed_button::Class::Back),
                 );
             }
 
