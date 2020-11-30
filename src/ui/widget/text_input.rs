@@ -122,6 +122,7 @@ where
             color,
             HorizontalAlignment::Left,
             VerticalAlignment::Top,
+            None,
         );
 
         if hover {

@@ -34,6 +34,7 @@ pub struct Part {
     pub checked: bool,
     pub choices: Option<Vec<String>>,
     pub search_by_str: bool,
+    pub classes: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

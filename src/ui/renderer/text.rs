@@ -1,11 +1,31 @@
 use crate::ui::renderer::Renderer;
 use crate::ui::widget::text;
-use coffee::graphics::{self, Color, HorizontalAlignment, Point, Rectangle, VerticalAlignment};
+use coffee::graphics::{
+    self, Color, HorizontalAlignment, Point, Rectangle, Sprite, VerticalAlignment,
+};
 use coffee::ui::core::{Node, Number, Size, Style};
 use coffee::ui::widget::text as coffee_text;
 
+use crate::ui::widget::text::Class;
 use std::cell::RefCell;
 use std::f32;
+
+const H1_X: u16 = 0;
+const H1_Y: u16 = 370;
+const H1_WIDTH: u16 = 600;
+const H1_HEIGHT: u16 = 54;
+
+const H2_X: u16 = 0;
+const H2_Y: u16 = 424;
+const H2_WIDTH: u16 = 600;
+const H2_HEIGHT: u16 = 37;
+
+const PARAGRAPH_X: u16 = 0;
+const PARAGRAPH_Y: u16 = 461;
+const PARAGRAPH_WIDTH: u16 = 768;
+const PARAGRAPH_HEIGHT: u16 = 37;
+const PARAGRAPH_Y_BORDER: u16 = 8;
+const PARAGRAPH_PADDING: u16 = 7;
 
 impl text::Renderer for Renderer {
     fn node(&self, style: Style, content: &str, size: f32) -> Node {
@@ -67,7 +87,118 @@ impl text::Renderer for Renderer {
         color: Color,
         horizontal_alignment: HorizontalAlignment,
         vertical_alignment: VerticalAlignment,
+        class: Option<text::Class>,
     ) {
+        if let Some(class_) = class {
+            match class_ {
+                Class::H1 => {
+                    self.sprites.add(Sprite {
+                        source: Rectangle {
+                            x: H1_X,
+                            y: H1_Y,
+                            width: H1_WIDTH,
+                            height: H1_HEIGHT,
+                        },
+                        position: Point::new(bounds.x, bounds.y),
+                        scale: (1.0, 1.0),
+                    });
+                    self.font.borrow_mut().add(graphics::Text {
+                        content,
+                        position: Point::new(bounds.x + 15 as f32, bounds.y - 2 as f32),
+                        bounds: (bounds.width, bounds.height),
+                        color,
+                        size,
+                        horizontal_alignment,
+                        vertical_alignment,
+                    });
+                    return;
+                }
+                Class::H2 => {
+                    self.sprites.add(Sprite {
+                        source: Rectangle {
+                            x: H2_X,
+                            y: H2_Y,
+                            width: H2_WIDTH,
+                            height: H2_HEIGHT,
+                        },
+                        position: Point::new(bounds.x, bounds.y),
+                        scale: (1.0, 1.0),
+                    });
+
+                    self.font.borrow_mut().add(graphics::Text {
+                        content,
+                        position: Point::new(bounds.x + 8 as f32, bounds.y + 1 as f32),
+                        bounds: (bounds.width, bounds.height),
+                        color,
+                        size,
+                        horizontal_alignment,
+                        vertical_alignment,
+                    });
+                    return;
+                }
+                Class::Paragraph => {
+                    // TOP
+                    self.sprites.add(Sprite {
+                        source: Rectangle {
+                            x: PARAGRAPH_X,
+                            y: PARAGRAPH_Y,
+                            width: PARAGRAPH_WIDTH,
+                            height: PARAGRAPH_Y_BORDER,
+                        },
+                        position: Point::new(bounds.x, bounds.y),
+                        scale: (1.0, 1.0),
+                    });
+                    // BACKGROUND
+                    self.sprites.add(Sprite {
+                        source: Rectangle {
+                            x: PARAGRAPH_X,
+                            y: PARAGRAPH_Y + PARAGRAPH_Y_BORDER,
+                            width: PARAGRAPH_WIDTH,
+                            height: PARAGRAPH_Y_BORDER,
+                        },
+                        position: Point::new(bounds.x, bounds.y + PARAGRAPH_Y_BORDER as f32),
+                        scale: (
+                            1.0,
+                            ((bounds.height
+                                - PARAGRAPH_Y_BORDER as f32
+                                - PARAGRAPH_Y_BORDER as f32
+                                + PARAGRAPH_PADDING as f32)
+                                / PARAGRAPH_Y_BORDER as f32),
+                        ),
+                    });
+                    // BOTTOM
+                    self.sprites.add(Sprite {
+                        source: Rectangle {
+                            x: PARAGRAPH_X,
+                            y: PARAGRAPH_Y + PARAGRAPH_HEIGHT - PARAGRAPH_Y_BORDER,
+                            width: PARAGRAPH_WIDTH,
+                            height: PARAGRAPH_Y_BORDER,
+                        },
+                        position: Point::new(
+                            bounds.x,
+                            bounds.y + bounds.height - PARAGRAPH_Y_BORDER as f32
+                                + PARAGRAPH_PADDING as f32,
+                        ),
+                        scale: (1.0, 1.0),
+                    });
+
+                    self.font.borrow_mut().add(graphics::Text {
+                        content,
+                        position: Point::new(
+                            bounds.x as f32 + PARAGRAPH_PADDING as f32,
+                            bounds.y as f32 + (PARAGRAPH_PADDING as f32 / 2.0),
+                        ),
+                        bounds: (bounds.width, bounds.height),
+                        color,
+                        size,
+                        horizontal_alignment,
+                        vertical_alignment,
+                    });
+                    return;
+                }
+            }
+        }
+
         self.font.borrow_mut().add(graphics::Text {
             content,
             position: Point::new(bounds.x, bounds.y),

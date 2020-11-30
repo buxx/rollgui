@@ -7,6 +7,13 @@ use crate::ui::renderer;
 use crate::ui::Element;
 use std::hash::Hash;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Class {
+    H1,
+    H2,
+    Paragraph,
+}
+
 /// A fragment of text.
 ///
 /// It implements [`Widget`] when the associated [`core::Renderer`] implements
@@ -36,6 +43,7 @@ pub struct Text {
     style: Style,
     horizontal_alignment: HorizontalAlignment,
     vertical_alignment: VerticalAlignment,
+    class: Option<Class>,
 }
 
 impl Text {
@@ -50,6 +58,7 @@ impl Text {
             style: Style::default().fill_width(),
             horizontal_alignment: HorizontalAlignment::Left,
             vertical_alignment: VerticalAlignment::Top,
+            class: None,
         }
     }
 
@@ -103,6 +112,11 @@ impl Text {
         self.vertical_alignment = alignment;
         self
     }
+
+    pub fn class(mut self, class: Option<Class>) -> Self {
+        self.class = class;
+        self
+    }
 }
 
 impl Widget<message::Message, renderer::Renderer> for Text {
@@ -123,6 +137,7 @@ impl Widget<message::Message, renderer::Renderer> for Text {
             self.color,
             self.horizontal_alignment,
             self.vertical_alignment,
+            self.class,
         );
 
         MouseCursor::OutOfBounds
@@ -177,6 +192,7 @@ pub trait Renderer {
         color: Color,
         horizontal_alignment: HorizontalAlignment,
         vertical_alignment: VerticalAlignment,
+        class: Option<Class>,
     );
 }
 

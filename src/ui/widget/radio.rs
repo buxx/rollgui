@@ -150,6 +150,7 @@ impl Widget<message::Message, renderer::Renderer> for Radio {
             self.label_color,
             HorizontalAlignment::Left,
             VerticalAlignment::Top,
+            None,
         );
 
         self::Renderer::draw(

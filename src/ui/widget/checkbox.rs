@@ -137,6 +137,7 @@ impl Widget<message::Message, renderer::Renderer> for Checkbox {
             self.label_color,
             HorizontalAlignment::Left,
             VerticalAlignment::Top,
+            None,
         );
 
         self::Renderer::draw(

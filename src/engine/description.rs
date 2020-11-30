@@ -9,6 +9,7 @@ use crate::ui::widget::checkbox::Checkbox;
 use crate::ui::widget::fixed_button::Button as FixedButton;
 use crate::ui::widget::radio::Radio;
 use crate::ui::widget::state_less_button::StateLessButton;
+use crate::ui::widget::text;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::text_input::TextInput;
 use crate::ui::widget::{button, fixed_button, state_less_button};
@@ -404,6 +405,41 @@ fn part_is_pure_text(part: &Part) -> bool {
     part.text.is_some() && !part.is_link
 }
 
+fn get_pure_text_class(item: &Part) -> Option<text::Class> {
+    for class in item.classes.iter().rev() {
+        match class.as_str() {
+            "h1" => return Some(text::Class::H1),
+            "h2" => return Some(text::Class::H2),
+            "p" => return Some(text::Class::Paragraph),
+            _ => {}
+        }
+    }
+
+    None
+}
+
+fn get_pure_text_size(item: &Part) -> u16 {
+    for class in item.classes.iter().rev() {
+        match class.as_str() {
+            "h1" => return 50,
+            "h2" => return 30,
+            "p" => return 20,
+            _ => {}
+        }
+    }
+
+    20
+}
+
+fn get_text_from_item(item: &Part) -> text::Text {
+    let class = get_pure_text_class(item);
+    let size = get_pure_text_size(item);
+    Text::new(&get_part_pure_text_text(item))
+        .class(class)
+        .size(size)
+        .vertical_alignment(VerticalAlignment::Center)
+}
+
 fn get_part_pure_text_text(part: &Part) -> String {
     if let Some(label) = part.label.as_ref() {
         if let Some(text) = part.text.as_ref() {
@@ -437,10 +473,6 @@ fn part_is_choices(part: &Part) -> bool {
 
 fn part_is_search_by_str(part: &Part) -> bool {
     part.choices.is_some() && part.search_by_str
-}
-
-fn default_text_style(text: Text) -> Text {
-    text.size(20).vertical_alignment(VerticalAlignment::Center)
 }
 
 impl Engine for DescriptionEngine {
@@ -681,7 +713,7 @@ impl Engine for DescriptionEngine {
             let mut content = Column::new()
                 .max_width(768)
                 .spacing(5)
-                .push(Text::new(&title).size(50));
+                .push(Text::new(&title).size(50).class(Some(text::Class::H1)));
 
             if let Some(error_message) = self.error_message.as_ref() {
                 content = content.push(Text::new(error_message).color(Color::RED));
@@ -689,9 +721,7 @@ impl Engine for DescriptionEngine {
 
             for item in items.iter() {
                 if part_is_pure_text(item) {
-                    content = content.push(default_text_style(Text::new(
-                        &get_part_pure_text_text(item),
-                    )));
+                    content = content.push(get_text_from_item(item));
                     continue;
                 }
 
@@ -709,9 +739,7 @@ impl Engine for DescriptionEngine {
                             .clone();
 
                         if part_is_pure_text(form_item) {
-                            content = content.push(default_text_style(Text::new(
-                                &get_part_pure_text_text(form_item),
-                            )));
+                            content = content.push(get_text_from_item(form_item));
                         } else if part_is_input(form_item) {
                             let form_item_name = form_item.name.as_ref().unwrap().clone();
                             let form_item_id = text_input_ids.get(&form_item_name).unwrap();
@@ -1075,7 +1103,7 @@ impl Engine for DescriptionEngine {
                 .align_items(Align::Center)
                 .justify_content(Justify::Center)
                 .push(info)
-                .push(content)
+                .push(content.spacing(8))
                 .into()
         }
     }
