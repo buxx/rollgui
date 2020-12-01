@@ -217,15 +217,11 @@ impl State {
 /// [`Button`]: struct.Button.html
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Class {
-    /// The [`Button`] performs the main action.
-    ///
-    /// [`Button`]: struct.Button.html
     Back,
-
-    /// The [`Button`] performs an alternative action.
-    ///
-    /// [`Button`]: struct.Button.html
     Zone,
+    Item,
+    Build,
+    Character,
 }
 
 /// The renderer of a [`Button`].

@@ -14,7 +14,7 @@ use crate::server::Server;
 use crate::sheet::TileSheet;
 use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles;
-use crate::ui::widget::button;
+use crate::ui::widget::fixed_button;
 use crate::ui::widget::link::Link;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::thin_button;
@@ -64,9 +64,9 @@ pub struct ZoneEngine {
     build_menu_button_state: thin_button::State,
     exit_menu_button_state: thin_button::State,
     resume_text: Vec<(String, Option<String>)>,
-    around_items_button_state: button::State,
-    around_builds_button_state: button::State,
-    around_characters_button_state: button::State,
+    around_items_button_state: fixed_button::State,
+    around_builds_button_state: fixed_button::State,
+    around_characters_button_state: fixed_button::State,
     around_items_count: i32,
     around_builds_count: i32,
     around_characters_count: i32,
@@ -129,9 +129,9 @@ impl ZoneEngine {
             build_menu_button_state: thin_button::State::new(),
             exit_menu_button_state: thin_button::State::new(),
             resume_text,
-            around_items_button_state: button::State::new(),
-            around_builds_button_state: button::State::new(),
-            around_characters_button_state: button::State::new(),
+            around_items_button_state: fixed_button::State::new(),
+            around_builds_button_state: fixed_button::State::new(),
+            around_characters_button_state: fixed_button::State::new(),
             around_items_count: 0,
             around_builds_count: 0,
             around_characters_count: 0,
@@ -1070,31 +1070,34 @@ impl Engine for ZoneEngine {
 
         if self.around_items_count > 0 {
             right_menu = right_menu.push(
-                button::Button::new(
+                fixed_button::Button::new(
                     &mut self.around_items_button_state,
                     &self.around_items_count.to_string(),
                 )
-                .on_press(Message::AroundItemsButtonPressed),
+                .on_press(Message::AroundItemsButtonPressed)
+                .class(fixed_button::Class::Item),
             )
         }
 
         if self.around_builds_count > 0 {
             right_menu = right_menu.push(
-                button::Button::new(
+                fixed_button::Button::new(
                     &mut self.around_builds_button_state,
                     &self.around_builds_count.to_string(),
                 )
-                .on_press(Message::AroundBuildButtonPressed),
+                .on_press(Message::AroundBuildButtonPressed)
+                .class(fixed_button::Class::Build),
             )
         }
 
         if self.around_characters_count > 0 {
             right_menu = right_menu.push(
-                button::Button::new(
+                fixed_button::Button::new(
                     &mut self.around_characters_button_state,
                     &self.around_characters_count.to_string(),
                 )
-                .on_press(Message::AroundCharactersButtonPressed),
+                .on_press(Message::AroundCharactersButtonPressed)
+                .class(fixed_button::Class::Character),
             )
         }
 

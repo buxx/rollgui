@@ -8,7 +8,7 @@ use coffee::ui::core::MouseCursor;
 const LEFT: Rectangle<u16> = Rectangle {
     x: 0,
     y: 272,
-    width: 24,
+    width: 37,
     height: 49,
 };
 
@@ -20,9 +20,9 @@ const BACKGROUND: Rectangle<u16> = Rectangle {
 };
 
 const RIGHT: Rectangle<u16> = Rectangle {
-    x: LEFT.height - LEFT.width,
+    x: LEFT.x + LEFT.width + BACKGROUND.width,
     y: LEFT.y,
-    width: LEFT.width,
+    width: 10,
     height: LEFT.height,
 };
 
@@ -51,6 +51,9 @@ impl fixed_button::Renderer for Renderer {
         let class_index = match class {
             fixed_button::Class::Back => 0,
             fixed_button::Class::Zone => 1,
+            fixed_button::Class::Item => 2,
+            fixed_button::Class::Build => 3,
+            fixed_button::Class::Character => 4,
         };
 
         self.sprites.add(Sprite {
