@@ -42,7 +42,10 @@ pub enum ZoneEventType {
         character_id: String,
     },
     ThereIsAround {
-        items: Vec<(String, Option<String>)>,
+        stuff_count: i32,
+        resource_count: i32,
+        build_count: i32,
+        character_count: i32,
     },
     ClickActionEvent {
         base_url: String,
@@ -101,20 +104,19 @@ impl ZoneEvent {
                 },
             }),
             &THERE_IS_AROUND => {
-                let mut items: Vec<(String, Option<String>)> = vec![];
-                for value in data["items"].as_array().unwrap() {
-                    let vector = value.as_array().unwrap();
-                    let text = vector.get(0).unwrap().as_str().unwrap().to_string();
-                    let mut url: Option<String> = None;
-                    if let Some(txt) = vector.get(1).unwrap().as_str() {
-                        url = Some(txt.to_string());
-                    }
-                    items.push((text, url));
-                }
+                let stuff_count: i32 = data["stuff_count"].as_i64().unwrap() as i32;
+                let resource_count: i32 = data["resource_count"].as_i64().unwrap() as i32;
+                let build_count: i32 = data["build_count"].as_i64().unwrap() as i32;
+                let character_count: i32 = data["character_count"].as_i64().unwrap() as i32;
 
                 Ok(ZoneEvent {
                     event_type_name: String::from(THERE_IS_AROUND),
-                    event_type: ZoneEventType::ThereIsAround { items },
+                    event_type: ZoneEventType::ThereIsAround {
+                        stuff_count,
+                        resource_count,
+                        build_count,
+                        character_count,
+                    },
                 })
             }
             &NEW_RESUME_TEXT => {

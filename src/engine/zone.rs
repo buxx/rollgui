@@ -14,9 +14,8 @@ use crate::server::Server;
 use crate::sheet::TileSheet;
 use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles;
+use crate::ui::widget::button;
 use crate::ui::widget::link::Link;
-use crate::ui::widget::state_less_button;
-use crate::ui::widget::state_less_button::StateLessButton;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::thin_button;
 use crate::ui::widget::thin_button::Button;
@@ -65,7 +64,12 @@ pub struct ZoneEngine {
     build_menu_button_state: thin_button::State,
     exit_menu_button_state: thin_button::State,
     resume_text: Vec<(String, Option<String>)>,
-    around_text: Vec<(String, Option<String>)>,
+    around_items_button_state: button::State,
+    around_builds_button_state: button::State,
+    around_characters_button_state: button::State,
+    around_items_count: i32,
+    around_builds_count: i32,
+    around_characters_count: i32,
     around_wait: Option<Instant>,
     menu_blinker: util::Blinker<char>,
     characters: HashMap<String, Character>,
@@ -125,7 +129,12 @@ impl ZoneEngine {
             build_menu_button_state: thin_button::State::new(),
             exit_menu_button_state: thin_button::State::new(),
             resume_text,
-            around_text: vec![],
+            around_items_button_state: button::State::new(),
+            around_builds_button_state: button::State::new(),
+            around_characters_button_state: button::State::new(),
+            around_items_count: 0,
+            around_builds_count: 0,
+            around_characters_count: 0,
             around_wait: None,
             menu_blinker: util::Blinker {
                 items: HashMap::new(),
@@ -163,15 +172,6 @@ impl ZoneEngine {
         self.link_button_ids = HashMap::new();
 
         for (text, url) in self.resume_text.iter() {
-            if let Some(_) = url {
-                self.link_button_ids
-                    .insert(text.clone(), link_button_counter);
-
-                link_button_counter += 1;
-            }
-        }
-
-        for (text, url) in self.around_text.iter() {
             if let Some(_) = url {
                 self.link_button_ids
                     .insert(text.clone(), link_button_counter);
@@ -623,9 +623,15 @@ impl Engine for ZoneEngine {
                         println!("{} exit from zone", &character_id);
                     }
                 }
-                ZoneEventType::ThereIsAround { items } => {
-                    self.around_text = items;
-                    self.update_link_button_data();
+                ZoneEventType::ThereIsAround {
+                    stuff_count,
+                    resource_count,
+                    build_count,
+                    character_count,
+                } => {
+                    self.around_items_count = stuff_count + resource_count;
+                    self.around_builds_count = build_count;
+                    self.around_characters_count = character_count;
                 }
                 ZoneEventType::NewResumeText { resume } => {
                     self.resume_text = resume;
@@ -787,7 +793,9 @@ impl Engine for ZoneEngine {
                     },
                 });
                 self.around_wait = Some(Instant::now());
-                self.around_text = vec![];
+                self.around_items_count = 0;
+                self.around_builds_count = 0;
+                self.around_characters_count = 0;
             }
         } else {
             if let Some(around_wait) = self.around_wait.as_ref() {
@@ -893,6 +901,26 @@ impl Engine for ZoneEngine {
                     url: url.clone(),
                     back_url: None,
                 });
+            }
+            Message::AroundItemsButtonPressed => {
+                return Some(MainMessage::ToDescriptionWithUrl {
+                    url: format!("/character/{}/describe_around_items", self.player.id).to_string(),
+                    back_url: None,
+                })
+            }
+            Message::AroundBuildButtonPressed => {
+                return Some(MainMessage::ToDescriptionWithUrl {
+                    url: format!("/character/{}/describe_around_builds", self.player.id)
+                        .to_string(),
+                    back_url: None,
+                })
+            }
+            Message::AroundCharactersButtonPressed => {
+                return Some(MainMessage::ToDescriptionWithUrl {
+                    url: format!("/character/{}/describe_around_characters", self.player.id)
+                        .to_string(),
+                    back_url: None,
+                })
             }
             _ => {}
         }
@@ -1039,22 +1067,35 @@ impl Engine for ZoneEngine {
                 right_menu = right_menu.push(Text::new(text));
             }
         }
-        for (text, url) in self.around_text.iter() {
-            if let Some(url) = url {
-                let id = self.link_button_ids.get(text).unwrap().clone();
-                right_menu = right_menu.push(
-                    StateLessButton::new(
-                        self.link_button_pressed == id,
-                        &text,
-                        Message::LinkButtonPressed(id),
-                        Message::LinkButtonReleased(url.clone()),
-                    )
-                    .width(175)
-                    .class(state_less_button::Class::Positive),
-                );
-            } else {
-                right_menu = right_menu.push(Text::new(text));
-            }
+
+        if self.around_items_count > 0 {
+            right_menu = right_menu.push(
+                button::Button::new(
+                    &mut self.around_items_button_state,
+                    &self.around_items_count.to_string(),
+                )
+                .on_press(Message::AroundItemsButtonPressed),
+            )
+        }
+
+        if self.around_builds_count > 0 {
+            right_menu = right_menu.push(
+                button::Button::new(
+                    &mut self.around_builds_button_state,
+                    &self.around_builds_count.to_string(),
+                )
+                .on_press(Message::AroundBuildButtonPressed),
+            )
+        }
+
+        if self.around_characters_count > 0 {
+            right_menu = right_menu.push(
+                button::Button::new(
+                    &mut self.around_characters_button_state,
+                    &self.around_characters_count.to_string(),
+                )
+                .on_press(Message::AroundCharactersButtonPressed),
+            )
         }
 
         let center_column = Column::new()

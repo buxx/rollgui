@@ -61,4 +61,7 @@ pub enum Message {
     BuildMenuButtonPressed,
     ExitMenuButtonPressed,
     ToStartupPressed,
+    AroundItemsButtonPressed,
+    AroundBuildButtonPressed,
+    AroundCharactersButtonPressed,
 }
