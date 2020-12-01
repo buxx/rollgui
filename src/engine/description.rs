@@ -67,6 +67,7 @@ pub struct DescriptionEngine {
     force_back_startup: bool,
     start_items_from: i32,
     submitable: bool,
+    total_items_count: i32,
 }
 
 impl DescriptionEngine {
@@ -105,11 +106,14 @@ impl DescriptionEngine {
         let mut search_by_str_button_counter: i32 = 0;
         let mut search_by_str_selected = -1;
         let mut submitable = false;
+        let mut total_items_count = 0;
 
         for item in description.items.iter() {
+            total_items_count += 1;
             if part_is_form(item) {
                 submitable = true;
                 for form_item in item.items.iter() {
+                    total_items_count += 1;
                     if part_is_input(form_item) {
                         text_input_ids
                             .insert(form_item.name.as_ref().unwrap().clone(), text_input_counter);
@@ -273,6 +277,7 @@ impl DescriptionEngine {
             force_back_startup,
             start_items_from: 0,
             submitable,
+            total_items_count,
         }
     }
 
@@ -692,14 +697,9 @@ impl Engine for DescriptionEngine {
                 .clone();
             let items = description.items;
 
-            if self.start_items_from as usize >= items.len() {
-                self.start_items_from = items.len() as i32 - 1;
+            if self.start_items_from >= self.total_items_count {
+                self.start_items_from = self.total_items_count - 1;
             }
-            let items = if items.len() != 0 {
-                &items[self.start_items_from as usize..]
-            } else {
-                &items
-            };
 
             let blink_char = self.get_blink_char();
             let mut must_add_submit = false;
@@ -719,12 +719,8 @@ impl Engine for DescriptionEngine {
                 content = content.push(Text::new(error_message).color(Color::RED));
             }
 
+            let mut total_item_i = 0;
             for item in items.iter() {
-                if part_is_pure_text(item) {
-                    content = content.push(get_text_from_item(item));
-                    continue;
-                }
-
                 if part_is_form(&item) {
                     must_add_submit = true;
                     if let Some(submit_label_) = item.submit_label.as_ref() {
@@ -732,6 +728,8 @@ impl Engine for DescriptionEngine {
                     }
 
                     for form_item in item.items.iter() {
+                        total_item_i += 1;
+                        if total_item_i < self.start_items_from { continue }
                         let label = form_item
                             .label
                             .as_ref()
@@ -937,7 +935,13 @@ impl Engine for DescriptionEngine {
                             }
                         }
                     }
+                } else if part_is_pure_text(item) {
+                    total_item_i += 1;
+                    if total_item_i < self.start_items_from { continue }
+                    content = content.push(get_text_from_item(item));
                 } else if part_is_link(item) {
+                    total_item_i += 1;
+                    if total_item_i < self.start_items_from { continue }
                     let label = item
                         .label
                         .as_ref()
