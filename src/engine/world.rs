@@ -125,15 +125,14 @@ impl Engine for WorldEngine {
     fn draw(&mut self, frame: &mut Frame, timer: &Timer) {
         frame.clear(Color::BLACK);
 
-        if timer.has_ticked() {
-            let mut sprites: Vec<Sprite> = vec![];
+        let mut sprites: Vec<Sprite> = vec![];
 
-            sprites.extend(self.get_world_sprites());
+        sprites.extend(self.get_world_sprites());
 
-            self.tile_sheet_batch.clear();
-            self.tile_sheet_batch.extend(sprites);
-            self.tile_sheet_batch.draw(&mut frame.as_target());
-        }
+        self.tile_sheet_batch.clear();
+        self.tile_sheet_batch.extend(sprites);
+        self.tile_sheet_batch.draw(&mut frame.as_target());
+
     }
 
     fn update(&mut self, window: &Window) -> Option<MainMessage> {
