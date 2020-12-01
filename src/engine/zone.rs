@@ -530,7 +530,7 @@ impl ZoneEngine {
 
 impl Drop for ZoneEngine {
     fn drop(&mut self) {
-        // FIXME BS NOW: close websocket here
+        self.socket.close().unwrap();
     }
 }
 
