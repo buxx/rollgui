@@ -537,39 +537,36 @@ impl Drop for ZoneEngine {
 impl Engine for ZoneEngine {
     fn draw(&mut self, frame: &mut Frame, timer: &Timer) {
         frame.clear(Color::BLACK);
+        let mut sprites: Vec<Sprite> = vec![];
 
-        if timer.has_ticked() {
-            let mut sprites: Vec<Sprite> = vec![];
+        sprites.extend(self.get_zone_sprites(Some(self.level.world_tile_type_id.clone())));
+        sprites.extend(self.get_zone_sprites(None));
+        sprites.extend(self.get_build_sprites());
+        sprites.extend(self.get_stuff_sprites());
+        sprites.extend(self.get_resource_sprites());
+        sprites.extend(self.get_characters_sprites());
 
-            sprites.extend(self.get_zone_sprites(Some(self.level.world_tile_type_id.clone())));
-            sprites.extend(self.get_zone_sprites(None));
-            sprites.extend(self.get_build_sprites());
-            sprites.extend(self.get_stuff_sprites());
-            sprites.extend(self.get_resource_sprites());
-            sprites.extend(self.get_characters_sprites());
+        if let Some(request_clicks) = &self.request_clicks {
+            let cursor_x = self.cursor_position.x.round() as i16;
+            let cursor_y = self.cursor_position.y.round() as i16;
+            if cursor_x > START_SCREEN_X && cursor_y > START_SCREEN_Y {
+                for class in request_clicks.cursor_classes.iter().rev() {
+                    if self.tile_sheet.have_id(class) {
+                        let (cursor_row_i, cursor_col_i) =
+                            self.xy_to_zone_coords(cursor_x, cursor_y);
+                        let real_x = self.get_real_x(cursor_col_i * TILE_WIDTH);
+                        let real_y = self.get_real_y(cursor_row_i * TILE_HEIGHT);
 
-            if let Some(request_clicks) = &self.request_clicks {
-                let cursor_x = self.cursor_position.x.round() as i16;
-                let cursor_y = self.cursor_position.y.round() as i16;
-                if cursor_x > START_SCREEN_X && cursor_y > START_SCREEN_Y {
-                    for class in request_clicks.cursor_classes.iter().rev() {
-                        if self.tile_sheet.have_id(class) {
-                            let (cursor_row_i, cursor_col_i) =
-                                self.xy_to_zone_coords(cursor_x, cursor_y);
-                            let real_x = self.get_real_x(cursor_col_i * TILE_WIDTH);
-                            let real_y = self.get_real_y(cursor_row_i * TILE_HEIGHT);
-
-                            sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y));
-                            break;
-                        }
+                        sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y));
+                        break;
                     }
                 }
             }
-
-            self.tile_sheet_batch.clear();
-            self.tile_sheet_batch.extend(sprites);
-            self.tile_sheet_batch.draw(&mut frame.as_target());
         }
+
+        self.tile_sheet_batch.clear();
+        self.tile_sheet_batch.extend(sprites);
+        self.tile_sheet_batch.draw(&mut frame.as_target());
     }
 
     fn update(&mut self, window: &Window) -> Option<MainMessage> {
