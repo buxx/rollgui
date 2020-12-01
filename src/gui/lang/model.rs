@@ -62,3 +62,8 @@ pub struct RequestClicks {
     pub cursor_classes: Vec<String>,
     pub many: bool,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ErrorResponse {
+    pub message: String,
+}

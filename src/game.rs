@@ -140,7 +140,7 @@ impl MyGame {
                     println!("Player found on server");
                     Ok(Some(player))
                 }
-                Err(server::client::ClientError::PlayerNotFound { response: _ }) => {
+                Err(server::client::ClientError::PlayerNotFound { message: _ }) => {
                     println!("Player NOT found on server");
                     Ok(None)
                 }

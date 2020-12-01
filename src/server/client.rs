@@ -8,6 +8,7 @@ use crate::entity::player::{ApiCharacter, Player};
 use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
 use crate::gui::lang::model::Description;
+use crate::gui::lang::model::ErrorResponse;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
 use std::error::Error;
@@ -17,11 +18,11 @@ use std::{fmt, fs, io};
 
 #[derive(Debug)]
 pub enum ClientError {
-    NotFound { response: String },
-    PlayerNotFound { response: String },
-    ClientSideError { response: String },
-    ServerSideError { response: String },
-    UnknownError { response: String },
+    NotFound { message: String },
+    PlayerNotFound { message: String },
+    ClientSideError { message: String },
+    ServerSideError { message: String },
+    UnknownError { message: String },
 }
 
 impl Error for ClientError {}
@@ -29,20 +30,20 @@ impl Error for ClientError {}
 impl ClientError {
     pub fn get_message(client_error: &ClientError) -> String {
         return match client_error {
-            ClientError::NotFound { response } => {
-                format!("Not found: {}", response.to_string()).to_string()
+            ClientError::NotFound { message } => {
+                format!("Not found: {}", message).to_string()
             }
-            ClientError::PlayerNotFound { response } => {
-                format!("Player not found: {}", response.to_string()).to_string()
+            ClientError::PlayerNotFound { message } => {
+                format!("Player not found: {}", message).to_string()
             }
-            ClientError::ClientSideError { response } => {
-                format!("Client side error: {}", response.to_string()).to_string()
+            ClientError::ClientSideError { message } => {
+                format!("Client side error: {}", message).to_string()
             }
-            ClientError::ServerSideError { response } => {
-                format!("Server side error: {}", response.to_string()).to_string()
+            ClientError::ServerSideError { message } => {
+                format!("Server side error: {}", message).to_string()
             }
-            ClientError::UnknownError { response } => {
-                format!("Unknown error: {}", response.to_string()).to_string()
+            ClientError::UnknownError { message } => {
+                format!("Unknown error: {}", message).to_string()
             }
         };
     }
@@ -84,19 +85,21 @@ impl Client {
     fn check_response(&self, response: Response) -> Result<Response, ClientError> {
         if response.status().as_u16() == 404 {
             return Err(ClientError::NotFound {
-                response: response.text().unwrap(),
+                message: "Not Found".to_string(),
             });
         }
 
         if response.status().is_client_error() {
+            let error: ErrorResponse = response.json().unwrap();
             return Err(ClientError::ClientSideError {
-                response: response.text().unwrap(),
+                message: error.message,
             });
         }
 
         if !response.status().is_success() {
+            let error: ErrorResponse = response.json().unwrap();
             return Err(ClientError::ServerSideError {
-                response: response.text().unwrap(),
+                message: error.message,
             });
         }
 
@@ -110,8 +113,8 @@ impl Client {
         let mut response: Response = self.client.get(url.as_str()).send().unwrap();
 
         match self.check_response(response) {
-            Err(ClientError::NotFound { response }) => {
-                return Err(ClientError::PlayerNotFound { response })
+            Err(ClientError::NotFound { message }) => {
+                return Err(ClientError::PlayerNotFound { message })
             }
             Err(client_error) => return Err(client_error),
             Ok(resp) => response = resp,
@@ -355,7 +358,7 @@ impl Client {
     pub fn player_is_dead(&self, character_id: &str) -> Result<bool, ClientError> {
         let url = format!("{}/character/{}/dead", self.get_base_path(), character_id);
         let result = self.check_response(self.client.get(url.as_str()).send().unwrap());
-        if let Err(ClientError::NotFound { response: _ }) = result {
+        if let Err(ClientError::NotFound { message: _ }) = result {
             return Ok(false);
         }
         let response: Response = result?;
