@@ -30,9 +30,7 @@ impl Error for ClientError {}
 impl ClientError {
     pub fn get_message(client_error: &ClientError) -> String {
         return match client_error {
-            ClientError::NotFound { message } => {
-                format!("Not found: {}", message).to_string()
-            }
+            ClientError::NotFound { message } => format!("Not found: {}", message).to_string(),
             ClientError::PlayerNotFound { message } => {
                 format!("Player not found: {}", message).to_string()
             }

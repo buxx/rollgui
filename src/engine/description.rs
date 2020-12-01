@@ -729,7 +729,9 @@ impl Engine for DescriptionEngine {
 
                     for form_item in item.items.iter() {
                         total_item_i += 1;
-                        if total_item_i < self.start_items_from { continue }
+                        if total_item_i < self.start_items_from {
+                            continue;
+                        }
                         let label = form_item
                             .label
                             .as_ref()
@@ -937,11 +939,15 @@ impl Engine for DescriptionEngine {
                     }
                 } else if part_is_pure_text(item) {
                     total_item_i += 1;
-                    if total_item_i < self.start_items_from { continue }
+                    if total_item_i < self.start_items_from {
+                        continue;
+                    }
                     content = content.push(get_text_from_item(item));
                 } else if part_is_link(item) {
                     total_item_i += 1;
-                    if total_item_i < self.start_items_from { continue }
+                    if total_item_i < self.start_items_from {
+                        continue;
+                    }
                     let label = item
                         .label
                         .as_ref()
