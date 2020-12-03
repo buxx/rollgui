@@ -122,7 +122,7 @@ impl WorldEngine {
 }
 
 impl Engine for WorldEngine {
-    fn draw(&mut self, frame: &mut Frame, timer: &Timer) {
+    fn draw(&mut self, frame: &mut Frame, _timer: &Timer) {
         frame.clear(Color::BLACK);
 
         let mut sprites: Vec<Sprite> = vec![];

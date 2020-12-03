@@ -23,6 +23,7 @@ use serde_json::{Map, Number, Value};
 use std::cmp::max;
 use std::collections::HashMap;
 use std::time::Instant;
+use crate::util;
 
 const BLINK_MS: u128 = 250;
 
@@ -68,6 +69,7 @@ pub struct DescriptionEngine {
     start_items_from: i32,
     submitable: bool,
     total_items_count: i32,
+    scroll_by_arrow_ticker: util::Ticker,
 }
 
 impl DescriptionEngine {
@@ -278,6 +280,7 @@ impl DescriptionEngine {
             start_items_from: 0,
             submitable,
             total_items_count,
+            scroll_by_arrow_ticker: util::Ticker::new(20),
         }
     }
 
@@ -582,12 +585,14 @@ impl Engine for DescriptionEngine {
             _ => {}
         }
 
-        if input.keys_pressed.contains(&keyboard::KeyCode::Up) {
-            self.start_items_from = max(0, self.start_items_from - 1);
-        }
+        if self.scroll_by_arrow_ticker.tick() {
+            if input.keys_pressed.contains(&keyboard::KeyCode::Up) {
+                self.start_items_from = max(0, self.start_items_from - 1);
+            }
 
-        if input.keys_pressed.contains(&keyboard::KeyCode::Down) {
-            self.start_items_from += 1;
+            if input.keys_pressed.contains(&keyboard::KeyCode::Down) {
+                self.start_items_from += 1;
+            }
         }
 
         self.start_items_from = max(

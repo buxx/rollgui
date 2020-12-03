@@ -10,6 +10,7 @@ use std::time::Instant;
 pub const BLOCK_GEO: &str = "GEO";
 pub const BLOCK_LEGEND: &str = "LEGEND";
 
+#[derive(Debug)]
 pub struct Blinker<T> {
     pub items: HashMap<T, Instant>,
 }
@@ -29,6 +30,30 @@ where
         }
 
         self.items.insert(key, Instant::now());
+        false
+    }
+}
+
+#[derive(Debug)]
+pub struct Ticker {
+    time: u128,  // ms
+    instant: Instant,
+}
+
+impl Ticker {
+    pub fn new(time: u128) -> Self {
+        Self {
+            time,
+            instant: Instant::now(),
+        }
+    }
+
+    pub fn tick(&mut self) -> bool {
+        let now = Instant::now();
+        if self.instant.elapsed().as_millis() >= self.time {
+            self.instant = now;
+            return true
+        }
         false
     }
 }

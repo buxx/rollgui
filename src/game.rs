@@ -266,7 +266,7 @@ impl MyGame {
 impl Game for MyGame {
     type Input = MyGameInput;
     type LoadingScreen = loading_screen::ProgressBar;
-    const TICKS_PER_SECOND: u16 = 60;
+    const TICKS_PER_SECOND: u16 = 30;
 
     fn load(_window: &Window) -> Task<MyGame> {
         graphics::Image::load("resources/tilesheet.png").map(|image| MyGame {

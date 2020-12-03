@@ -83,6 +83,7 @@ pub struct ZoneEngine {
     request_clicks: Option<RequestClicks>,
     cursor_position: Point,
     player_tile_id: String,
+    player_move_ticker: util::Ticker,
 }
 
 impl ZoneEngine {
@@ -150,6 +151,7 @@ impl ZoneEngine {
             request_clicks,
             cursor_position: Point::new(0.0, 0.0),
             player_tile_id: String::from("PLAYER"),
+            player_move_ticker: util::Ticker::new(15),
         };
         zone_engine.update_link_button_data();
         zone_engine.update_builds_data();
@@ -737,15 +739,6 @@ impl Engine for ZoneEngine {
             }
         }
 
-        if let Some(move_requested) = self.move_requested.as_ref() {
-            if let Some(next_move) = move_requested.iter().next() {
-                try_player_moves.push(*next_move);
-                self.move_requested.as_mut().unwrap().remove(0);
-            } else {
-                self.move_requested = None;
-            }
-        }
-
         match input.key_code {
             Some(keyboard::KeyCode::Escape) => {
                 input.key_code = None;
@@ -763,57 +756,68 @@ impl Engine for ZoneEngine {
             return Some(main_message);
         }
 
-        let mut player_have_move = (false, false);
-        if try_player_moves.len() != 0 {
-            player_have_move = self.try_player_moves(&try_player_moves);
-            if !player_have_move.0 {
-                // try diags is any
-                let mut additional_try_player_mode: (i16, i16) = (0, 0);
-                if try_player_moves.len() > 1 {
-                    for try_player_move in try_player_moves.iter() {
-                        additional_try_player_mode.0 += try_player_move.0;
-                        additional_try_player_mode.1 += try_player_move.1;
-                    }
+        if self.player_move_ticker.tick() {
+            if let Some(move_requested) = self.move_requested.as_ref() {
+                if let Some(next_move) = move_requested.iter().next() {
+                    try_player_moves.push(*next_move);
+                    self.move_requested.as_mut().unwrap().remove(0);
+                } else {
+                    self.move_requested = None;
                 }
-                player_have_move = self.try_player_move(additional_try_player_mode);
             }
-        }
-        if player_have_move.1 {
-            // NOTE: There is problem with moves and we send ws move on NOTHING tile :/ skip it
-            let next_tile_id = self
-                .level
-                .tile_id(self.player.position.0 as i16, self.player.position.1 as i16);
-            if self.tiles.browseable(&next_tile_id) {
-                self.socket.send(event::ZoneEvent {
-                    event_type_name: String::from(event::PLAYER_MOVE),
-                    event_type: event::ZoneEventType::PlayerMove {
-                        to_row_i: self.player.position.0 as i32,
-                        to_col_i: self.player.position.1 as i32,
-                        character_id: String::from(self.player.id.as_str()),
-                    },
-                });
-                self.around_wait = Some(Instant::now());
-                self.around_items_count = 0;
-                self.around_builds_count = 0;
-                self.around_characters_count = 0;
+
+            let mut player_have_move = (false, false);
+            if try_player_moves.len() != 0 {
+                player_have_move = self.try_player_moves(&try_player_moves);
+                if !player_have_move.0 {
+                    // try diags is any
+                    let mut additional_try_player_mode: (i16, i16) = (0, 0);
+                    if try_player_moves.len() > 1 {
+                        for try_player_move in try_player_moves.iter() {
+                            additional_try_player_mode.0 += try_player_move.0;
+                            additional_try_player_mode.1 += try_player_move.1;
+                        }
+                    }
+                    player_have_move = self.try_player_move(additional_try_player_mode);
+                }
             }
-        } else {
-            if let Some(around_wait) = self.around_wait.as_ref() {
-                if around_wait.elapsed().as_millis() > 350 {
-                    self.around_wait = None;
+            if player_have_move.1 {
+                // NOTE: There is problem with moves and we send ws move on NOTHING tile :/ skip it
+                let next_tile_id = self
+                    .level
+                    .tile_id(self.player.position.0 as i16, self.player.position.1 as i16);
+                if self.tiles.browseable(&next_tile_id) {
                     self.socket.send(event::ZoneEvent {
-                        event_type_name: String::from(event::CLIENT_REQUIRE_AROUND),
-                        event_type: event::ZoneEventType::ClientRequireAround {
-                            zone_row_i: self.player.position.0 as i32,
-                            zone_col_i: self.player.position.1 as i32,
+                        event_type_name: String::from(event::PLAYER_MOVE),
+                        event_type: event::ZoneEventType::PlayerMove {
+                            to_row_i: self.player.position.0 as i32,
+                            to_col_i: self.player.position.1 as i32,
                             character_id: String::from(self.player.id.as_str()),
                         },
                     });
+                    self.around_wait = Some(Instant::now());
+                    self.around_items_count = 0;
+                    self.around_builds_count = 0;
+                    self.around_characters_count = 0;
+                }
+            } else {
+                if let Some(around_wait) = self.around_wait.as_ref() {
+                    if around_wait.elapsed().as_millis() > 350 {
+                        self.around_wait = None;
+                        self.socket.send(event::ZoneEvent {
+                            event_type_name: String::from(event::CLIENT_REQUIRE_AROUND),
+                            event_type: event::ZoneEventType::ClientRequireAround {
+                                zone_row_i: self.player.position.0 as i32,
+                                zone_col_i: self.player.position.1 as i32,
+                                character_id: String::from(self.player.id.as_str()),
+                            },
+                        });
+                    }
                 }
             }
-        }
-        if !player_have_move.0 {
-            self.move_requested = None;
+            if !player_have_move.0 {
+                self.move_requested = None;
+            }
         }
 
         None
