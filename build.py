@@ -10,8 +10,7 @@ from json import JSONDecodeError
 import requests
 
 TRACIM_API_URL = (
-    "https://tracim.bux.fr"
-    "/api/v2/workspaces/{workspace_id}/files/{content_id}/raw/{filename}"
+    "https://tracim.bux.fr/api/workspaces/{workspace_id}/files/{content_id}/raw/{filename}"
 )
 TRACIM_LOGIN = "sevajol.bastien@gmail.com"
 
@@ -24,7 +23,7 @@ CONFIG = {
 TMP_DIR = tempfile.gettempdir()
 
 
-def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None, debug: bool = False, upload: bool = False) -> None:
+def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None, debug: bool = False, upload: bool = False, cross: bool = False) -> None:
     for target in targets:
         print(target)
         assert target in CONFIG
@@ -32,10 +31,11 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
         assert (tracim_api_key and upload) or (not tracim_api_key and not upload)
         file_name, tracim_workspace_id, tracim_content_id = CONFIG[target]
         release_str = " --release" if not debug else ""
+        base_cmd = "cargo" if not cross else "cross"
 
         # compile
         subprocess.check_output(
-            f"cargo build --target {target}{release_str}",
+            f"{base_cmd} build --target {target}{release_str}",
             shell=True,
         )
 
@@ -93,5 +93,6 @@ if __name__ == '__main__':
     parser.add_argument("--tracim-api-key", default=None)
     parser.add_argument("--debug", action="store_true", default=False)
     parser.add_argument("--upload", action="store_true", default=False)
+    parser.add_argument("--cross", action="store_true", default=False)
     args = parser.parse_args()
-    main(args.target, args.tracim_api_key, debug=args.debug, upload=args.upload)
+    main(args.target, args.tracim_api_key, debug=args.debug, upload=args.upload, cross=args.cross)
