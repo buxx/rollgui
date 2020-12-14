@@ -21,7 +21,8 @@ pub mod util;
 pub mod world;
 
 pub fn main() -> Result<()> {
-    let _guard = sentry::init("https://7f725b87c5494a66983f69228fc9fd3c@o433154.ingest.sentry.io/5551646");
+    let _guard =
+        sentry::init("https://7f725b87c5494a66983f69228fc9fd3c@o433154.ingest.sentry.io/5551646");
 
     <game::MyGame as UserInterface>::run(WindowSettings {
         title: String::from("Coffee"),

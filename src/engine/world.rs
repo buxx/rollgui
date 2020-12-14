@@ -132,7 +132,6 @@ impl Engine for WorldEngine {
         self.tile_sheet_batch.clear();
         self.tile_sheet_batch.extend(sprites);
         self.tile_sheet_batch.draw(&mut frame.as_target());
-
     }
 
     fn update(&mut self, window: &Window) -> Option<MainMessage> {

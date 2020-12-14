@@ -15,6 +15,7 @@ use crate::ui::widget::text_input::TextInput;
 use crate::ui::widget::{button, fixed_button, state_less_button};
 use crate::ui::Element;
 use crate::ui::{Column, Row};
+use crate::util;
 use coffee::graphics::{Color, Frame, HorizontalAlignment, Point, VerticalAlignment, Window};
 use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
@@ -23,7 +24,6 @@ use serde_json::{Map, Number, Value};
 use std::cmp::max;
 use std::collections::HashMap;
 use std::time::Instant;
-use crate::util;
 
 const BLINK_MS: u128 = 250;
 

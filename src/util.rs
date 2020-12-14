@@ -36,7 +36,7 @@ where
 
 #[derive(Debug)]
 pub struct Ticker {
-    time: u128,  // ms
+    time: u128, // ms
     instant: Instant,
 }
 
@@ -52,7 +52,7 @@ impl Ticker {
         let now = Instant::now();
         if self.instant.elapsed().as_millis() >= self.time {
             self.instant = now;
-            return true
+            return true;
         }
         false
     }
