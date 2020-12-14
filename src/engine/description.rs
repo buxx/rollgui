@@ -1058,7 +1058,7 @@ impl Engine for DescriptionEngine {
                 } else {
                     self.back_url.clone()
                 };
-                let back_message = if back_url.is_some() {
+                let back_message = if back_url.is_some() && !self.description.back_url_is_zone {
                     Message::GoBackButtonPressed(back_url.unwrap())
                 } else {
                     Message::GoBackZoneButtonPressed

@@ -44,6 +44,7 @@ pub struct Description {
     pub items: Vec<Part>,
     pub footer_links: Vec<Part>,
     pub back_url: Option<String>,
+    pub back_url_is_zone: bool,
     pub back_to_zone: bool,
     pub image: Option<String>,
     pub image_id: Option<i32>,
