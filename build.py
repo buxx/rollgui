@@ -64,7 +64,10 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
         print("upload ... ", end="")
 
         # upload
-        with open(f"{TMP_DIR}/rolling/{file_name}.zip", "rb") as zip_file:
+        file_to_upload_path = f"{TMP_DIR}/rolling/{file_name}.zip"
+        if "windows" in target:
+            file_to_upload_path = f"{TMP_DIR}\\rolling\\{file_name}.zip"
+        with open(file_to_upload_path, "rb") as zip_file:
             response = requests.put(
                 url=TRACIM_API_URL.format(
                     workspace_id=tracim_workspace_id,
