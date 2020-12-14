@@ -439,13 +439,26 @@ fn get_pure_text_size(item: &Part) -> u16 {
     20
 }
 
+fn get_pure_text_color(item: &Part) -> Color {
+    for class in item.classes.iter().rev() {
+        match class.as_str() {
+            "error" => return Color::RED,
+            _ => {}
+        }
+    }
+
+    Color::WHITE
+}
+
 fn get_text_from_item(item: &Part) -> text::Text {
     let class = get_pure_text_class(item);
     let size = get_pure_text_size(item);
+    let color = get_pure_text_color(item);
     Text::new(&get_part_pure_text_text(item))
         .class(class)
         .size(size)
         .vertical_alignment(VerticalAlignment::Center)
+        .color(color)
 }
 
 fn get_part_pure_text_text(part: &Part) -> String {
