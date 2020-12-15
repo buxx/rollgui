@@ -1011,13 +1011,13 @@ impl Engine for ZoneEngine {
             )
             .push(
                 Button::new(&mut self.zone_menu_button_state, "Zone")
-                    .class(zone_message_class)
+                    .class(thin_button::Class::Secondary)
                     .on_press(Message::ZoneMenuButtonPressed)
                     .width(175),
             )
             .push(
                 Button::new(&mut self.zone_messages_menu_button_state, "Chat")
-                    .class(thin_button::Class::Secondary)
+                    .class(zone_message_class)
                     .on_press(Message::ZoneMessagesMenuButtonPressed)
                     .width(175),
             )

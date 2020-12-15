@@ -1,4 +1,5 @@
 use crate::engine::Engine;
+use crate::entity::player::Player;
 use crate::gui::lang::model::{Description, Part};
 use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
@@ -28,6 +29,7 @@ use std::time::Instant;
 const BLINK_MS: u128 = 250;
 
 pub struct DescriptionEngine {
+    player: Player,
     description: Description,
     server: Server,
     error_message: Option<String>,
@@ -42,6 +44,11 @@ pub struct DescriptionEngine {
     submit_button: button::State,
     zone_button_state: fixed_button::State,
     back_button_state: fixed_button::State,
+    back_with_character_button_state: fixed_button::State,
+    back_with_build_button_state: fixed_button::State,
+    back_inventory_button_state: fixed_button::State,
+    back_actions_button_state: fixed_button::State,
+    back_with_affinity_button_state: fixed_button::State,
     current_link_group_name: Option<String>,
     link_group_name_ids: HashMap<String, i32>,
     link_group_button_pressed: i32,
@@ -74,6 +81,7 @@ pub struct DescriptionEngine {
 
 impl DescriptionEngine {
     pub fn new(
+        player: Player,
         description: Description,
         server: Server,
         back_url: Option<String>,
@@ -230,6 +238,7 @@ impl DescriptionEngine {
         };
 
         Self {
+            player,
             description,
             server,
             error_message: None,
@@ -244,6 +253,11 @@ impl DescriptionEngine {
             submit_button: button::State::new(),
             zone_button_state: fixed_button::State::new(),
             back_button_state: fixed_button::State::new(),
+            back_with_character_button_state: fixed_button::State::new(),
+            back_with_build_button_state: fixed_button::State::new(),
+            back_inventory_button_state: fixed_button::State::new(),
+            back_actions_button_state: fixed_button::State::new(),
+            back_with_affinity_button_state: fixed_button::State::new(),
             current_link_group_name: None,
             link_group_name_ids,
             link_group_button_pressed: -1,
@@ -669,6 +683,52 @@ impl Engine for DescriptionEngine {
                     back_url: self.future_back_url.clone(),
                 });
             }
+            Message::GoBackWithCharacterButtonPressed(with_character_id) => {
+                return Some(MainMessage::ToDescriptionWithUrl {
+                    url: format!(
+                        "/_describe/character/{}/look-character/{}",
+                        self.player.id.clone(),
+                        with_character_id
+                    )
+                    .to_string(),
+                    back_url: self.future_back_url.clone(),
+                });
+            }
+            Message::GoBackActionButtonPressed => {
+                return Some(MainMessage::ToDescriptionWithUrl {
+                    url: format!("/_describe/character/{}/on_place_actions", self.player.id)
+                        .to_string(),
+                    back_url: self.future_back_url.clone(),
+                });
+            }
+            Message::GoBackInventoryButtonPressed => {
+                return Some(MainMessage::ToDescriptionWithUrl {
+                    url: format!("/_describe/character/{}/inventory", self.player.id).to_string(),
+                    back_url: self.future_back_url.clone(),
+                });
+            }
+            Message::GoBackWithBuildButtonPressed(build_id) => {
+                return Some(MainMessage::ToDescriptionWithUrl {
+                    url: format!(
+                        "/character/{}/build/{}",
+                        self.player.id,
+                        build_id.to_string()
+                    )
+                    .to_string(),
+                    back_url: self.future_back_url.clone(),
+                });
+            }
+            Message::GoBackWithAffinityButtonPressed(affinity_id) => {
+                return Some(MainMessage::ToDescriptionWithUrl {
+                    url: format!(
+                        "/affinity/{}/see/{}",
+                        self.player.id,
+                        affinity_id.to_string()
+                    )
+                    .to_string(),
+                    back_url: self.future_back_url.clone(),
+                });
+            }
             Message::ToStartupPressed => return Some(MainMessage::ToStartup),
             Message::GoBackFromGroupButtonPressed => {
                 self.current_link_group_name = None;
@@ -1076,6 +1136,8 @@ impl Engine for DescriptionEngine {
                 } else {
                     Message::GoBackZoneButtonPressed
                 };
+                let footer_row = Row::new();
+
                 let back_column = Column::new()
                     .push(
                         FixedButton::new(&mut self.back_button_state, "Retour")
@@ -1085,6 +1147,109 @@ impl Engine for DescriptionEngine {
                     )
                     .align_items(Align::End)
                     .padding(15);
+                let footer_row = footer_row.push(back_column);
+
+                let footer_row = if self.description.footer_with_character_id.is_some() {
+                    let with_character_column = Column::new()
+                        .push(
+                            FixedButton::new(
+                                &mut self.back_with_character_button_state,
+                                "Personnage",
+                            )
+                            .on_press(Message::GoBackWithCharacterButtonPressed(
+                                self.description
+                                    .footer_with_character_id
+                                    .as_ref()
+                                    .unwrap()
+                                    .clone(),
+                            ))
+                            .width(128)
+                            .class(fixed_button::Class::Character),
+                        )
+                        .align_items(Align::End)
+                        .padding(15);
+                    let footer_row = footer_row.push(with_character_column);
+                    footer_row
+                } else {
+                    footer_row
+                };
+
+                let footer_row = if self.description.footer_with_affinity_id.is_some() {
+                    let with_affinity_column = Column::new()
+                        .push(
+                            FixedButton::new(&mut self.back_with_affinity_button_state, "Affinité")
+                                .on_press(Message::GoBackWithAffinityButtonPressed(
+                                    self.description
+                                        .footer_with_affinity_id
+                                        .as_ref()
+                                        .unwrap()
+                                        .clone(),
+                                ))
+                                .width(128)
+                                .class(fixed_button::Class::Affinity),
+                        )
+                        .align_items(Align::End)
+                        .padding(15);
+                    let footer_row = footer_row.push(with_affinity_column);
+                    footer_row
+                } else {
+                    footer_row
+                };
+
+                let footer_row = if self.description.footer_with_build_id.is_some() {
+                    let with_build_column = Column::new()
+                        .push(
+                            FixedButton::new(&mut self.back_with_build_button_state, "Bâtiment")
+                                .on_press(Message::GoBackWithBuildButtonPressed(
+                                    self.description
+                                        .footer_with_build_id
+                                        .as_ref()
+                                        .unwrap()
+                                        .clone(),
+                                ))
+                                .width(128)
+                                .class(fixed_button::Class::Build),
+                        )
+                        .align_items(Align::End)
+                        .padding(15);
+                    let footer_row = footer_row.push(with_build_column);
+                    footer_row
+                } else {
+                    footer_row
+                };
+
+                let footer_row = if self.description.footer_actions {
+                    let actions_column = Column::new()
+                        .push(
+                            FixedButton::new(&mut self.back_actions_button_state, "Actions")
+                                .on_press(Message::GoBackActionButtonPressed)
+                                .width(128)
+                                .class(fixed_button::Class::Action),
+                        )
+                        .align_items(Align::End)
+                        .padding(15);
+                    let footer_row = footer_row.push(actions_column);
+                    footer_row
+                } else {
+                    footer_row
+                };
+
+                let footer_row = if self.description.footer_inventory {
+                    let inventory_column = Column::new()
+                        .push(
+                            FixedButton::new(&mut self.back_inventory_button_state, "Inventaire")
+                                .on_press(Message::GoBackInventoryButtonPressed)
+                                .width(128)
+                                .class(fixed_button::Class::Item),
+                        )
+                        .align_items(Align::End)
+                        .padding(15);
+                    let footer_row = footer_row.push(inventory_column);
+                    footer_row
+                } else {
+                    footer_row
+                };
+
                 let zone_column = Column::new()
                     .push(
                         FixedButton::new(&mut self.zone_button_state, "Zone")
@@ -1094,7 +1259,8 @@ impl Engine for DescriptionEngine {
                     )
                     .align_items(Align::Start)
                     .padding(15);
-                let footer_row = Row::new().push(back_column).push(zone_column);
+                let footer_row = footer_row.push(zone_column);
+
                 content = content.push(footer_row);
             } else {
                 content = content.push(

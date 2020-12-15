@@ -54,6 +54,8 @@ impl fixed_button::Renderer for Renderer {
             fixed_button::Class::Item => 2,
             fixed_button::Class::Build => 3,
             fixed_button::Class::Character => 4,
+            fixed_button::Class::Action => 5,
+            fixed_button::Class::Affinity => 6,
         };
 
         self.sprites.add(Sprite {

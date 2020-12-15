@@ -222,6 +222,8 @@ pub enum Class {
     Item,
     Build,
     Character,
+    Action,
+    Affinity,
 }
 
 /// The renderer of a [`Button`].

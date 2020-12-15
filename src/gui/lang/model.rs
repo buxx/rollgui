@@ -55,6 +55,12 @@ pub struct Description {
     pub force_back_url: Option<String>,
     pub can_be_back_url: bool,
     pub request_clicks: Option<RequestClicks>,
+    pub footer_with_character_id: Option<String>,
+    pub footer_actions: bool,
+    pub footer_inventory: bool,
+    pub footer_with_build_id: Option<i32>,
+    pub footer_with_affinity_id: Option<i32>,
+    pub footer_with_business_id: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
