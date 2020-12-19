@@ -89,7 +89,7 @@ impl MyGame {
             if server.client.player_is_dead(&character_id).unwrap() {
                 println!("Yes, it is dead");
                 self.engine = Box::new(DescriptionEngine::new(
-                    self.player.as_ref().unwrap().clone(),
+                    Some(self.player.as_ref().unwrap().clone()),
                     // TODO: manage error cases
                     server
                         .client
@@ -108,7 +108,7 @@ impl MyGame {
         }
 
         self.engine = Box::new(DescriptionEngine::new(
-            self.player.as_ref().unwrap().clone(),
+            None,
             // FIXME: manage error cases
             server
                 .client
@@ -308,7 +308,7 @@ impl Game for MyGame {
                     back_url,
                 } => {
                     self.engine = Box::new(DescriptionEngine::new(
-                        self.player.as_ref().unwrap().clone(),
+                        Some(self.player.as_ref().unwrap().clone()),
                         description.clone(),
                         self.server.as_ref().unwrap().clone(),
                         back_url.clone(),
@@ -345,7 +345,7 @@ impl Game for MyGame {
                         .describe(&url, None, None)
                         .unwrap();
                     self.engine = Box::new(DescriptionEngine::new(
-                        self.player.as_ref().unwrap().clone(),
+                        Some(self.player.as_ref().unwrap().clone()),
                         description,
                         self.server.as_ref().unwrap().clone(),
                         back_url.clone(),

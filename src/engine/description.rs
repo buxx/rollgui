@@ -29,7 +29,7 @@ use std::time::Instant;
 const BLINK_MS: u128 = 250;
 
 pub struct DescriptionEngine {
-    player: Player,
+    player: Option<Player>,
     description: Description,
     server: Server,
     error_message: Option<String>,
@@ -81,7 +81,7 @@ pub struct DescriptionEngine {
 
 impl DescriptionEngine {
     pub fn new(
-        player: Player,
+        player: Option<Player>,
         description: Description,
         server: Server,
         back_url: Option<String>,
@@ -687,7 +687,7 @@ impl Engine for DescriptionEngine {
                 return Some(MainMessage::ToDescriptionWithUrl {
                     url: format!(
                         "/_describe/character/{}/look-character/{}",
-                        self.player.id.clone(),
+                        self.player.as_ref().unwrap().id.clone(),
                         with_character_id
                     )
                     .to_string(),
@@ -696,14 +696,14 @@ impl Engine for DescriptionEngine {
             }
             Message::GoBackActionButtonPressed => {
                 return Some(MainMessage::ToDescriptionWithUrl {
-                    url: format!("/_describe/character/{}/on_place_actions", self.player.id)
+                    url: format!("/_describe/character/{}/on_place_actions", self.player.as_ref().unwrap().id)
                         .to_string(),
                     back_url: self.future_back_url.clone(),
                 });
             }
             Message::GoBackInventoryButtonPressed => {
                 return Some(MainMessage::ToDescriptionWithUrl {
-                    url: format!("/_describe/character/{}/inventory", self.player.id).to_string(),
+                    url: format!("/_describe/character/{}/inventory", self.player.as_ref().unwrap().id).to_string(),
                     back_url: self.future_back_url.clone(),
                 });
             }
@@ -711,7 +711,7 @@ impl Engine for DescriptionEngine {
                 return Some(MainMessage::ToDescriptionWithUrl {
                     url: format!(
                         "/character/{}/build/{}",
-                        self.player.id,
+                        self.player.as_ref().unwrap().id,
                         build_id.to_string()
                     )
                     .to_string(),
@@ -722,7 +722,7 @@ impl Engine for DescriptionEngine {
                 return Some(MainMessage::ToDescriptionWithUrl {
                     url: format!(
                         "/affinity/{}/see/{}",
-                        self.player.id,
+                        self.player.as_ref().unwrap().id,
                         affinity_id.to_string()
                     )
                     .to_string(),
