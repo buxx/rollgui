@@ -10,12 +10,13 @@ use crate::gui::lang::model::RequestClicks;
 use crate::input::MyGameInput;
 use crate::level::Level;
 use crate::message::{MainMessage, Message};
+use crate::server::client::ItemModel;
 use crate::server::Server;
 use crate::sheet::TileSheet;
 use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles;
 use crate::ui::widget::fixed_button;
-use crate::ui::widget::link::Link;
+use crate::ui::widget::progress_bar;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::thin_button;
 use crate::ui::widget::thin_button::Button;
@@ -36,6 +37,16 @@ const START_SCREEN_X: i16 = 0;
 const LEFT_MENU_WIDTH: i16 = 200;
 const RIGHT_MENU_WIDTH: i16 = 200;
 const START_SCREEN_Y: i16 = 0;
+
+fn contains_string(classes: &Vec<String>, search: &str) -> bool {
+    for class in classes.iter() {
+        if class.eq(&search) {
+            return true;
+        }
+    }
+
+    false
+}
 
 pub struct ZoneEngine {
     tiles: Tiles,
@@ -63,7 +74,7 @@ pub struct ZoneEngine {
     action_menu_button_state: thin_button::State,
     build_menu_button_state: thin_button::State,
     exit_menu_button_state: thin_button::State,
-    resume_text: Vec<(String, Option<String>)>,
+    resume_text: Vec<ItemModel>,
     around_items_button_state: fixed_button::State,
     around_builds_button_state: fixed_button::State,
     around_characters_button_state: fixed_button::State,
@@ -96,7 +107,7 @@ impl ZoneEngine {
         server: Server,
         level: Level,
         socket: ZoneSocket,
-        resume_text: Vec<(String, Option<String>)>,
+        resume_text: Vec<ItemModel>,
         characters: HashMap<String, Character>,
         stuffs: HashMap<String, Stuff>,
         resources: Vec<Resource>,
@@ -173,10 +184,10 @@ impl ZoneEngine {
         let mut link_button_counter: i32 = 0;
         self.link_button_ids = HashMap::new();
 
-        for (text, url) in self.resume_text.iter() {
-            if let Some(_) = url {
+        for item in self.resume_text.iter() {
+            if let Some(_) = item.url {
                 self.link_button_ids
-                    .insert(text.clone(), link_button_counter);
+                    .insert(item.name.clone(), link_button_counter);
 
                 link_button_counter += 1;
             }
@@ -1055,22 +1066,37 @@ impl Engine for ZoneEngine {
         let mut right_menu = Column::new()
             .width(RIGHT_MENU_WIDTH as u32)
             .height(window.height() as u32);
-        for (text, url) in self.resume_text.iter() {
-            if let Some(url) = url {
-                let id = self.link_button_ids.get(text).unwrap().clone();
-                right_menu = right_menu.push(
-                    Link::new(
-                        self.link_button_pressed == id,
-                        &text,
-                        Message::LinkButtonPressed(id),
-                        Message::LinkButtonReleased(url.clone()),
-                    )
-                    .width(175),
-                );
-            } else {
-                right_menu = right_menu.push(Text::new(text));
+
+        let mut right_column_1 = Column::new().width(100);
+        let mut right_column_2 = Column::new().width(50);
+        for item in self.resume_text.iter() {
+            right_column_1 = right_column_1.push(Text::new(&item.name));
+            if item.value_is_str {
+                right_column_2 = right_column_2.push(Text::new(&item.value_str.as_ref().unwrap()));
+            }
+            if item.value_is_float {
+                if contains_string(&item.classes, "inverted_percent") {
+                    let color_class = if contains_string(&item.classes, "yellow") {
+                        progress_bar::ColorClass::Yellow
+                    } else if contains_string(&item.classes, "red") {
+                        progress_bar::ColorClass::Red
+                    } else {
+                        progress_bar::ColorClass::Green
+                    };
+                    right_column_2 = right_column_2.push(progress_bar::ProgressBar::new(
+                        (100.0 - item.value_float.unwrap()) / 100.0,
+                        progress_bar::Class::SimpleThin,
+                        color_class,
+                    ));
+                } else {
+                    right_column_2 = right_column_2.push(Text::new(
+                        &item.value_float.as_ref().unwrap().clone().to_string(),
+                    ));
+                }
             }
         }
+        let right_menu_row = Row::new().push(right_column_1).push(right_column_2);
+        right_menu = right_menu.push(right_menu_row);
 
         if self.around_items_count > 0 {
             right_menu = right_menu.push(

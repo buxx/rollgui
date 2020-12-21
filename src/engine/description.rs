@@ -696,14 +696,21 @@ impl Engine for DescriptionEngine {
             }
             Message::GoBackActionButtonPressed => {
                 return Some(MainMessage::ToDescriptionWithUrl {
-                    url: format!("/_describe/character/{}/on_place_actions", self.player.as_ref().unwrap().id)
-                        .to_string(),
+                    url: format!(
+                        "/_describe/character/{}/on_place_actions",
+                        self.player.as_ref().unwrap().id
+                    )
+                    .to_string(),
                     back_url: self.future_back_url.clone(),
                 });
             }
             Message::GoBackInventoryButtonPressed => {
                 return Some(MainMessage::ToDescriptionWithUrl {
-                    url: format!("/_describe/character/{}/inventory", self.player.as_ref().unwrap().id).to_string(),
+                    url: format!(
+                        "/_describe/character/{}/inventory",
+                        self.player.as_ref().unwrap().id
+                    )
+                    .to_string(),
                     back_url: self.future_back_url.clone(),
                 });
             }

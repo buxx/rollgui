@@ -1,106 +1,99 @@
 use crate::ui::renderer::Renderer;
+use crate::ui::widget::progress_bar;
+use crate::ui::widget::progress_bar::{Class, ColorClass};
 use coffee::graphics::{Point, Rectangle, Sprite};
-use coffee::ui::progress_bar;
 
-const LEFT: Rectangle<u16> = Rectangle {
-    x: 0,
-    y: 34,
-    width: 6,
-    height: 49,
-};
+const SIMPLE_THIN_LEFT_X: i32 = 196;
+const SIMPLE_THIN_LEFT_WIDTH: i32 = 2;
+const SIMPLE_THIN_Y: i32 = 0;
+const SIMPLE_THIN_HEIGHT: i32 = 6;
 
-const BACKGROUND: Rectangle<u16> = Rectangle {
-    x: LEFT.width,
-    y: LEFT.y,
-    width: 1,
-    height: LEFT.height,
-};
+const SIMPLE_THIN_CENTER_X: i32 = 198;
+const SIMPLE_THIN_CENTER_WIDTH: i32 = 2;
 
-const RIGHT: Rectangle<u16> = Rectangle {
-    x: LEFT.height - LEFT.width,
-    y: LEFT.y,
-    width: LEFT.width,
-    height: LEFT.height,
-};
+const SIMPLE_THIN_RIGHT_X: i32 = 200;
+const SIMPLE_THIN_RIGHT_WIDTH: i32 = 2;
 
 impl progress_bar::Renderer for Renderer {
-    fn draw(&mut self, bounds: Rectangle<f32>, progress: f32) {
-        let active_class = 0;
-        let background_class = 1;
-        let full = 1.0;
-        let left_width_f32 = LEFT.width as f32 / 100.0;
-        let background_width = 1.0 - 2.0 * left_width_f32;
+    fn draw(
+        &mut self,
+        bounds: Rectangle<f32>,
+        class: progress_bar::Class,
+        color_class: progress_bar::ColorClass,
+        progress: f32,
+    ) {
+        let (left_x, left_width) = match class {
+            Class::SimpleThin => (SIMPLE_THIN_LEFT_X, SIMPLE_THIN_LEFT_WIDTH),
+        };
+        let (center_x, center_width) = match class {
+            Class::SimpleThin => (SIMPLE_THIN_CENTER_X, SIMPLE_THIN_CENTER_WIDTH),
+        };
+        let (right_x, right_width) = match class {
+            Class::SimpleThin => (SIMPLE_THIN_RIGHT_X, SIMPLE_THIN_RIGHT_WIDTH),
+        };
+        let y = match class {
+            Class::SimpleThin => SIMPLE_THIN_Y,
+        };
+        let height = match class {
+            Class::SimpleThin => SIMPLE_THIN_HEIGHT,
+        };
+        let color_modifier = match color_class {
+            ColorClass::Green => 1,
+            ColorClass::Yellow => 2,
+            ColorClass::Red => 3,
+        };
+        let color_y = y + height * color_modifier;
 
-        self.sprites
-            .add(left_sprite(bounds, background_class, full));
-        self.sprites
-            .add(background_sprite(bounds, background_class, full));
-        self.sprites
-            .add(right_sprite(bounds, background_class, full));
+        // BORDER LEFT
+        self.sprites.add(Sprite {
+            source: Rectangle {
+                x: left_x as u16,
+                y: y as u16,
+                width: left_width as u16,
+                height: height as u16,
+            },
+            position: Point::new(bounds.x, bounds.y),
+            scale: (1.0, 2.0),
+        });
 
-        if progress > 0.0 {
-            let area = bound(progress / left_width_f32);
-            self.sprites.add(left_sprite(bounds, active_class, area));
-        }
+        // BORDER CENTER
+        self.sprites.add(Sprite {
+            source: Rectangle {
+                x: center_x as u16,
+                y: y as u16,
+                width: center_width as u16,
+                height: height as u16,
+            },
+            position: Point::new(bounds.x + SIMPLE_THIN_LEFT_WIDTH as f32, bounds.y),
+            scale: (bounds.width - SIMPLE_THIN_RIGHT_WIDTH as f32, 2.0),
+        });
 
-        if progress > left_width_f32 {
-            let area = bound((progress - left_width_f32) / background_width);
-            self.sprites
-                .add(background_sprite(bounds, active_class, area));
-        }
+        // BORDER RIGHT
+        self.sprites.add(Sprite {
+            source: Rectangle {
+                x: right_x as u16,
+                y: y as u16,
+                width: right_width as u16,
+                height: height as u16,
+            },
+            position: Point::new(
+                bounds.x + bounds.width - SIMPLE_THIN_RIGHT_WIDTH as f32,
+                bounds.y,
+            ),
+            scale: (1.0, 2.0),
+        });
 
-        if progress > left_width_f32 + background_width {
-            let area = bound((progress - left_width_f32 - background_width) / left_width_f32);
-            self.sprites.add(right_sprite(bounds, active_class, area));
-        }
-    }
-}
-
-fn bound(v: f32) -> f32 {
-    if v > 1.0 {
-        1.0
-    } else {
-        v
-    }
-}
-
-fn left_sprite(bounds: Rectangle<f32>, class_index: u16, area: f32) -> Sprite {
-    Sprite {
-        source: Rectangle {
-            x: LEFT.x,
-            y: LEFT.y + class_index * LEFT.height,
-            width: (LEFT.width as f32 * area) as u16,
-            height: LEFT.height,
-        },
-        position: Point::new(bounds.x, bounds.y),
-        scale: (1.0, 1.0),
-    }
-}
-
-fn background_sprite(bounds: Rectangle<f32>, class_index: u16, area: f32) -> Sprite {
-    Sprite {
-        source: Rectangle {
-            x: BACKGROUND.x,
-            y: BACKGROUND.y + class_index * BACKGROUND.height,
-            ..BACKGROUND
-        },
-        position: Point::new(bounds.x + LEFT.width as f32, bounds.y),
-        scale: (
-            (bounds.width - (LEFT.width + RIGHT.width) as f32) * area,
-            1.0,
-        ),
-    }
-}
-
-fn right_sprite(bounds: Rectangle<f32>, class_index: u16, area: f32) -> Sprite {
-    Sprite {
-        source: Rectangle {
-            x: RIGHT.x,
-            y: RIGHT.y + class_index * RIGHT.height,
-            width: (RIGHT.width as f32 * area) as u16,
-            height: RIGHT.height,
-        },
-        position: Point::new(bounds.x + bounds.width - RIGHT.width as f32, bounds.y),
-        scale: (1.0, 1.0),
+        let scale_width = bounds.width * progress;
+        // COLOR CENTER
+        self.sprites.add(Sprite {
+            source: Rectangle {
+                x: center_x as u16,
+                y: color_y as u16,
+                width: center_width as u16,
+                height: height as u16,
+            },
+            position: Point::new(bounds.x + SIMPLE_THIN_LEFT_WIDTH as f32, bounds.y),
+            scale: (scale_width, 2.0),
+        });
     }
 }

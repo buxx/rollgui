@@ -1,5 +1,6 @@
 use crate::entity::build::Build;
 use crate::error::RollingError;
+use crate::server::client::{ItemModel, ListOfItemModel};
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde_derive::{Deserialize as DeserializeDerive, Serialize as SerializeDerive};
 use serde_json::Value;
@@ -53,7 +54,7 @@ pub enum ZoneEventType {
         col_i: i16,
     },
     NewResumeText {
-        resume: Vec<(String, Option<String>)>,
+        resume: Vec<ItemModel>,
     },
     NewBuild {
         build: Build,
@@ -120,20 +121,14 @@ impl ZoneEvent {
                 })
             }
             &NEW_RESUME_TEXT => {
-                let mut items: Vec<(String, Option<String>)> = vec![];
-                for value in data["resume"].as_array().unwrap() {
-                    let vector = value.as_array().unwrap();
-                    let text = vector.get(0).unwrap().as_str().unwrap().to_string();
-                    let mut url: Option<String> = None;
-                    if let Some(txt) = vector.get(1).unwrap().as_str() {
-                        url = Some(txt.to_string());
-                    }
-                    items.push((text, url));
-                }
-
+                let list_of_items: ListOfItemModel =
+                    serde_json::from_value(data.get("resume").unwrap().clone()).unwrap();
                 Ok(ZoneEvent {
                     event_type_name: String::from(NEW_RESUME_TEXT),
-                    event_type: ZoneEventType::NewResumeText { resume: items },
+                    // FIXME BS NOW
+                    event_type: ZoneEventType::NewResumeText {
+                        resume: list_of_items.items,
+                    },
                 })
             }
             &NEW_BUILD => {

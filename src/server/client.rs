@@ -55,8 +55,19 @@ impl fmt::Display for ClientError {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct ListOfStrModel {
-    pub items: Vec<(String, Option<String>)>,
+pub struct ItemModel {
+    pub name: String,
+    pub value_is_str: bool,
+    pub value_is_float: bool,
+    pub value_str: Option<String>,
+    pub value_float: Option<f32>,
+    pub url: Option<String>,
+    pub classes: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ListOfItemModel {
+    pub items: Vec<ItemModel>,
 }
 
 #[derive(Clone)]
@@ -314,7 +325,7 @@ impl Client {
     pub fn get_character_resume_texts(
         &self,
         character_id: &str,
-    ) -> Result<Vec<(String, Option<String>)>, ClientError> {
+    ) -> Result<Vec<ItemModel>, ClientError> {
         let url = format!(
             "{}/character/{}/resume_texts",
             self.get_base_path(),
@@ -323,7 +334,7 @@ impl Client {
         let response: Response =
             self.check_response(self.client.get(url.as_str()).send().unwrap())?;
 
-        Ok(response.json::<ListOfStrModel>().unwrap().items)
+        Ok(response.json::<ListOfItemModel>().unwrap().items)
     }
 
     fn url_with_query(&self, url: String, query: Option<Map<String, Value>>) -> String {
