@@ -52,7 +52,8 @@ impl progress_bar::Renderer for Renderer {
                 width: left_width as u16,
                 height: height as u16,
             },
-            position: Point::new(bounds.x, bounds.y),
+            // NOTE: + 5.0 but should be like padding ...
+            position: Point::new(bounds.x, bounds.y + 5.0),
             scale: (1.0, 2.0),
         });
 
@@ -64,7 +65,8 @@ impl progress_bar::Renderer for Renderer {
                 width: center_width as u16,
                 height: height as u16,
             },
-            position: Point::new(bounds.x + SIMPLE_THIN_LEFT_WIDTH as f32, bounds.y),
+            // NOTE: + 5.0 but should be like padding ...
+            position: Point::new(bounds.x + SIMPLE_THIN_LEFT_WIDTH as f32, bounds.y + 5.0),
             scale: (bounds.width - SIMPLE_THIN_RIGHT_WIDTH as f32, 2.0),
         });
 
@@ -78,7 +80,8 @@ impl progress_bar::Renderer for Renderer {
             },
             position: Point::new(
                 bounds.x + bounds.width - SIMPLE_THIN_RIGHT_WIDTH as f32,
-                bounds.y,
+                // NOTE: + 5.0 but should be like padding ...
+                bounds.y + 5.0,
             ),
             scale: (1.0, 2.0),
         });
@@ -92,7 +95,8 @@ impl progress_bar::Renderer for Renderer {
                 width: center_width as u16,
                 height: height as u16,
             },
-            position: Point::new(bounds.x + SIMPLE_THIN_LEFT_WIDTH as f32, bounds.y),
+            // NOTE: + 5.0 but should be like padding ...
+            position: Point::new(bounds.x + SIMPLE_THIN_LEFT_WIDTH as f32, bounds.y + 5.0),
             scale: (scale_width, 2.0),
         });
     }

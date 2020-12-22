@@ -1,6 +1,7 @@
 pub mod button;
 pub mod checkbox;
 pub mod fixed_button;
+pub mod icon;
 pub mod link;
 pub mod progress_bar;
 pub mod radio;

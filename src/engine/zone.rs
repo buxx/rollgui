@@ -16,6 +16,7 @@ use crate::sheet::TileSheet;
 use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles;
 use crate::ui::widget::fixed_button;
+use crate::ui::widget::icon;
 use crate::ui::widget::progress_bar;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::thin_button;
@@ -24,7 +25,7 @@ use crate::ui::Column;
 use crate::ui::Element;
 use crate::ui::Row;
 use crate::{event, util};
-use coffee::graphics::{Batch, Color, Frame, Point, Sprite, Window};
+use coffee::graphics::{Batch, Color, Frame, Point, Rectangle, Sprite, Window};
 use coffee::input::keyboard;
 use coffee::input::mouse;
 use coffee::ui::Align;
@@ -35,7 +36,7 @@ use std::time::Instant;
 
 const START_SCREEN_X: i16 = 0;
 const LEFT_MENU_WIDTH: i16 = 200;
-const RIGHT_MENU_WIDTH: i16 = 200;
+const RIGHT_MENU_WIDTH: i16 = 120;
 const START_SCREEN_Y: i16 = 0;
 
 fn contains_string(classes: &Vec<String>, search: &str) -> bool {
@@ -558,6 +559,16 @@ impl Engine for ZoneEngine {
         sprites.extend(self.get_stuff_sprites());
         sprites.extend(self.get_resource_sprites());
         sprites.extend(self.get_characters_sprites());
+        sprites.push(Sprite {
+            source: Rectangle {
+                x: 904,
+                y: 0,
+                width: 120,
+                height: 185,
+            },
+            position: Point::new(frame.width() - RIGHT_MENU_WIDTH as f32 - 5.0, 0.0),
+            scale: (1.0, 1.0),
+        });
 
         if let Some(request_clicks) = &self.request_clicks {
             let cursor_x = self.cursor_position.x.round() as i16;
@@ -1067,12 +1078,39 @@ impl Engine for ZoneEngine {
             .width(RIGHT_MENU_WIDTH as u32)
             .height(window.height() as u32);
 
-        let mut right_column_1 = Column::new().width(100);
-        let mut right_column_2 = Column::new().width(50);
+        let mut right_column_1 = Column::new().width(30);
+        let mut right_column_2 = Column::new().width(40);
         for item in self.resume_text.iter() {
-            right_column_1 = right_column_1.push(Text::new(&item.name));
+            let name_icon = match item.name.as_str() {
+                "PV" => icon::Icon::new(icon::Class::Heart),
+                "PA" => icon::Icon::new(icon::Class::Time),
+                "Faim" => icon::Icon::new(icon::Class::Ham),
+                "Soif" => icon::Icon::new(icon::Class::Water),
+                "A boire" => icon::Icon::new(icon::Class::AnyWater),
+                "A manger" => icon::Icon::new(icon::Class::AnyHam),
+                "Suivis" => icon::Icon::new(icon::Class::Followed),
+                "Suiveurs" => icon::Icon::new(icon::Class::Follower),
+                "Combattants" => icon::Icon::new(icon::Class::Shield),
+                _ => icon::Icon::new(icon::Class::Empty),
+            };
+            right_column_1 = right_column_1.push(name_icon);
             if item.value_is_str {
-                right_column_2 = right_column_2.push(Text::new(&item.value_str.as_ref().unwrap()));
+                let value = item.value_str.as_ref().unwrap();
+                if value.eq("Oui") {
+                    right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Ok));
+                } else if value.eq("Non") {
+                    right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Ko));
+                } else if value.eq("Ok") {
+                    right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Health1));
+                } else if value.eq("Moyen") {
+                    right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Health2));
+                } else if value.eq("Mauvais") {
+                    right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Health3));
+                } else if value.eq("Critique") {
+                    right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Health4));
+                } else {
+                    right_column_2 = right_column_2.push(Text::new(value).color(Color::BLACK));
+                }
             }
             if item.value_is_float {
                 if contains_string(&item.classes, "inverted_percent") {
@@ -1083,15 +1121,19 @@ impl Engine for ZoneEngine {
                     } else {
                         progress_bar::ColorClass::Green
                     };
-                    right_column_2 = right_column_2.push(progress_bar::ProgressBar::new(
-                        (100.0 - item.value_float.unwrap()) / 100.0,
-                        progress_bar::Class::SimpleThin,
-                        color_class,
-                    ));
+                    right_column_2 = right_column_2.push(
+                        progress_bar::ProgressBar::new(
+                            (100.0 - item.value_float.unwrap()) / 100.0,
+                            progress_bar::Class::SimpleThin,
+                            color_class,
+                        )
+                        .width(40),
+                    );
                 } else {
-                    right_column_2 = right_column_2.push(Text::new(
-                        &item.value_float.as_ref().unwrap().clone().to_string(),
-                    ));
+                    right_column_2 = right_column_2.push(
+                        Text::new(&item.value_float.as_ref().unwrap().clone().to_string())
+                            .color(Color::BLACK),
+                    );
                 }
             }
         }
