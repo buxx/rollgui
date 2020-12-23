@@ -1108,6 +1108,8 @@ impl Engine for ZoneEngine {
                     right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Health3));
                 } else if value.eq("Critique") {
                     right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Health4));
+                } else if value.eq("Faible") {
+                    right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Warning));
                 } else {
                     right_column_2 = right_column_2.push(Text::new(value).color(Color::BLACK));
                 }
