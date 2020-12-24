@@ -48,6 +48,7 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
         shutil.copy(f"target/{target}/{folder_str}/rollgui{exe_extension}", f"{TMP_DIR}/rolling/{file_name}")
         shutil.copy(f"resources/tilesheet.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
         shutil.copy(f"resources/ui.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
+        shutil.copy(f"config.ini", f"{TMP_DIR}/rolling/{file_name}/config.ini")
         zip_command = f"cd {TMP_DIR}/rolling && zip -r {file_name}.zip {file_name}"
         if "windows" in target:
             shutil.copy(f"rollgui.bat", f"{TMP_DIR}/rolling/{file_name}/")
