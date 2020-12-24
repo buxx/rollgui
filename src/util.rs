@@ -2,10 +2,10 @@ use crate::error::RollingError;
 use crate::level::Level;
 use std::collections::HashMap;
 use std::error::Error;
-use std::fs;
 use std::io::Read;
 use std::path::Path;
 use std::time::Instant;
+use std::{fs, io};
 
 pub const BLOCK_GEO: &str = "GEO";
 pub const BLOCK_LEGEND: &str = "LEGEND";
@@ -365,6 +365,100 @@ pub fn get_corner(level: &Level, row_i: i16, col_i: i16) -> Option<CornerEnum> {
     } else {
         None
     }
+}
+
+pub fn str_version_to_tuple(version: &str) -> (u8, u8, u8) {
+    let split: Vec<&str> = version.split(".").collect::<Vec<&str>>();
+    let major = split.get(0).unwrap().parse::<u8>().unwrap();
+    let minor = split.get(1).unwrap().parse::<u8>().unwrap();
+    let correction = split.get(2).unwrap().parse::<u8>().unwrap();
+    (major, minor, correction)
+}
+
+pub fn is_compatible_versions(server_version: (u8, u8, u8), client_version: (u8, u8, u8)) -> bool {
+    println!("{:?} {:?}", server_version, client_version);
+    let (server_major, server_minor, _) = server_version;
+    let (client_major, client_minor, _) = client_version;
+
+    if server_major != client_major {
+        return false;
+    }
+
+    if server_minor != client_minor {
+        return false;
+    }
+
+    true
+}
+
+pub fn unzip_to(zip_file: fs::File) {
+    let mut archive = zip::ZipArchive::new(zip_file).unwrap();
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i).unwrap();
+        let outpath = match file.enclosed_name() {
+            Some(path) => path.to_owned(),
+            None => continue,
+        };
+
+        {
+            let comment = file.comment();
+            if !comment.is_empty() {
+                println!("File {} comment: {}", i, comment);
+            }
+        }
+
+        if (&*file.name()).ends_with('/') {
+            println!("File {} extracted to \"{}\"", i, outpath.display());
+            fs::create_dir_all(&outpath).unwrap();
+        } else {
+            println!(
+                "File {} extracted to \"{}\" ({} bytes)",
+                i,
+                outpath.display(),
+                file.size()
+            );
+            if let Some(p) = outpath.parent() {
+                if !p.exists() {
+                    fs::create_dir_all(&p).unwrap();
+                }
+            }
+            let mut outfile = fs::File::create(&outpath).unwrap();
+            io::copy(&mut file, &mut outfile).unwrap();
+        }
+
+        // Get and Set permissions
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+
+            if let Some(mode) = file.unix_mode() {
+                fs::set_permissions(&outpath, fs::Permissions::from_mode(mode)).unwrap();
+            }
+        }
+    }
+}
+
+pub fn get_last_compatible_version(server_version: (u8, u8, u8)) -> (u8, u8, u8) {
+    let (server_major, server_minor, _) = server_version;
+    let client = reqwest::blocking::Client::new();
+    let index_response = client
+        .get("http://rolling.bux.fr/release/index")
+        .send()
+        .unwrap();
+    let indexes: String = index_response.text().unwrap();
+
+    let mut last_compatible_version: (u8, u8, u8) = (0, 0, 0);
+
+    for version_as_str in indexes.lines() {
+        let version = str_version_to_tuple(version_as_str);
+        let (major, minor, _) = version;
+        if server_major == major && server_minor == minor {
+            last_compatible_version = version;
+        }
+    }
+
+    last_compatible_version
 }
 
 #[cfg(test)]

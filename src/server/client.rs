@@ -9,6 +9,7 @@ use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
 use crate::gui::lang::model::Description;
 use crate::gui::lang::model::ErrorResponse;
+use crate::util;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
 use std::error::Error;
@@ -391,5 +392,13 @@ impl Client {
             .expect(format!("failed to copy content into {}", &file_path).as_str());
 
         Ok(())
+    }
+
+    pub fn get_version(&self) -> Result<(u8, u8, u8), ClientError> {
+        let url = format!("{}/system/version", self.get_base_path());
+        let response: Response =
+            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let text_response: String = response.text().unwrap();
+        Ok(util::str_version_to_tuple(&text_response))
     }
 }

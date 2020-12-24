@@ -1,6 +1,7 @@
 use crate::engine::description::DescriptionEngine;
 use crate::engine::exit::ExitEngine;
 use crate::engine::startup::StartupEngine;
+use crate::engine::upgrade::UpgradeEngine;
 use crate::engine::world::WorldEngine;
 use crate::engine::zone::ZoneEngine;
 use crate::engine::Engine;
@@ -26,6 +27,8 @@ use coffee::{graphics, Game, Timer};
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
 use std::error::Error;
+
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 // TODO: dynamic from server (and tilesheet)
 pub const TILE_WIDTH: i16 = 16;
@@ -71,10 +74,34 @@ impl MyGame {
         server_ip: String,
         server_port: u16,
         request_clicks: Option<RequestClicks>,
+        disable_version_check: bool,
     ) {
         // FIXME BS: manage error cases
         self.server = Some(self.create_server(server_ip, server_port).unwrap());
         let server = self.server.as_ref().unwrap().clone();
+
+        if !disable_version_check {
+            let server_version = server.client.get_version().unwrap();
+            let client_version = util::str_version_to_tuple(VERSION);
+            println!("Check is compatible");
+            if !util::is_compatible_versions(server_version, client_version) {
+                println!("Version is not compatible");
+                let last_compatible_version = util::get_last_compatible_version(server_version);
+                self.setup_upgrade_engine(last_compatible_version, true);
+                return;
+            } else {
+                println!("Version is compatible");
+                let last_compatible_version = util::get_last_compatible_version(server_version);
+                println!(
+                    "Is there newer version ? ({:?} != {:?})",
+                    last_compatible_version, client_version
+                );
+                if last_compatible_version != client_version {
+                    self.setup_upgrade_engine(last_compatible_version, false);
+                    return;
+                }
+            }
+        }
 
         // FIXME BS: manage error cases
         if let Some(player) = self.create_player().unwrap() {
@@ -152,6 +179,14 @@ impl MyGame {
 
         println!("No local player found");
         return Ok(None);
+    }
+
+    fn setup_upgrade_engine(&mut self, version: (u8, u8, u8), mandatory: bool) {
+        self.engine = Box::new(UpgradeEngine::new(
+            version,
+            mandatory,
+            self.server.as_ref().unwrap().clone(),
+        ));
     }
 
     fn setup_zone_engine(&mut self, request_clicks: Option<RequestClicks>) {
@@ -300,8 +335,14 @@ impl Game for MyGame {
                 MainMessage::StartupToZone {
                     server_ip,
                     server_port,
+                    disable_version_check,
                 } => {
-                    self.setup_startup_to_zone_engine(server_ip.clone(), server_port, None);
+                    self.setup_startup_to_zone_engine(
+                        server_ip.clone(),
+                        server_port,
+                        None,
+                        disable_version_check,
+                    );
                 }
                 MainMessage::ToDescriptionWithDescription {
                     description,
@@ -333,6 +374,7 @@ impl Game for MyGame {
                         self.server.as_ref().unwrap().config.ip.clone(),
                         self.server.as_ref().unwrap().config.port,
                         None,
+                        false,
                     );
                 }
                 MainMessage::ToDescriptionWithUrl { url, back_url } => {
@@ -359,6 +401,7 @@ impl Game for MyGame {
                         server.config.ip.clone(),
                         server.config.port,
                         request_clicks,
+                        false,
                     );
                 }
                 MainMessage::ToStartup => {

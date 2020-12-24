@@ -45,12 +45,14 @@ impl Engine for StartupEngine {
                 return Some(MainMessage::StartupToZone {
                     server_ip: "127.0.0.1".to_string(),
                     server_port: 5000,
+                    disable_version_check: false,
                 })
             }
             Message::S2BuxFrServerPressed => {
                 return Some(MainMessage::StartupToZone {
                     server_ip: "91.121.134.31".to_string(),
                     server_port: 7431,
+                    disable_version_check: false,
                 })
             }
             Message::ExitMenuButtonPressed => return Some(MainMessage::ExitRequested),

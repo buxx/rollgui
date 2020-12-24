@@ -7,6 +7,7 @@ use coffee::Timer;
 pub mod description;
 pub mod exit;
 pub mod startup;
+pub mod upgrade;
 pub mod world;
 pub mod zone;
 

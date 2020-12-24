@@ -23,12 +23,12 @@ CONFIG = {
 TMP_DIR = tempfile.gettempdir()
 
 
-def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None, debug: bool = False, upload: bool = False, cross: bool = False) -> None:
+def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None, debug: bool = False, upload_tracim: bool = False, upload_release: bool = False, cross: bool = False) -> None:
     for target in targets:
         print(target)
         assert target in CONFIG
-        assert (not upload and debug) or (upload and not debug)
-        assert (tracim_api_key and upload) or (not tracim_api_key and not upload)
+        if upload_tracim:
+            assert tracim_api_key
         file_name, tracim_workspace_id, tracim_content_id = CONFIG[target]
         release_str = " --release" if not debug else ""
         base_cmd = "cargo" if not cross else "cross"
@@ -60,35 +60,65 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
         )
         print(f"zip available at {TMP_DIR}/rolling/{file_name}.zip")
 
-        if not upload:
-            return
-        print("upload ... ", end="")
-
-        # upload
         file_to_upload_path = f"{TMP_DIR}/rolling/{file_name}.zip"
         if "windows" in target:
             file_to_upload_path = f"{TMP_DIR}\\rolling\\{file_name}.zip"
-        with open(file_to_upload_path, "rb") as zip_file:
-            response = requests.put(
-                url=TRACIM_API_URL.format(
-                    workspace_id=tracim_workspace_id,
-                    content_id=tracim_content_id,
-                    filename=f"{file_name}.zip",
-                ),
-                files={"files": zip_file},
-                headers={
-                    "Tracim-Api-Key": tracim_api_key,
-                    "Tracim-Api-Login": TRACIM_LOGIN,
-                },
-            )
-            if response.status_code != 204:
-                try:
-                    print(response.json()["message"])
-                except JSONDecodeError:
-                    print(response.text)
-                exit(1)
 
-        print("OK")
+        if upload_tracim:
+            print("upload to Tracim ... ", end="")
+
+            # upload
+            with open(file_to_upload_path, "rb") as zip_file:
+                response = requests.put(
+                    url=TRACIM_API_URL.format(
+                        workspace_id=tracim_workspace_id,
+                        content_id=tracim_content_id,
+                        filename=f"{file_name}.zip",
+                    ),
+                    files={"files": zip_file},
+                    headers={
+                        "Tracim-Api-Key": tracim_api_key,
+                        "Tracim-Api-Login": TRACIM_LOGIN,
+                    },
+                )
+                if response.status_code != 204:
+                    try:
+                        print(response.json()["message"])
+                    except JSONDecodeError:
+                        print(response.text)
+                    exit(1)
+
+            print("OK")
+
+        if upload_release:
+
+            print("Upload to rolling.bux.fr/release")
+            # FIXME BS NOW: how to upload on windows ? Cross compile with -gnu version ? this compiled
+            # work on linux ?
+            with open("Cargo.toml", "r") as cargo_file:
+                cargo_content = cargo_file.read()
+
+            version = None
+            for line in cargo_content.splitlines():
+                line = line.strip()
+                if line.startswith("version"):
+                    version = line.split("=")[1].strip()[1:-1]
+                    break
+
+            assert version is not None
+
+            subprocess.check_output(
+                f"scp -P 3122 "
+                f"{file_to_upload_path} "
+                f"s2.bux.fr:/srv/www/bux.fr/rolling/release/{file_name}_{version}.zip",
+                shell=True,
+            )
+            subprocess.check_output(
+                f"ssh -p 3122 s2.bux.fr 'echo \"{version}\" "
+                f">> /srv/www/bux.fr/rolling/release/index'",
+                shell=True,
+            )
+            print("OK")
 
 
 if __name__ == '__main__':
@@ -96,7 +126,8 @@ if __name__ == '__main__':
     parser.add_argument("target", nargs="+")
     parser.add_argument("--tracim-api-key", default=None)
     parser.add_argument("--debug", action="store_true", default=False)
-    parser.add_argument("--upload", action="store_true", default=False)
+    parser.add_argument("--upload-tracim", action="store_true", default=False)
+    parser.add_argument("--upload-release", action="store_true", default=False)
     parser.add_argument("--cross", action="store_true", default=False)
     args = parser.parse_args()
-    main(args.target, args.tracim_api_key, debug=args.debug, upload=args.upload, cross=args.cross)
+    main(args.target, args.tracim_api_key, debug=args.debug, upload_tracim=args.upload_tracim, upload_release=args.upload_release, cross=args.cross)

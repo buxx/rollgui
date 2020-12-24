@@ -9,6 +9,7 @@ pub enum MainMessage {
     StartupToZone {
         server_ip: String,
         server_port: u16,
+        disable_version_check: bool,
     },
     DescriptionToZone {
         request_clicks: Option<RequestClicks>,
@@ -30,6 +31,8 @@ pub enum MainMessage {
 pub enum Message {
     ConfirmButtonPressed,
     CancelButtonPressed,
+    DownloadButtonPressed,
+    ContinueButtonPressed,
     ResetProgressBar,
     LocalServerPressed,
     S2BuxFrServerPressed,

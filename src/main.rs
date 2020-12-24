@@ -23,12 +23,16 @@ pub mod world;
 
 pub fn main() -> Result<()> {
     let conf = Ini::load_from_file("config.ini").unwrap();
-    match conf.get_from(Some("debug"), "enable_bug_report").unwrap_or("false") {
-       "true" | "True" | "1" => {
-           println!("Enable bug report (configurable in config.ini)");
-           let _guard =
-        sentry::init("https://7f725b87c5494a66983f69228fc9fd3c@o433154.ingest.sentry.io/5551646");
-       }
+    match conf
+        .get_from(Some("debug"), "enable_bug_report")
+        .unwrap_or("false")
+    {
+        "true" | "True" | "1" => {
+            println!("Enable bug report (configurable in config.ini)");
+            let _guard = sentry::init(
+                "https://7f725b87c5494a66983f69228fc9fd3c@o433154.ingest.sentry.io/5551646",
+            );
+        }
         _ => {}
     };
 
