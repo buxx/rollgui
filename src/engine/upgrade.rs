@@ -12,41 +12,63 @@ use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
 use coffee::Timer;
 use std::io::Write;
+use std::path::Path;
 use std::{env, fs};
 
 pub struct UpgradeEngine {
     version: (u8, u8, u8),
     mandatory: bool,
     server: Server,
+    folder: String,
     already_on_disk: bool,
     display_downloading: bool,
     make_download: bool,
     downloaded: bool,
     download_button: button::State,
     cancel_button: button::State,
+    cancel2_button: button::State,
     continue_button: button::State,
 }
 
 impl UpgradeEngine {
     pub fn new(version: (u8, u8, u8), mandatory: bool, server: Server) -> Self {
-        // FIXME: test it
-        let (major, minor, correction) = version;
+        // Determine where is the reference folder (executable can be in x.y.z folder)
+        let executable_name = if cfg!(windows) {
+            "rollgui.exe"
+        } else {
+            "rollgui"
+        };
         let current_exe = env::current_exe().unwrap();
-        let rolling_folder = current_exe.parent().unwrap();
-        let already_on_disk = rolling_folder
-            .join(format!("{}.{}.{}", major, minor, correction))
-            .is_dir();
+        let possible_parent_executable_path = current_exe
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join(executable_name);
+        let folder = if possible_parent_executable_path.is_file() {
+            possible_parent_executable_path.parent().unwrap()
+        } else {
+            current_exe.parent().unwrap()
+        };
+
+        let (major, minor, correction) = version;
+        let future_folder = folder.join(format!("{}.{}.{}", major, minor, correction));
+        println!("version folder exist ? {:?}", future_folder);
+        let already_on_disk = future_folder.is_dir();
+        println!("version folder exist ? {:?}", already_on_disk);
 
         Self {
             version,
             mandatory,
             server,
             already_on_disk,
+            folder: String::from(folder.to_str().unwrap()),
             display_downloading: false,
             make_download: false,
             downloaded: false,
             download_button: button::State::new(),
             cancel_button: button::State::new(),
+            cancel2_button: button::State::new(),
             continue_button: button::State::new(),
         }
     }
@@ -77,20 +99,30 @@ impl Engine for UpgradeEngine {
                 "Rolling_Linux_x86-64"
             };
 
+            let folder = Path::new(&self.folder);
             let client = reqwest::blocking::Client::new();
             let url = &format!("http://rolling.bux.fr/release/{}", remote_file_name);
-            println!("download {} ...", url);
+            let download_into = folder.join(&remote_file_name);
+            println!(
+                "download {} into {} ...",
+                url,
+                download_into.to_str().unwrap()
+            );
             let response = client.get(url).send().unwrap();
             let zip_content = response.bytes().unwrap();
-            let mut zip_file = fs::File::create(&remote_file_name).unwrap();
+            let mut zip_file = fs::File::create(download_into).unwrap();
             zip_file.write(&zip_content).unwrap();
-            let zip_file = fs::File::open(&remote_file_name).unwrap();
-            util::unzip_to(zip_file);
-            fs::rename(
-                extracted_folder_name,
-                &format!("{}.{}.{}", major, minor, correction),
-            )
-            .unwrap();
+            let zip_file = fs::File::open(folder.join(&remote_file_name)).unwrap();
+            util::unzip_to(zip_file, folder);
+            let version_folder_name = &format!("{}.{}.{}", major, minor, correction);
+            let rename_from = folder.join(extracted_folder_name);
+            let rename_to = folder.join(version_folder_name);
+            println!(
+                "rename downloaded folder {} into {}",
+                rename_from.to_str().unwrap(),
+                rename_to.to_str().unwrap()
+            );
+            fs::rename(rename_from, rename_to).unwrap();
 
             self.display_downloading = false;
             self.make_download = false;
@@ -162,13 +194,19 @@ impl Engine for UpgradeEngine {
             );
         } else {
             if self.already_on_disk {
-                column = column.push(
-                    Text::new(&format!(
-                        "Pour l'utiliser, quitter, puis lancer rolling dans le dossier {}.{}.{}",
+                column = column
+                    .push(
+                        Text::new(&format!(
+                        "Pour l'utiliser, quittez, puis lancer rolling dans le dossier {}.{}.{}",
                         major, minor, correction
                     ))
-                    .size(20),
-                );
+                        .size(20),
+                    )
+                    .push(
+                        Button::new(&mut self.cancel_button, "Quitter")
+                            .on_press(Message::ExitMenuButtonPressed)
+                            .class(button::Class::Primary),
+                    );
             } else {
                 column = column.push(
                     Button::new(&mut self.download_button, "Télécharger")
@@ -179,7 +217,7 @@ impl Engine for UpgradeEngine {
 
             if self.mandatory {
                 column = column.push(
-                    Button::new(&mut self.cancel_button, "Retour")
+                    Button::new(&mut self.cancel2_button, "Retour")
                         .on_press(Message::CancelButtonPressed)
                         .class(button::Class::Secondary),
                 );

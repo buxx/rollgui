@@ -306,10 +306,25 @@ impl Game for MyGame {
     const TICKS_PER_SECOND: u16 = 30;
 
     fn load(_window: &Window) -> Task<MyGame> {
+        // Check if database exist in parent folder: This permit to use original client db when
+        // using specified version of rollgui
+        let db_in_parent_folder_path = std::env::current_exe()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("client.db");
+        let db = if db_in_parent_folder_path.is_file() {
+            get_db(db_in_parent_folder_path.to_str().unwrap())
+        } else {
+            get_db("client.db")
+        };
+
         graphics::Image::load("resources/tilesheet.png").map(|image| MyGame {
             engine: Box::new(StartupEngine::new()),
             tile_sheet_image: image,
-            db: get_db("client.db"),
+            db,
             server: None,
             player: None,
             exit_requested: false,

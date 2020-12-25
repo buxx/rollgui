@@ -391,13 +391,13 @@ pub fn is_compatible_versions(server_version: (u8, u8, u8), client_version: (u8,
     true
 }
 
-pub fn unzip_to(zip_file: fs::File) {
+pub fn unzip_to(zip_file: fs::File, to_folder: &Path) {
     let mut archive = zip::ZipArchive::new(zip_file).unwrap();
 
     for i in 0..archive.len() {
         let mut file = archive.by_index(i).unwrap();
         let outpath = match file.enclosed_name() {
-            Some(path) => path.to_owned(),
+            Some(path) => to_folder.join(path.to_owned()),
             None => continue,
         };
 
