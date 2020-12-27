@@ -72,4 +72,5 @@ pub enum Message {
     AroundItemsButtonPressed,
     AroundBuildButtonPressed,
     AroundCharactersButtonPressed,
+    SubmitChatButtonPressed,
 }

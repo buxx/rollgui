@@ -33,11 +33,13 @@ use coffee::{graphics, Timer};
 use pathfinding::prelude::{absdiff, astar};
 use std::collections::HashMap;
 use std::time::Instant;
+use crate::ui::widget::text_input::TextInput;
 
 const START_SCREEN_X: i16 = 0;
 const LEFT_MENU_WIDTH: i16 = 200;
 const RIGHT_MENU_WIDTH: i16 = 120;
 const START_SCREEN_Y: i16 = 0;
+const TEXT_INPUT_CHAT_ID: i32 = 0;
 
 fn contains_string(classes: &Vec<String>, search: &str) -> bool {
     for class in classes.iter() {
@@ -47,6 +49,18 @@ fn contains_string(classes: &Vec<String>, search: &str) -> bool {
     }
 
     false
+}
+
+pub struct TopBar {
+    text: String,
+    text_color: Color,
+    left_button_state: Option<thin_button::State>,
+    right_button_state: Option<thin_button::State>,
+}
+
+pub struct Chat {
+    messages: Vec<String>,
+    conversation_id: Option<i32>,
 }
 
 pub struct ZoneEngine {
@@ -83,7 +97,7 @@ pub struct ZoneEngine {
     around_builds_count: i32,
     around_characters_count: i32,
     around_wait: Option<Instant>,
-    menu_blinker: util::Blinker<char>,
+    blinker: util::Blinker<char>,
     characters: HashMap<String, Character>,
     stuffs: HashMap<String, Stuff>,
     resources: Vec<Resource>,
@@ -96,6 +110,12 @@ pub struct ZoneEngine {
     cursor_position: Point,
     player_tile_id: String,
     player_move_ticker: util::Ticker,
+    top_bar: Option<TopBar>,
+    displaying_chat: bool,
+    display_chat_required: bool,
+    chat: Option<Chat>,
+    chat_input_value: String,
+    submit_chat_button_state: fixed_button::State,
 }
 
 impl ZoneEngine {
@@ -115,6 +135,17 @@ impl ZoneEngine {
         builds: HashMap<i32, Build>,
         request_clicks: Option<RequestClicks>,
     ) -> Self {
+        let top_bar = if request_clicks.is_some() {
+            Some(TopBar {
+                text: "Appuyez sur Echap pour annuler le mode construction".to_string(),
+                text_color: Color::WHITE,
+                left_button_state: None,
+                right_button_state: None,
+            })
+        } else {
+            None
+        };
+
         let mut zone_engine = Self {
             tiles,
             tile_sheet: TileSheet::new(tile_sheet_image.clone(), tile_width, tile_height),
@@ -149,7 +180,7 @@ impl ZoneEngine {
             around_builds_count: 0,
             around_characters_count: 0,
             around_wait: None,
-            menu_blinker: util::Blinker {
+            blinker: util::Blinker {
                 items: HashMap::new(),
             },
             characters,
@@ -164,6 +195,12 @@ impl ZoneEngine {
             cursor_position: Point::new(0.0, 0.0),
             player_tile_id: String::from("PLAYER"),
             player_move_ticker: util::Ticker::new(15),
+            top_bar,
+            displaying_chat: false,
+            display_chat_required: false,
+            chat: None,
+            chat_input_value: "".to_string(),
+            submit_chat_button_state: fixed_button::State::new(),
         };
         zone_engine.update_link_button_data();
         zone_engine.update_builds_data();
@@ -540,6 +577,22 @@ impl ZoneEngine {
         eprintln!("Around position must used !");
         (0, 0)
     }
+
+    fn apply_chat_text_buffer(&mut self, text_buffer: String) {
+        for c in text_buffer.chars() {
+            match c {
+                // Match ASCII backspace and delete from the text buffer
+                '\u{8}' => {
+                    self.chat_input_value.pop();
+                }
+                // Tabulation | Enter | Escape
+                '\t' | '\r' | '\u{1b}' => {}
+                _ => {
+                    self.chat_input_value.push(c);
+                }
+            }
+        }
+    }
 }
 
 impl Drop for ZoneEngine {
@@ -665,6 +718,23 @@ impl Engine for ZoneEngine {
                     self.builds.insert(build.id, build);
                     self.update_builds_data();
                 }
+                ZoneEventType::NewChatMessage {
+                    conversation_id,
+                    message,
+                    character_id,
+                } => {
+                    println!("New chat message received: {}", message);
+                    match self.chat.as_mut() {
+                        Some(chat) => {
+                            chat.messages.push(message)
+                        }
+                        None => {
+                            self.chat = Some(Chat{ messages: vec![message], conversation_id });
+                            self.display_chat_required = false;
+                            self.displaying_chat = true;
+                        }
+                    }
+                }
                 _ => println!("unknown event type {:?}", &event.event_type),
             }
         }
@@ -741,6 +811,11 @@ impl Engine for ZoneEngine {
         }
 
         if !input.keys_pressed.is_empty() {
+            if self.chat.is_some() {
+                self.apply_chat_text_buffer(input.text_buffer.clone());
+                input.text_buffer = String::new();
+            }
+
             if input.keys_pressed.contains(&keyboard::KeyCode::Right) {
                 try_player_moves.push((1, 0));
                 self.move_requested = None;
@@ -767,8 +842,37 @@ impl Engine for ZoneEngine {
 
                 if self.request_clicks.is_some() {
                     self.request_clicks = None;
+                    self.top_bar = None;
+                } else if self.displaying_chat {
+                    self.top_bar = None;
+                    self.chat = None;
                 } else {
                     return Some(MainMessage::ToExit);
+                }
+            }
+            Some(keyboard::KeyCode::Return) => {
+                if !self.displaying_chat && !self.display_chat_required {
+                    self.display_chat_required = true;
+                    self.socket.send(event::ZoneEvent {
+                        event_type_name: String::from(event::REQUEST_CHAT),
+                        event_type: event::ZoneEventType::RequestChat {
+                            character_id: String::from(self.player.id.as_str()),
+                            conversation_id: None,
+                            message_count: 12,
+                        },
+                    });
+                } else if self.displaying_chat {
+                    println!("send chat message {}", &self.chat_input_value);
+                    self.socket.send(event::ZoneEvent {
+                        event_type_name: String::from(event::NEW_CHAT_MESSAGE),
+                        event_type: event::ZoneEventType::NewChatMessage {
+                            character_id: self.player.id.clone(),
+                            conversation_id: self.chat.as_ref().unwrap().conversation_id,
+                            message: self.chat_input_value.clone()
+                        },
+                    });
+                    self.chat_input_value = "".to_string();
+                    input.key_code = None;
                 }
             }
             _ => {}
@@ -954,31 +1058,31 @@ impl Engine for ZoneEngine {
     }
 
     fn layout(&mut self, window: &Window) -> Element {
-        let event_class = if self.player.unread_event && self.menu_blinker.visible(500, 'E') {
+        let event_class = if self.player.unread_event && self.blinker.visible(500, 'E') {
             thin_button::Class::Primary
         } else {
             thin_button::Class::Secondary
         };
         let business_class =
-            if self.player.unread_transactions && self.menu_blinker.visible(500, 'B') {
+            if self.player.unread_transactions && self.blinker.visible(500, 'B') {
                 thin_button::Class::Primary
             } else {
                 thin_button::Class::Secondary
             };
         let affinity_class =
-            if self.player.unvote_affinity_relation && self.menu_blinker.visible(500, 'A') {
+            if self.player.unvote_affinity_relation && self.blinker.visible(500, 'A') {
                 thin_button::Class::Primary
             } else {
                 thin_button::Class::Secondary
             };
         let zone_message_class =
-            if self.player.unread_zone_message && self.menu_blinker.visible(500, 'M') {
+            if self.player.unread_zone_message && self.blinker.visible(500, 'M') {
                 thin_button::Class::Primary
             } else {
                 thin_button::Class::Secondary
             };
         let conversation_class =
-            if self.player.unread_conversation && self.menu_blinker.visible(500, 'C') {
+            if self.player.unread_conversation && self.blinker.visible(500, 'C') {
                 thin_button::Class::Primary
             } else {
                 thin_button::Class::Secondary
@@ -1107,7 +1211,12 @@ impl Engine for ZoneEngine {
                 } else if value.eq("Mauvais") {
                     right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Health3));
                 } else if value.eq("Critique") {
-                    right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Health4));
+                    if self.blinker.visible(250, 'x') {
+                        right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Health4));
+                    } else {
+                        right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Empty));
+                    };
+
                 } else if value.eq("Faible") {
                     right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Warning));
                 } else {
@@ -1116,21 +1225,39 @@ impl Engine for ZoneEngine {
             }
             if item.value_is_float {
                 if contains_string(&item.classes, "inverted_percent") {
-                    let color_class = if contains_string(&item.classes, "yellow") {
+                    let mut color_class = if contains_string(&item.classes, "yellow") {
                         progress_bar::ColorClass::Yellow
                     } else if contains_string(&item.classes, "red") {
                         progress_bar::ColorClass::Red
                     } else {
                         progress_bar::ColorClass::Green
                     };
-                    right_column_2 = right_column_2.push(
-                        progress_bar::ProgressBar::new(
-                            (100.0 - item.value_float.unwrap()) / 100.0,
-                            progress_bar::Class::SimpleThin,
-                            color_class,
-                        )
-                        .width(40),
-                    );
+                    if color_class == progress_bar::ColorClass::Red {
+                        if self.blinker.visible(250, 'h') {
+                            right_column_2 = right_column_2.push(
+                                progress_bar::ProgressBar::new(
+                                    (100.0 - item.value_float.unwrap()) / 100.0,
+                                    progress_bar::Class::SimpleThin,
+                                    color_class,
+                                )
+                                .width(40),
+                            );
+                        } else {
+                            right_column_2 = right_column_2.push(
+                                icon::Icon::new(icon::Class::Empty)
+                            );
+                        }
+                    } else {
+                        right_column_2 = right_column_2.push(
+                            progress_bar::ProgressBar::new(
+                                (100.0 - item.value_float.unwrap()) / 100.0,
+                                progress_bar::Class::SimpleThin,
+                                color_class,
+                            )
+                            .width(40),
+                        );
+                    }
+
                 } else {
                     right_column_2 = right_column_2.push(
                         Text::new(&item.value_float.as_ref().unwrap().clone().to_string())
@@ -1175,9 +1302,33 @@ impl Engine for ZoneEngine {
             )
         }
 
-        let center_column = Column::new()
+        let mut center_column = Column::new()
             .width(window.width() as u32 - LEFT_MENU_WIDTH as u32 - RIGHT_MENU_WIDTH as u32)
             .height(window.height() as u32);
+
+        if let Some(top_bar) = self.top_bar.as_ref() {
+            center_column = center_column.push(Text::new(&top_bar.text).color(top_bar.text_color));
+        };
+
+        if let Some(chat) = self.chat.as_ref() {
+            for message in &chat.messages {
+                center_column = center_column.push(Text::new(message));
+            }
+            let blink_char = if self.blinker.visible(250, 'c') {
+                Some('_')
+            } else {
+                None
+            };
+            center_column = center_column.push(
+                TextInput::new(
+                    TEXT_INPUT_CHAT_ID,
+                    "Parler",
+                    &self.chat_input_value,
+                    Message::TextInputSelected,
+                    blink_char,
+                )
+            );
+        }
 
         let layout = Row::new()
             .push(left_menu)

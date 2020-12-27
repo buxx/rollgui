@@ -2,6 +2,7 @@ use crate::entity::build::Build;
 use crate::error::RollingError;
 use crate::server::client::{ItemModel, ListOfItemModel};
 use serde::ser::{Serialize, SerializeStruct, Serializer};
+use serde::{Deserialize as SerdeDeserialize, Serialize as SerdeSerialize};
 use serde_derive::{Deserialize as DeserializeDerive, Serialize as SerializeDerive};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -16,6 +17,8 @@ pub const THERE_IS_AROUND: &str = "THERE_IS_AROUND";
 pub const CLICK_ACTION_EVENT: &str = "CLICK_ACTION_EVENT";
 pub const NEW_RESUME_TEXT: &str = "NEW_RESUME_TEXT";
 pub const NEW_BUILD: &str = "NEW_BUILD";
+pub const REQUEST_CHAT: &str = "REQUEST_CHAT";
+pub const NEW_CHAT_MESSAGE: &str = "NEW_CHAT_MESSAGE";
 
 #[derive(SerializeDerive, DeserializeDerive, Debug)]
 #[serde(untagged)]
@@ -59,6 +62,23 @@ pub enum ZoneEventType {
     NewBuild {
         build: Build,
     },
+    RequestChat {
+        character_id: String,
+        conversation_id: Option<i32>,
+        message_count: i32,
+    },
+    NewChatMessage {
+        character_id: String,
+        conversation_id: Option<i32>,
+        message: String,
+    },
+}
+
+#[derive(SerdeSerialize, SerdeDeserialize, Debug)]
+pub struct NewChatMessage {
+    pub conversation_id: Option<i32>,
+    pub message: String,
+    pub character_id: String,
 }
 
 #[derive(Debug)]
@@ -161,6 +181,17 @@ impl ZoneEvent {
                             classes,
                             traversable,
                         },
+                    },
+                })
+            }
+            &NEW_CHAT_MESSAGE => {
+                let new_chat_message: NewChatMessage = serde_json::from_value(data.clone()).unwrap();
+                Ok(ZoneEvent {
+                    event_type_name: String::from(NEW_CHAT_MESSAGE),
+                    event_type: ZoneEventType::NewChatMessage {
+                        conversation_id: new_chat_message.conversation_id,
+                        message: new_chat_message.message,
+                        character_id: new_chat_message.character_id,
                     },
                 })
             }
