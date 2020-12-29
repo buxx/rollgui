@@ -217,8 +217,8 @@ impl MyGame {
 
         // TODO: https
         let mut socket = ZoneSocket::new(format!(
-            "http://{}:{}/zones/{}/{}/events",
-            server.config.ip, server.config.port, player.world_position.0, player.world_position.1,
+            "http://{}:{}/zones/{}/{}/events?character_id={}",
+            server.config.ip, server.config.port, player.world_position.0, player.world_position.1, player.id
         ));
         socket.connect();
         socket.send(event::ZoneEvent {

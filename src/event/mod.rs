@@ -64,12 +64,15 @@ pub enum ZoneEventType {
     },
     RequestChat {
         character_id: String,
-        conversation_id: Option<i32>,
+        previous_conversation_id: Option<i32>,
         message_count: i32,
+        next: bool,
+        previous: bool,
     },
     NewChatMessage {
         character_id: String,
         conversation_id: Option<i32>,
+        conversation_title: Option<String>,
         message: String,
     },
 }
@@ -77,6 +80,7 @@ pub enum ZoneEventType {
 #[derive(SerdeSerialize, SerdeDeserialize, Debug)]
 pub struct NewChatMessage {
     pub conversation_id: Option<i32>,
+    pub conversation_title: Option<String>,
     pub message: String,
     pub character_id: String,
 }
@@ -185,11 +189,13 @@ impl ZoneEvent {
                 })
             }
             &NEW_CHAT_MESSAGE => {
-                let new_chat_message: NewChatMessage = serde_json::from_value(data.clone()).unwrap();
+                let new_chat_message: NewChatMessage =
+                    serde_json::from_value(data.clone()).unwrap();
                 Ok(ZoneEvent {
                     event_type_name: String::from(NEW_CHAT_MESSAGE),
                     event_type: ZoneEventType::NewChatMessage {
                         conversation_id: new_chat_message.conversation_id,
+                        conversation_title: new_chat_message.conversation_title,
                         message: new_chat_message.message,
                         character_id: new_chat_message.character_id,
                     },

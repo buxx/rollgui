@@ -19,6 +19,7 @@ use crate::ui::widget::fixed_button;
 use crate::ui::widget::icon;
 use crate::ui::widget::progress_bar;
 use crate::ui::widget::text::Text;
+use crate::ui::widget::text_input::TextInput;
 use crate::ui::widget::thin_button;
 use crate::ui::widget::thin_button::Button;
 use crate::ui::Column;
@@ -33,13 +34,13 @@ use coffee::{graphics, Timer};
 use pathfinding::prelude::{absdiff, astar};
 use std::collections::HashMap;
 use std::time::Instant;
-use crate::ui::widget::text_input::TextInput;
 
 const START_SCREEN_X: i16 = 0;
 const LEFT_MENU_WIDTH: i16 = 200;
 const RIGHT_MENU_WIDTH: i16 = 120;
 const START_SCREEN_Y: i16 = 0;
 const TEXT_INPUT_CHAT_ID: i32 = 0;
+const CHAT_MESSAGE_COUNT: i32 = 15;
 
 fn contains_string(classes: &Vec<String>, search: &str) -> bool {
     for class in classes.iter() {
@@ -54,8 +55,6 @@ fn contains_string(classes: &Vec<String>, search: &str) -> bool {
 pub struct TopBar {
     text: String,
     text_color: Color,
-    left_button_state: Option<thin_button::State>,
-    right_button_state: Option<thin_button::State>,
 }
 
 pub struct Chat {
@@ -116,6 +115,8 @@ pub struct ZoneEngine {
     chat: Option<Chat>,
     chat_input_value: String,
     submit_chat_button_state: fixed_button::State,
+    previous_chat_button_state: fixed_button::State,
+    next_chat_button_state: fixed_button::State,
 }
 
 impl ZoneEngine {
@@ -139,8 +140,6 @@ impl ZoneEngine {
             Some(TopBar {
                 text: "Appuyez sur Echap pour annuler le mode construction".to_string(),
                 text_color: Color::WHITE,
-                left_button_state: None,
-                right_button_state: None,
             })
         } else {
             None
@@ -156,7 +155,7 @@ impl ZoneEngine {
             end_screen_y: 0,
             start_zone_row_i: 0,
             start_zone_col_i: 0,
-            server: server,
+            server,
             player,
             level,
             socket,
@@ -201,6 +200,8 @@ impl ZoneEngine {
             chat: None,
             chat_input_value: "".to_string(),
             submit_chat_button_state: fixed_button::State::new(),
+            previous_chat_button_state: fixed_button::State::new(),
+            next_chat_button_state: fixed_button::State::new(),
         };
         zone_engine.update_link_button_data();
         zone_engine.update_builds_data();
@@ -720,16 +721,36 @@ impl Engine for ZoneEngine {
                 }
                 ZoneEventType::NewChatMessage {
                     conversation_id,
+                    conversation_title,
                     message,
                     character_id,
                 } => {
                     println!("New chat message received: {}", message);
                     match self.chat.as_mut() {
                         Some(chat) => {
-                            chat.messages.push(message)
-                        }
+                            if chat.conversation_id == conversation_id {
+                                chat.messages.push(message);
+                            } else {
+                                chat.conversation_id = conversation_id;
+                                chat.messages = vec!();
+                                chat.messages.push(message);
+                            };
+                            if let Some(conversation_title) = conversation_title{
+                                self.top_bar.as_mut().unwrap().text = conversation_title;
+                            };
+                            if chat.messages.len() > CHAT_MESSAGE_COUNT as usize {
+                                chat.messages.remove(0);
+                            }
+                        },
                         None => {
-                            self.chat = Some(Chat{ messages: vec![message], conversation_id });
+                            self.chat = Some(Chat {
+                                messages: vec![message],
+                                conversation_id,
+                            });
+                            self.top_bar = Some(TopBar {
+                                text: conversation_title.unwrap_or("Chat de la zone".to_string()),
+                                text_color: Color::WHITE,
+                            });
                             self.display_chat_required = false;
                             self.displaying_chat = true;
                         }
@@ -846,6 +867,7 @@ impl Engine for ZoneEngine {
                 } else if self.displaying_chat {
                     self.top_bar = None;
                     self.chat = None;
+                    self.displaying_chat = false;
                 } else {
                     return Some(MainMessage::ToExit);
                 }
@@ -857,8 +879,10 @@ impl Engine for ZoneEngine {
                         event_type_name: String::from(event::REQUEST_CHAT),
                         event_type: event::ZoneEventType::RequestChat {
                             character_id: String::from(self.player.id.as_str()),
-                            conversation_id: None,
-                            message_count: 12,
+                            previous_conversation_id: None,
+                            message_count: CHAT_MESSAGE_COUNT,
+                            next: false,
+                            previous: false,
                         },
                     });
                 } else if self.displaying_chat {
@@ -868,7 +892,8 @@ impl Engine for ZoneEngine {
                         event_type: event::ZoneEventType::NewChatMessage {
                             character_id: self.player.id.clone(),
                             conversation_id: self.chat.as_ref().unwrap().conversation_id,
-                            message: self.chat_input_value.clone()
+                            conversation_title: None,
+                            message: self.chat_input_value.clone(),
                         },
                     });
                     self.chat_input_value = "".to_string();
@@ -1052,6 +1077,32 @@ impl Engine for ZoneEngine {
                     back_url: None,
                 })
             }
+            Message::PreviousChatButtonPressed => {
+                self.chat.as_mut().unwrap().messages = vec!();
+                self.socket.send(event::ZoneEvent {
+                    event_type_name: String::from(event::REQUEST_CHAT),
+                    event_type: event::ZoneEventType::RequestChat {
+                        character_id: String::from(self.player.id.as_str()),
+                        previous_conversation_id: self.chat.as_ref().unwrap().conversation_id,
+                        message_count: CHAT_MESSAGE_COUNT,
+                        next: false,
+                        previous: true,
+                    },
+                });
+            }
+            Message::NextChatButtonPressed => {
+                self.chat.as_mut().unwrap().messages = vec!();
+                self.socket.send(event::ZoneEvent {
+                    event_type_name: String::from(event::REQUEST_CHAT),
+                    event_type: event::ZoneEventType::RequestChat {
+                        character_id: String::from(self.player.id.as_str()),
+                        previous_conversation_id: self.chat.as_ref().unwrap().conversation_id,
+                        message_count: CHAT_MESSAGE_COUNT,
+                        next: true,
+                        previous: false,
+                    },
+                });
+            }
             _ => {}
         }
         None
@@ -1063,12 +1114,11 @@ impl Engine for ZoneEngine {
         } else {
             thin_button::Class::Secondary
         };
-        let business_class =
-            if self.player.unread_transactions && self.blinker.visible(500, 'B') {
-                thin_button::Class::Primary
-            } else {
-                thin_button::Class::Secondary
-            };
+        let business_class = if self.player.unread_transactions && self.blinker.visible(500, 'B') {
+            thin_button::Class::Primary
+        } else {
+            thin_button::Class::Secondary
+        };
         let affinity_class =
             if self.player.unvote_affinity_relation && self.blinker.visible(500, 'A') {
                 thin_button::Class::Primary
@@ -1216,7 +1266,6 @@ impl Engine for ZoneEngine {
                     } else {
                         right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Empty));
                     };
-
                 } else if value.eq("Faible") {
                     right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Warning));
                 } else {
@@ -1243,9 +1292,8 @@ impl Engine for ZoneEngine {
                                 .width(40),
                             );
                         } else {
-                            right_column_2 = right_column_2.push(
-                                icon::Icon::new(icon::Class::Empty)
-                            );
+                            right_column_2 =
+                                right_column_2.push(icon::Icon::new(icon::Class::Empty));
                         }
                     } else {
                         right_column_2 = right_column_2.push(
@@ -1257,7 +1305,6 @@ impl Engine for ZoneEngine {
                             .width(40),
                         );
                     }
-
                 } else {
                     right_column_2 = right_column_2.push(
                         Text::new(&item.value_float.as_ref().unwrap().clone().to_string())
@@ -1307,7 +1354,26 @@ impl Engine for ZoneEngine {
             .height(window.height() as u32);
 
         if let Some(top_bar) = self.top_bar.as_ref() {
-            center_column = center_column.push(Text::new(&top_bar.text).color(top_bar.text_color));
+            center_column = center_column.push(
+                Row::new()
+                    .push(
+                        Column::new().push(
+                            fixed_button::Button::new(&mut self.previous_chat_button_state, "")
+                                .on_press(Message::PreviousChatButtonPressed)
+                                .class(fixed_button::Class::Back),
+                        ),
+                    )
+                    .push(Column::new().push(Text::new(&top_bar.text).color(top_bar.text_color)))
+                    .push(
+                        Column::new().push(
+                            Column::new().push(
+                                fixed_button::Button::new(&mut self.next_chat_button_state, "")
+                                    .on_press(Message::NextChatButtonPressed)
+                                    .class(fixed_button::Class::Next),
+                            ),
+                        ),
+                    ),
+            )
         };
 
         if let Some(chat) = self.chat.as_ref() {
@@ -1319,15 +1385,13 @@ impl Engine for ZoneEngine {
             } else {
                 None
             };
-            center_column = center_column.push(
-                TextInput::new(
-                    TEXT_INPUT_CHAT_ID,
-                    "Parler",
-                    &self.chat_input_value,
-                    Message::TextInputSelected,
-                    blink_char,
-                )
-            );
+            center_column = center_column.push(TextInput::new(
+                TEXT_INPUT_CHAT_ID,
+                "Parler",
+                &self.chat_input_value,
+                Message::TextInputSelected,
+                blink_char,
+            ));
         }
 
         let layout = Row::new()
