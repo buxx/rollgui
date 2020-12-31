@@ -744,15 +744,25 @@ impl Engine for ZoneEngine {
                     message,
                     character_id,
                 } => {
-                    println!("New chat message received: {}", message);
+                    println!(
+                        "New chat message received: {} ({:?})",
+                        message, conversation_id
+                    );
                     match self.chat.as_mut() {
                         Some(chat) => {
                             if chat.conversation_id == conversation_id {
                                 chat.messages.push(message);
-                            }; // else TODO arrow blink etc
+                            } else if self.display_chat_required {
+                                self.display_chat_required = false;
+                                if let Some(conversation_title) = conversation_title {
+                                    self.top_bar.as_mut().unwrap().text = conversation_title;
+                                };
+                                chat.messages = vec![message];
+                                chat.conversation_id = conversation_id;
+                            };
                             if chat.messages.len() > CHAT_MESSAGE_COUNT as usize {
                                 chat.messages.remove(0);
-                            }
+                            };
                         }
                         None => {
                             println!("open chat box");
@@ -1120,6 +1130,7 @@ impl Engine for ZoneEngine {
             }
             Message::PreviousChatButtonPressed => {
                 self.chat.as_mut().unwrap().messages = vec![];
+                self.display_chat_required = true;
                 self.socket.send(event::ZoneEvent {
                     event_type_name: String::from(event::REQUEST_CHAT),
                     event_type: event::ZoneEventType::RequestChat {
@@ -1133,6 +1144,7 @@ impl Engine for ZoneEngine {
             }
             Message::NextChatButtonPressed => {
                 self.chat.as_mut().unwrap().messages = vec![];
+                self.display_chat_required = true;
                 self.socket.send(event::ZoneEvent {
                     event_type_name: String::from(event::REQUEST_CHAT),
                     event_type: event::ZoneEventType::RequestChat {
