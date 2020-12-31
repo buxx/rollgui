@@ -75,4 +75,7 @@ pub enum Message {
     SubmitChatButtonPressed,
     PreviousChatButtonPressed,
     NextChatButtonPressed,
+    DismissRequestClicks,
+    DismissChat,
+    RequestChat(Option<i32>),
 }
