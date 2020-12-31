@@ -33,7 +33,7 @@ use coffee::ui::Align;
 use coffee::{graphics, Timer};
 use pathfinding::prelude::{absdiff, astar};
 use std::collections::HashMap;
-use std::time::Instant;
+use std::time::{Duration, Instant, SystemTime};
 
 const START_SCREEN_X: i16 = 0;
 const LEFT_MENU_WIDTH: i16 = 200;
@@ -55,6 +55,7 @@ fn contains_string(classes: &Vec<String>, search: &str) -> bool {
 pub struct TopBar {
     text: String,
     text_color: Color,
+    display_buttons: bool,
 }
 
 pub struct Chat {
@@ -117,6 +118,8 @@ pub struct ZoneEngine {
     submit_chat_button_state: fixed_button::State,
     previous_chat_button_state: fixed_button::State,
     next_chat_button_state: fixed_button::State,
+    unread_conversation_id: Vec<Option<i32>>,
+    close_unread_conversation_top_bar_start: Option<SystemTime>,
 }
 
 impl ZoneEngine {
@@ -140,6 +143,7 @@ impl ZoneEngine {
             Some(TopBar {
                 text: "Appuyez sur Echap pour annuler le mode construction".to_string(),
                 text_color: Color::WHITE,
+                display_buttons: false,
             })
         } else {
             None
@@ -202,6 +206,8 @@ impl ZoneEngine {
             submit_chat_button_state: fixed_button::State::new(),
             previous_chat_button_state: fixed_button::State::new(),
             next_chat_button_state: fixed_button::State::new(),
+            unread_conversation_id: vec![],
+            close_unread_conversation_top_bar_start: None,
         };
         zone_engine.update_link_button_data();
         zone_engine.update_builds_data();
@@ -652,6 +658,16 @@ impl Engine for ZoneEngine {
         self.end_screen_y = window.height() as i16;
         self.update_zone_display();
 
+        if let Some(close_unread_conversation_top_bar_start) =
+            self.close_unread_conversation_top_bar_start.as_mut()
+        {
+            if close_unread_conversation_top_bar_start.elapsed().unwrap() > Duration::from_secs(10)
+            {
+                self.close_unread_conversation_top_bar_start = None;
+                self.top_bar = None;
+            }
+        }
+
         for event in self.socket.pending_events() {
             // TODO Move code ailleurs
             match event.event_type {
@@ -730,29 +746,46 @@ impl Engine for ZoneEngine {
                         Some(chat) => {
                             if chat.conversation_id == conversation_id {
                                 chat.messages.push(message);
-                            } else {
-                                chat.conversation_id = conversation_id;
-                                chat.messages = vec!();
-                                chat.messages.push(message);
-                            };
-                            if let Some(conversation_title) = conversation_title{
-                                self.top_bar.as_mut().unwrap().text = conversation_title;
-                            };
+                            }; // else TODO arrow blink etc
                             if chat.messages.len() > CHAT_MESSAGE_COUNT as usize {
                                 chat.messages.remove(0);
                             }
-                        },
+                        }
                         None => {
-                            self.chat = Some(Chat {
-                                messages: vec![message],
-                                conversation_id,
-                            });
-                            self.top_bar = Some(TopBar {
-                                text: conversation_title.unwrap_or("Chat de la zone".to_string()),
-                                text_color: Color::WHITE,
-                            });
-                            self.display_chat_required = false;
-                            self.displaying_chat = true;
+                            if self.display_chat_required {
+                                self.chat = Some(Chat {
+                                    messages: vec![message],
+                                    conversation_id,
+                                });
+                                self.top_bar = Some(TopBar {
+                                    text: conversation_title
+                                        .unwrap_or("Chat de la zone".to_string()),
+                                    text_color: Color::WHITE,
+                                    display_buttons: true,
+                                });
+                                self.display_chat_required = false;
+                                self.displaying_chat = true;
+                            } else {
+                                if !self.request_clicks.is_some() {
+                                    match self.top_bar.as_mut() {
+                                        Some(top_bar) => {
+                                            top_bar.text = message;
+                                        }
+                                        None => {
+                                            self.top_bar = Some(TopBar {
+                                                text: message,
+                                                text_color: Color::WHITE,
+                                                display_buttons: false,
+                                            });
+                                        }
+                                    }
+                                    self.close_unread_conversation_top_bar_start =
+                                        Some(SystemTime::now());
+                                    self.unread_conversation_id.push(conversation_id);
+                                } else {
+                                    self.unread_conversation_id.push(conversation_id);
+                                }
+                            }
                         }
                     }
                 }
@@ -1078,7 +1111,7 @@ impl Engine for ZoneEngine {
                 })
             }
             Message::PreviousChatButtonPressed => {
-                self.chat.as_mut().unwrap().messages = vec!();
+                self.chat.as_mut().unwrap().messages = vec![];
                 self.socket.send(event::ZoneEvent {
                     event_type_name: String::from(event::REQUEST_CHAT),
                     event_type: event::ZoneEventType::RequestChat {
@@ -1091,7 +1124,7 @@ impl Engine for ZoneEngine {
                 });
             }
             Message::NextChatButtonPressed => {
-                self.chat.as_mut().unwrap().messages = vec!();
+                self.chat.as_mut().unwrap().messages = vec![];
                 self.socket.send(event::ZoneEvent {
                     event_type_name: String::from(event::REQUEST_CHAT),
                     event_type: event::ZoneEventType::RequestChat {
@@ -1354,26 +1387,33 @@ impl Engine for ZoneEngine {
             .height(window.height() as u32);
 
         if let Some(top_bar) = self.top_bar.as_ref() {
-            center_column = center_column.push(
+            let mut top_bar_row = Row::new();
+            if top_bar.display_buttons {
+                top_bar_row = top_bar_row.push(
+                    fixed_button::Button::new(&mut self.previous_chat_button_state, "")
+                        .on_press(Message::PreviousChatButtonPressed)
+                        .class(fixed_button::Class::Back),
+                );
+            }
+
+            top_bar_row = top_bar_row.push(
                 Row::new()
-                    .push(
+                    .push(Column::new().push(Text::new(&top_bar.text).color(top_bar.text_color))),
+            );
+
+            if top_bar.display_buttons {
+                top_bar_row = top_bar_row.push(
+                    Column::new().push(
                         Column::new().push(
-                            fixed_button::Button::new(&mut self.previous_chat_button_state, "")
-                                .on_press(Message::PreviousChatButtonPressed)
-                                .class(fixed_button::Class::Back),
-                        ),
-                    )
-                    .push(Column::new().push(Text::new(&top_bar.text).color(top_bar.text_color)))
-                    .push(
-                        Column::new().push(
-                            Column::new().push(
-                                fixed_button::Button::new(&mut self.next_chat_button_state, "")
-                                    .on_press(Message::NextChatButtonPressed)
-                                    .class(fixed_button::Class::Next),
-                            ),
+                            fixed_button::Button::new(&mut self.next_chat_button_state, "")
+                                .on_press(Message::NextChatButtonPressed)
+                                .class(fixed_button::Class::Next),
                         ),
                     ),
-            )
+                );
+            }
+
+            center_column = center_column.push(top_bar_row);
         };
 
         if let Some(chat) = self.chat.as_ref() {
