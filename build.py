@@ -17,7 +17,7 @@ TRACIM_LOGIN = "sevajol.bastien@gmail.com"
 CONFIG = {
     "x86_64-unknown-linux-gnu": ("Rolling_Linux_x86-64", "5", "201"),
     "i686-unknown-linux-gnu": ("Rolling_Linux_i686", "5", "384"),
-    "x86_64-pc-windows-msvc": ("Rolling_Windows_x86-64", "5", "200"),
+    "x86_64-pc-windows-gnu": ("Rolling_Windows_x86-64", "5", "200"),
     "i686-pc-windows-msvc": ("Rolling_windows_i686", "5", "218"),
 }
 TMP_DIR = tempfile.gettempdir()
@@ -34,8 +34,10 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
         base_cmd = "cargo" if not cross else "cross"
 
         # compile
+        command = f"{base_cmd} build --target {target}{release_str}"
+        print(command)
         subprocess.check_output(
-            f"{base_cmd} build --target {target}{release_str}",
+            command,
             shell=True,
         )
 
@@ -52,7 +54,8 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
         zip_command = f"cd {TMP_DIR}/rolling && zip -r {file_name}.zip {file_name}"
         if "windows" in target:
             shutil.copy(f"rollgui.bat", f"{TMP_DIR}/rolling/{file_name}/")
-            zip_command = f"cd {TMP_DIR}\\rolling && tar.exe -a -c -f {file_name}.zip {file_name}"
+            if not cross:
+                zip_command = f"cd {TMP_DIR}\\rolling && tar.exe -a -c -f {file_name}.zip {file_name}"
         print(zip_command)
         subprocess.check_output(
             zip_command,
@@ -61,11 +64,11 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
         print(f"zip available at {TMP_DIR}/rolling/{file_name}.zip")
 
         file_to_upload_path = f"{TMP_DIR}/rolling/{file_name}.zip"
-        if "windows" in target:
+        if "windows" in target and not cross:
             file_to_upload_path = f"{TMP_DIR}\\rolling\\{file_name}.zip"
 
         if upload_tracim:
-            print("upload to Tracim ... ", end="")
+            print("upload to Tracim ... ")
 
             # upload
             with open(file_to_upload_path, "rb") as zip_file:
@@ -88,13 +91,9 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
                         print(response.text)
                     exit(1)
 
-            print("OK")
-
         if upload_release:
 
             print("Upload to rolling.bux.fr/release")
-            # FIXME BS NOW: how to upload on windows ? Cross compile with -gnu version ? this compiled
-            # work on linux ?
             with open("Cargo.toml", "r") as cargo_file:
                 cargo_content = cargo_file.read()
 
