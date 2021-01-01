@@ -72,4 +72,10 @@ pub enum Message {
     AroundItemsButtonPressed,
     AroundBuildButtonPressed,
     AroundCharactersButtonPressed,
+    SubmitChatButtonPressed,
+    PreviousChatButtonPressed,
+    NextChatButtonPressed,
+    DismissRequestClicks,
+    DismissChat,
+    RequestChat(Option<i32>),
 }

@@ -27,6 +27,13 @@ const PARAGRAPH_HEIGHT: u16 = 37;
 const PARAGRAPH_Y_BORDER: u16 = 8;
 const PARAGRAPH_PADDING: u16 = 7;
 
+const GRAY1_X: u16 = 180;
+const GRAY1_Y: u16 = 0;
+const GRAY2_X: u16 = 180;
+const GRAY2_Y: u16 = 1;
+const GRAY3_X: u16 = 180;
+const GRAY3_Y: u16 = 2;
+
 impl text::Renderer for Renderer {
     fn node(&self, style: Style, content: &str, size: f32) -> Node {
         let font = self.font.clone();
@@ -180,6 +187,39 @@ impl text::Renderer for Renderer {
                                 + PARAGRAPH_PADDING as f32,
                         ),
                         scale: (1.0, 1.0),
+                    });
+
+                    self.font.borrow_mut().add(graphics::Text {
+                        content,
+                        position: Point::new(
+                            bounds.x as f32 + PARAGRAPH_PADDING as f32,
+                            bounds.y as f32 + (PARAGRAPH_PADDING as f32 / 2.0),
+                        ),
+                        bounds: (bounds.width, bounds.height),
+                        color,
+                        size,
+                        horizontal_alignment,
+                        vertical_alignment,
+                    });
+                    return;
+                }
+                Class::BgGray1 | Class::BgGray2 | Class::BgGray3 => {
+                    let (x, y) = match class_ {
+                        Class::BgGray1 => (GRAY1_X, GRAY1_Y),
+                        Class::BgGray2 => (GRAY2_X, GRAY2_Y),
+                        Class::BgGray3 => (GRAY3_X, GRAY3_Y),
+                        _ => panic!("not implemented"),
+                    };
+
+                    self.sprites.add(Sprite {
+                        source: Rectangle {
+                            x,
+                            y,
+                            width: 1,
+                            height: 1,
+                        },
+                        position: Point::new(bounds.x, bounds.y),
+                        scale: (bounds.width, bounds.height),
                     });
 
                     self.font.borrow_mut().add(graphics::Text {

@@ -14,6 +14,8 @@ use crate::message;
 use crate::ui::{renderer, Element};
 use std::hash::Hash;
 
+pub const NODE_HEIGHT: u32 = 50;
+
 /// A generic widget that produces a message when clicked.
 ///
 /// It implements [`Widget`] when the associated [`core::Renderer`] implements
@@ -126,7 +128,7 @@ impl<'a> Button<'a> {
 
 impl<'a> Widget<message::Message, renderer::Renderer> for Button<'a> {
     fn node(&self, _renderer: &renderer::Renderer) -> Node {
-        Node::new(self.style.height(50))
+        Node::new(self.style.height(NODE_HEIGHT))
     }
 
     fn on_event(
@@ -224,6 +226,7 @@ pub enum Class {
     Character,
     Action,
     Affinity,
+    Next,
 }
 
 /// The renderer of a [`Button`].

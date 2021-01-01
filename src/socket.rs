@@ -70,20 +70,23 @@ impl ZoneSocket {
                 match message {
                     Ok(OwnedMessage::Text(msg)) => {
                         let value: Value = serde_json::from_str(&msg).unwrap();
-                        let event = event::ZoneEvent::from_value(value).unwrap();
+                        match event::ZoneEvent::from_value(value) {
+                            Ok(event) => {
+                                let mut break_ = false;
+                                if let event::ZoneEventType::ServerPermitClose = event.event_type {
+                                    break_ = true;
+                                }
 
-                        let mut break_ = false;
-                        if let event::ZoneEventType::ServerPermitClose = event.event_type {
-                            break_ = true;
-                        }
+                                if let Err(SendError(_e)) = from_websocket_sender.send(event) {
+                                    eprintln!("WebSocket(receiver): Something went wrong during process of received event");
+                                }
 
-                        if let Err(SendError(_e)) = from_websocket_sender.send(event) {
-                            eprintln!("WebSocket(receiver): Something went wrong during process of received event");
-                        }
-
-                        if break_ {
-                            println!("WebSocket(receiver): Receive close event");
-                            break;
+                                if break_ {
+                                    println!("WebSocket(receiver): Receive close event");
+                                    break;
+                                }
+                            }
+                            Err(err) => println!("Error while decoding event: {}", err.message),
                         }
                     }
                     Ok(OwnedMessage::Close(_)) => {

@@ -12,6 +12,9 @@ pub enum Class {
     H1,
     H2,
     Paragraph,
+    BgGray1,
+    BgGray2,
+    BgGray3,
 }
 
 /// A fragment of text.

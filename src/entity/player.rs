@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone)]
 pub struct Player {
     pub id: String,
+    pub name: String,
     pub x: i16,
     pub y: i16,
     // row_i, col_i
@@ -26,6 +27,7 @@ pub struct Player {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ApiCharacter {
     pub id: String,
+    pub name: String,
     pub zone_row_i: i32,
     pub zone_col_i: i32,
     pub world_row_i: i32,
@@ -46,6 +48,7 @@ pub struct ApiCharacter {
 impl Player {
     pub fn new(
         id: &str,
+        name: &str,
         position: (i32, i32),
         world_position: (i32, i32),
         max_life_comp: f32,
@@ -62,6 +65,7 @@ impl Player {
     ) -> Self {
         Self {
             id: id.to_string(),
+            name: name.to_string(),
             // TODO: tile width/height must be passed by args
             x: position.1 as i16 * TILE_WIDTH,
             y: position.0 as i16 * TILE_HEIGHT,

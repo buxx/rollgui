@@ -20,6 +20,8 @@ pub struct TextInput<Id> {
     color: Color,
     hover_color: Color,
     blink_char: Option<char>,
+    class: Option<text::Class>,
+    height: u32,
 }
 
 impl<I> std::fmt::Debug for TextInput<I>
@@ -37,8 +39,14 @@ where
 }
 
 impl<I> TextInput<I> {
-    /// todo doc
-    pub fn new<S>(id: I, label: &str, value: &str, on_selected: S, blink_char: Option<char>) -> Self
+    pub fn new<S>(
+        id: I,
+        label: &str,
+        value: &str,
+        on_selected: S,
+        blink_char: Option<char>,
+        class: Option<text::Class>,
+    ) -> Self
     where
         S: 'static + Fn(I) -> message::Message,
     {
@@ -50,18 +58,23 @@ impl<I> TextInput<I> {
             color: Color::WHITE,
             hover_color: Color::GREEN,
             blink_char,
+            class,
+            height: 25,
         }
     }
 
-    /// todo doc
     pub fn color(mut self, color: Color) -> Self {
         self.color = color;
         self
     }
 
-    /// todo doc
     pub fn hover_color(mut self, color: Color) -> Self {
         self.hover_color = color;
+        self
+    }
+
+    pub fn height(mut self, height: u32) -> Self {
+        self.height = height;
         self
     }
 }
@@ -71,13 +84,10 @@ where
     I: Copy,
 {
     fn node(&self, renderer: &renderer::Renderer) -> Node {
-        // FIXME BS NOW: When it is called ?!
         Row::new()
             .spacing(15)
             .align_items(Align::Center)
-            .push(Text::new(
-                format!("{}: {}", self.label, self.value).as_str(),
-            ))
+            .push(Text::new(format!("{}: {}", self.label, self.value).as_str()).height(self.height))
             .node(renderer)
     }
 
@@ -122,7 +132,7 @@ where
             color,
             HorizontalAlignment::Left,
             VerticalAlignment::Top,
-            None,
+            self.class,
         );
 
         if hover {
@@ -137,9 +147,7 @@ where
     }
 }
 
-/// todo doc
 pub trait Renderer {
-    /// todo doc
     fn draw(
         &mut self,
         cursor_position: Point,

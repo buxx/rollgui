@@ -17,27 +17,36 @@ use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles;
 use crate::ui::widget::fixed_button;
 use crate::ui::widget::icon;
+use crate::ui::widget::link::Link;
 use crate::ui::widget::progress_bar;
-use crate::ui::widget::text::Text;
+use crate::ui::widget::text;
+use crate::ui::widget::text_input::TextInput;
 use crate::ui::widget::thin_button;
 use crate::ui::widget::thin_button::Button;
 use crate::ui::Column;
 use crate::ui::Element;
 use crate::ui::Row;
 use crate::{event, util};
-use coffee::graphics::{Batch, Color, Frame, Point, Rectangle, Sprite, Window};
+use coffee::graphics::{
+    Batch, Color, Frame, HorizontalAlignment, Point, Rectangle, Sprite, VerticalAlignment, Window,
+};
 use coffee::input::keyboard;
 use coffee::input::mouse;
 use coffee::ui::Align;
 use coffee::{graphics, Timer};
 use pathfinding::prelude::{absdiff, astar};
 use std::collections::HashMap;
-use std::time::Instant;
+use std::time::{Duration, Instant, SystemTime};
 
 const START_SCREEN_X: i16 = 0;
 const LEFT_MENU_WIDTH: i16 = 200;
 const RIGHT_MENU_WIDTH: i16 = 120;
 const START_SCREEN_Y: i16 = 0;
+const TEXT_INPUT_CHAT_ID: i32 = 0;
+const CHAT_MESSAGE_COUNT: i32 = 15;
+const TOP_BAR_BUTTON_WIDTH: u32 = 100;
+const MARGIN_RIGHT_CHAT: u32 = 25;
+const CHAT_LINE_HEIGHT: u32 = 20;
 
 fn contains_string(classes: &Vec<String>, search: &str) -> bool {
     for class in classes.iter() {
@@ -47,6 +56,18 @@ fn contains_string(classes: &Vec<String>, search: &str) -> bool {
     }
 
     false
+}
+
+pub struct TopBar {
+    text: String,
+    text_color: Color,
+    display_buttons: bool,
+    on_click: Option<Message>,
+}
+
+pub struct Chat {
+    messages: Vec<String>,
+    conversation_id: Option<i32>,
 }
 
 pub struct ZoneEngine {
@@ -83,7 +104,7 @@ pub struct ZoneEngine {
     around_builds_count: i32,
     around_characters_count: i32,
     around_wait: Option<Instant>,
-    menu_blinker: util::Blinker<char>,
+    blinker: util::Blinker<char>,
     characters: HashMap<String, Character>,
     stuffs: HashMap<String, Stuff>,
     resources: Vec<Resource>,
@@ -96,6 +117,15 @@ pub struct ZoneEngine {
     cursor_position: Point,
     player_tile_id: String,
     player_move_ticker: util::Ticker,
+    top_bar: Option<TopBar>,
+    displaying_chat: bool,
+    display_chat_required: bool,
+    chat: Option<Chat>,
+    chat_input_value: String,
+    previous_chat_button_state: fixed_button::State,
+    next_chat_button_state: fixed_button::State,
+    unread_conversation_id: Vec<Option<i32>>,
+    close_unread_conversation_top_bar_start: Option<SystemTime>,
 }
 
 impl ZoneEngine {
@@ -115,6 +145,17 @@ impl ZoneEngine {
         builds: HashMap<i32, Build>,
         request_clicks: Option<RequestClicks>,
     ) -> Self {
+        let top_bar = if request_clicks.is_some() {
+            Some(TopBar {
+                text: "Appuyez sur Echap pour annuler le mode construction".to_string(),
+                text_color: Color::WHITE,
+                display_buttons: false,
+                on_click: Some(Message::DismissRequestClicks),
+            })
+        } else {
+            None
+        };
+
         let mut zone_engine = Self {
             tiles,
             tile_sheet: TileSheet::new(tile_sheet_image.clone(), tile_width, tile_height),
@@ -125,7 +166,7 @@ impl ZoneEngine {
             end_screen_y: 0,
             start_zone_row_i: 0,
             start_zone_col_i: 0,
-            server: server,
+            server,
             player,
             level,
             socket,
@@ -149,7 +190,7 @@ impl ZoneEngine {
             around_builds_count: 0,
             around_characters_count: 0,
             around_wait: None,
-            menu_blinker: util::Blinker {
+            blinker: util::Blinker {
                 items: HashMap::new(),
             },
             characters,
@@ -164,6 +205,15 @@ impl ZoneEngine {
             cursor_position: Point::new(0.0, 0.0),
             player_tile_id: String::from("PLAYER"),
             player_move_ticker: util::Ticker::new(15),
+            top_bar,
+            displaying_chat: false,
+            display_chat_required: false,
+            chat: None,
+            chat_input_value: "".to_string(),
+            previous_chat_button_state: fixed_button::State::new(),
+            next_chat_button_state: fixed_button::State::new(),
+            unread_conversation_id: vec![],
+            close_unread_conversation_top_bar_start: None,
         };
         zone_engine.update_link_button_data();
         zone_engine.update_builds_data();
@@ -540,6 +590,22 @@ impl ZoneEngine {
         eprintln!("Around position must used !");
         (0, 0)
     }
+
+    fn apply_chat_text_buffer(&mut self, text_buffer: String) {
+        for c in text_buffer.chars() {
+            match c {
+                // Match ASCII backspace and delete from the text buffer
+                '\u{8}' => {
+                    self.chat_input_value.pop();
+                }
+                // Tabulation | Enter | Escape
+                '\t' | '\r' | '\u{1b}' => {}
+                _ => {
+                    self.chat_input_value.push(c);
+                }
+            }
+        }
+    }
 }
 
 impl Drop for ZoneEngine {
@@ -564,7 +630,7 @@ impl Engine for ZoneEngine {
                 x: 904,
                 y: 0,
                 width: 120,
-                height: 185,
+                height: 200,
             },
             position: Point::new(frame.width() - RIGHT_MENU_WIDTH as f32 - 5.0, 0.0),
             scale: (1.0, 1.0),
@@ -597,6 +663,16 @@ impl Engine for ZoneEngine {
         self.end_screen_x = window.width() as i16;
         self.end_screen_y = window.height() as i16;
         self.update_zone_display();
+
+        if let Some(close_unread_conversation_top_bar_start) =
+            self.close_unread_conversation_top_bar_start.as_mut()
+        {
+            if close_unread_conversation_top_bar_start.elapsed().unwrap() > Duration::from_secs(10)
+            {
+                self.close_unread_conversation_top_bar_start = None;
+                self.top_bar = None;
+            }
+        }
 
         for event in self.socket.pending_events() {
             // TODO Move code ailleurs
@@ -664,6 +740,75 @@ impl Engine for ZoneEngine {
                 ZoneEventType::NewBuild { build } => {
                     self.builds.insert(build.id, build);
                     self.update_builds_data();
+                }
+                ZoneEventType::NewChatMessage {
+                    character_id: _,
+                    conversation_id,
+                    conversation_title,
+                    message,
+                } => {
+                    println!(
+                        "New chat message received: {} ({:?})",
+                        message, conversation_id
+                    );
+                    match self.chat.as_mut() {
+                        Some(chat) => {
+                            if chat.conversation_id == conversation_id {
+                                chat.messages.push(message);
+                            } else if self.display_chat_required {
+                                self.display_chat_required = false;
+                                if let Some(conversation_title) = conversation_title {
+                                    self.top_bar.as_mut().unwrap().text = conversation_title;
+                                };
+                                chat.messages = vec![message];
+                                chat.conversation_id = conversation_id;
+                            };
+                            if chat.messages.len() > CHAT_MESSAGE_COUNT as usize {
+                                chat.messages.remove(0);
+                            };
+                        }
+                        None => {
+                            println!("open chat box");
+                            if self.display_chat_required {
+                                self.chat = Some(Chat {
+                                    messages: vec![message],
+                                    conversation_id,
+                                });
+                                self.top_bar = Some(TopBar {
+                                    text: conversation_title
+                                        .unwrap_or("Chat de la zone".to_string()),
+                                    text_color: Color::WHITE,
+                                    display_buttons: true,
+                                    on_click: Some(Message::DismissChat),
+                                });
+                                self.display_chat_required = false;
+                                self.displaying_chat = true;
+                            } else {
+                                if !self.request_clicks.is_some() {
+                                    match self.top_bar.as_mut() {
+                                        Some(top_bar) => {
+                                            top_bar.text = message;
+                                        }
+                                        None => {
+                                            self.top_bar = Some(TopBar {
+                                                text: message,
+                                                text_color: Color::WHITE,
+                                                display_buttons: false,
+                                                on_click: Some(Message::RequestChat(
+                                                    conversation_id,
+                                                )),
+                                            });
+                                        }
+                                    }
+                                    self.close_unread_conversation_top_bar_start =
+                                        Some(SystemTime::now());
+                                    self.unread_conversation_id.push(conversation_id);
+                                } else {
+                                    self.unread_conversation_id.push(conversation_id);
+                                }
+                            }
+                        }
+                    }
                 }
                 _ => println!("unknown event type {:?}", &event.event_type),
             }
@@ -741,6 +886,11 @@ impl Engine for ZoneEngine {
         }
 
         if !input.keys_pressed.is_empty() {
+            if self.chat.is_some() {
+                self.apply_chat_text_buffer(input.text_buffer.clone());
+                input.text_buffer = String::new();
+            }
+
             if input.keys_pressed.contains(&keyboard::KeyCode::Right) {
                 try_player_moves.push((1, 0));
                 self.move_requested = None;
@@ -767,8 +917,41 @@ impl Engine for ZoneEngine {
 
                 if self.request_clicks.is_some() {
                     self.request_clicks = None;
+                    self.top_bar = None;
+                } else if self.displaying_chat {
+                    self.top_bar = None;
+                    self.chat = None;
+                    self.displaying_chat = false;
                 } else {
                     return Some(MainMessage::ToExit);
+                }
+            }
+            Some(keyboard::KeyCode::Return) => {
+                if !self.displaying_chat && !self.display_chat_required {
+                    self.display_chat_required = true;
+                    self.socket.send(event::ZoneEvent {
+                        event_type_name: String::from(event::REQUEST_CHAT),
+                        event_type: event::ZoneEventType::RequestChat {
+                            character_id: String::from(self.player.id.as_str()),
+                            previous_conversation_id: None,
+                            message_count: CHAT_MESSAGE_COUNT,
+                            next: false,
+                            previous: false,
+                        },
+                    });
+                } else if self.displaying_chat {
+                    println!("send chat message {}", &self.chat_input_value);
+                    self.socket.send(event::ZoneEvent {
+                        event_type_name: String::from(event::NEW_CHAT_MESSAGE),
+                        event_type: event::ZoneEventType::NewChatMessage {
+                            character_id: self.player.id.clone(),
+                            conversation_id: self.chat.as_ref().unwrap().conversation_id,
+                            conversation_title: None,
+                            message: self.chat_input_value.clone(),
+                        },
+                    });
+                    self.chat_input_value = "".to_string();
+                    input.key_code = None;
                 }
             }
             _ => {}
@@ -948,37 +1131,91 @@ impl Engine for ZoneEngine {
                     back_url: None,
                 })
             }
+            Message::PreviousChatButtonPressed => {
+                self.chat.as_mut().unwrap().messages = vec![];
+                self.display_chat_required = true;
+                self.socket.send(event::ZoneEvent {
+                    event_type_name: String::from(event::REQUEST_CHAT),
+                    event_type: event::ZoneEventType::RequestChat {
+                        character_id: String::from(self.player.id.as_str()),
+                        previous_conversation_id: self.chat.as_ref().unwrap().conversation_id,
+                        message_count: CHAT_MESSAGE_COUNT,
+                        next: false,
+                        previous: true,
+                    },
+                });
+            }
+            Message::NextChatButtonPressed => {
+                self.chat.as_mut().unwrap().messages = vec![];
+                self.display_chat_required = true;
+                self.socket.send(event::ZoneEvent {
+                    event_type_name: String::from(event::REQUEST_CHAT),
+                    event_type: event::ZoneEventType::RequestChat {
+                        character_id: String::from(self.player.id.as_str()),
+                        previous_conversation_id: self.chat.as_ref().unwrap().conversation_id,
+                        message_count: CHAT_MESSAGE_COUNT,
+                        next: true,
+                        previous: false,
+                    },
+                });
+            }
+            Message::DismissChat => {
+                self.chat = None;
+                self.top_bar = None;
+                self.displaying_chat = false;
+                self.display_chat_required = false;
+                self.chat_input_value = "".to_string();
+                self.unread_conversation_id = vec![];
+                self.close_unread_conversation_top_bar_start = None;
+            }
+            Message::DismissRequestClicks => {
+                self.request_clicks = None;
+            }
+            Message::RequestChat(conversation_id) => {
+                self.display_chat_required = true;
+                self.close_unread_conversation_top_bar_start = None;
+                self.top_bar = None;
+                self.socket.send(event::ZoneEvent {
+                    event_type_name: String::from(event::REQUEST_CHAT),
+                    event_type: event::ZoneEventType::RequestChat {
+                        character_id: String::from(self.player.id.as_str()),
+                        previous_conversation_id: conversation_id,
+                        message_count: CHAT_MESSAGE_COUNT,
+                        next: false,
+                        previous: false,
+                    },
+                });
+            }
             _ => {}
         }
         None
     }
 
     fn layout(&mut self, window: &Window) -> Element {
-        let event_class = if self.player.unread_event && self.menu_blinker.visible(500, 'E') {
+        let event_class = if self.player.unread_event && self.blinker.visible(500, 'E') {
             thin_button::Class::Primary
         } else {
             thin_button::Class::Secondary
         };
-        let business_class =
-            if self.player.unread_transactions && self.menu_blinker.visible(500, 'B') {
-                thin_button::Class::Primary
-            } else {
-                thin_button::Class::Secondary
-            };
+        let business_class = if self.player.unread_transactions && self.blinker.visible(500, 'B') {
+            thin_button::Class::Primary
+        } else {
+            thin_button::Class::Secondary
+        };
         let affinity_class =
-            if self.player.unvote_affinity_relation && self.menu_blinker.visible(500, 'A') {
+            if self.player.unvote_affinity_relation && self.blinker.visible(500, 'A') {
                 thin_button::Class::Primary
             } else {
                 thin_button::Class::Secondary
             };
         let zone_message_class =
-            if self.player.unread_zone_message && self.menu_blinker.visible(500, 'M') {
+            if self.player.unread_zone_message && self.blinker.visible(500, 'M') {
                 thin_button::Class::Primary
             } else {
                 thin_button::Class::Secondary
             };
         let conversation_class =
-            if self.player.unread_conversation && self.menu_blinker.visible(500, 'C') {
+            if self.player.unread_conversation && self.blinker.visible(500, 'C') {
                 thin_button::Class::Primary
             } else {
                 thin_button::Class::Secondary
@@ -1076,7 +1313,14 @@ impl Engine for ZoneEngine {
 
         let mut right_menu = Column::new()
             .width(RIGHT_MENU_WIDTH as u32)
-            .height(window.height() as u32);
+            .height(window.height() as u32)
+            .push(
+                Row::new().push(
+                    text::Text::new(&self.player.name)
+                        .color(Color::BLACK)
+                        .horizontal_alignment(HorizontalAlignment::Center),
+                ),
+            );
 
         let mut right_column_1 = Column::new().width(30);
         let mut right_column_2 = Column::new().width(40);
@@ -1107,11 +1351,16 @@ impl Engine for ZoneEngine {
                 } else if value.eq("Mauvais") {
                     right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Health3));
                 } else if value.eq("Critique") {
-                    right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Health4));
+                    if self.blinker.visible(250, 'x') {
+                        right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Health4));
+                    } else {
+                        right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Empty));
+                    };
                 } else if value.eq("Faible") {
                     right_column_2 = right_column_2.push(icon::Icon::new(icon::Class::Warning));
                 } else {
-                    right_column_2 = right_column_2.push(Text::new(value).color(Color::BLACK));
+                    right_column_2 =
+                        right_column_2.push(text::Text::new(value).color(Color::BLACK));
                 }
             }
             if item.value_is_float {
@@ -1123,17 +1372,33 @@ impl Engine for ZoneEngine {
                     } else {
                         progress_bar::ColorClass::Green
                     };
-                    right_column_2 = right_column_2.push(
-                        progress_bar::ProgressBar::new(
-                            (100.0 - item.value_float.unwrap()) / 100.0,
-                            progress_bar::Class::SimpleThin,
-                            color_class,
-                        )
-                        .width(40),
-                    );
+                    if color_class == progress_bar::ColorClass::Red {
+                        if self.blinker.visible(250, 'h') {
+                            right_column_2 = right_column_2.push(
+                                progress_bar::ProgressBar::new(
+                                    (100.0 - item.value_float.unwrap()) / 100.0,
+                                    progress_bar::Class::SimpleThin,
+                                    color_class,
+                                )
+                                .width(40),
+                            );
+                        } else {
+                            right_column_2 =
+                                right_column_2.push(icon::Icon::new(icon::Class::Empty));
+                        }
+                    } else {
+                        right_column_2 = right_column_2.push(
+                            progress_bar::ProgressBar::new(
+                                (100.0 - item.value_float.unwrap()) / 100.0,
+                                progress_bar::Class::SimpleThin,
+                                color_class,
+                            )
+                            .width(40),
+                        );
+                    }
                 } else {
                     right_column_2 = right_column_2.push(
-                        Text::new(&item.value_float.as_ref().unwrap().clone().to_string())
+                        text::Text::new(&item.value_float.as_ref().unwrap().clone().to_string())
                             .color(Color::BLACK),
                     );
                 }
@@ -1175,13 +1440,104 @@ impl Engine for ZoneEngine {
             )
         }
 
-        let center_column = Column::new()
-            .width(window.width() as u32 - LEFT_MENU_WIDTH as u32 - RIGHT_MENU_WIDTH as u32)
+        let mut center_column = Column::new()
+            .width(
+                window.width() as u32
+                    - LEFT_MENU_WIDTH as u32
+                    - RIGHT_MENU_WIDTH as u32
+                    - MARGIN_RIGHT_CHAT,
+            )
             .height(window.height() as u32);
+
+        if let Some(top_bar) = self.top_bar.as_ref() {
+            let mut top_bar_row = Row::new().height(fixed_button::NODE_HEIGHT);
+            if top_bar.display_buttons {
+                top_bar_row = top_bar_row.push(
+                    Column::new()
+                        .push(
+                            fixed_button::Button::new(&mut self.previous_chat_button_state, "")
+                                .on_press(Message::PreviousChatButtonPressed)
+                                .class(fixed_button::Class::Back),
+                        )
+                        .width(TOP_BAR_BUTTON_WIDTH),
+                );
+            }
+
+            if let Some(message) = top_bar.on_click.as_ref() {
+                top_bar_row = top_bar_row.push(
+                    Column::new()
+                        .push(
+                            Link::new(
+                                false,
+                                &top_bar.text,
+                                message.clone(),
+                                message.clone(),
+                                Some(text::Class::BgGray2),
+                            )
+                            .fill_width()
+                            .height(fixed_button::NODE_HEIGHT)
+                            .vertical_alignment(VerticalAlignment::Center)
+                            .horizontal_alignment(HorizontalAlignment::Center),
+                        )
+                        .height(fixed_button::NODE_HEIGHT),
+                );
+            } else {
+                top_bar_row = top_bar_row.push(
+                    Column::new()
+                        .push(
+                            text::Text::new(&top_bar.text)
+                                .color(top_bar.text_color)
+                                .class(Some(text::Class::BgGray2))
+                                .height(fixed_button::NODE_HEIGHT)
+                                .vertical_alignment(VerticalAlignment::Center)
+                                .horizontal_alignment(HorizontalAlignment::Center),
+                        )
+                        .height(fixed_button::NODE_HEIGHT),
+                );
+            };
+
+            if top_bar.display_buttons {
+                top_bar_row = top_bar_row.push(
+                    Column::new()
+                        .push(
+                            fixed_button::Button::new(&mut self.next_chat_button_state, "")
+                                .on_press(Message::NextChatButtonPressed)
+                                .class(fixed_button::Class::Next),
+                        )
+                        .width(TOP_BAR_BUTTON_WIDTH),
+                );
+            }
+
+            center_column = center_column.push(top_bar_row);
+        };
+
+        if let Some(chat) = self.chat.as_ref() {
+            for message in &chat.messages {
+                center_column = center_column.push(
+                    text::Text::new(message)
+                        .class(Some(text::Class::BgGray3))
+                        .height(CHAT_LINE_HEIGHT),
+                );
+            }
+            let blink_char = if self.blinker.visible(250, 'c') {
+                Some('_')
+            } else {
+                None
+            };
+            center_column = center_column.push(TextInput::new(
+                TEXT_INPUT_CHAT_ID,
+                "Parler",
+                &self.chat_input_value,
+                Message::TextInputSelected,
+                blink_char,
+                Some(text::Class::BgGray1),
+            ));
+        }
 
         let layout = Row::new()
             .push(left_menu)
             .push(center_column)
+            .push(Column::new().width(MARGIN_RIGHT_CHAT))
             .push(right_menu)
             .align_items(Align::Stretch);
 

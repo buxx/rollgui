@@ -1,8 +1,9 @@
-use coffee::graphics::{Point, Rectangle};
+use coffee::graphics::{HorizontalAlignment, Point, Rectangle, VerticalAlignment};
 use coffee::input::{mouse, ButtonState};
 use coffee::ui::core::{Align, Event, Hasher, Layout, MouseCursor, Node, Style, Widget};
 
 use crate::message;
+use crate::ui::widget::text;
 use crate::ui::{renderer, Element};
 use std::hash::Hash;
 
@@ -12,6 +13,9 @@ pub struct Link {
     on_press: message::Message,
     on_release: message::Message,
     style: Style,
+    class: Option<text::Class>,
+    horizontal_alignment: HorizontalAlignment,
+    vertical_alignment: VerticalAlignment,
 }
 
 impl std::fmt::Debug for Link {
@@ -20,6 +24,7 @@ impl std::fmt::Debug for Link {
             .field("label", &self.label)
             .field("on_press", &self.on_press)
             .field("style", &self.style)
+            .field("class", &self.class)
             .finish()
     }
 }
@@ -30,6 +35,7 @@ impl Link {
         label: &str,
         on_press: message::Message,
         on_release: message::Message,
+        class: Option<text::Class>,
     ) -> Self {
         Link {
             pressed,
@@ -37,6 +43,9 @@ impl Link {
             on_press,
             on_release,
             style: Style::default().min_width(100),
+            class,
+            horizontal_alignment: HorizontalAlignment::Left,
+            vertical_alignment: VerticalAlignment::Top,
         }
     }
 
@@ -54,11 +63,26 @@ impl Link {
         self.style = self.style.align_self(align);
         self
     }
+
+    pub fn height(mut self, height: u32) -> Self {
+        self.style = self.style.height(height);
+        self
+    }
+
+    pub fn horizontal_alignment(mut self, alignment: HorizontalAlignment) -> Self {
+        self.horizontal_alignment = alignment;
+        self
+    }
+
+    pub fn vertical_alignment(mut self, alignment: VerticalAlignment) -> Self {
+        self.vertical_alignment = alignment;
+        self
+    }
 }
 
 impl Widget<message::Message, renderer::Renderer> for Link {
     fn node(&self, _renderer: &renderer::Renderer) -> Node {
-        Node::new(self.style.height(20))
+        Node::new(self.style)
     }
 
     fn on_event(
@@ -99,7 +123,14 @@ impl Widget<message::Message, renderer::Renderer> for Link {
         layout: Layout<'_>,
         cursor_position: Point,
     ) -> MouseCursor {
-        renderer.draw(cursor_position, layout.bounds(), &self.label)
+        renderer.draw(
+            cursor_position,
+            layout.bounds(),
+            &self.label,
+            self.class,
+            self.horizontal_alignment,
+            self.vertical_alignment,
+        )
     }
 
     fn hash(&self, state: &mut Hasher) {
@@ -108,7 +139,15 @@ impl Widget<message::Message, renderer::Renderer> for Link {
 }
 
 pub trait Renderer {
-    fn draw(&mut self, cursor_position: Point, bounds: Rectangle<f32>, label: &str) -> MouseCursor;
+    fn draw(
+        &mut self,
+        cursor_position: Point,
+        bounds: Rectangle<f32>,
+        label: &str,
+        class: Option<text::Class>,
+        horizontal_alignment: HorizontalAlignment,
+        vertical_alignment: VerticalAlignment,
+    ) -> MouseCursor;
 }
 
 impl<'a> From<Link> for Element<'a> {

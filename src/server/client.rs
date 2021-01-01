@@ -134,6 +134,7 @@ impl Client {
 
         Ok(Player::new(
             character.id.as_str(),
+            character.name.as_str(),
             (character.zone_row_i, character.zone_col_i),
             (character.world_row_i, character.world_col_i),
             character.max_life_comp,
@@ -178,6 +179,7 @@ impl Client {
 
         Ok(Player::new(
             character.id.as_str(),
+            character.name.as_str(),
             (character.zone_row_i, character.zone_col_i),
             (character.world_row_i, character.world_col_i),
             character.max_life_comp,
