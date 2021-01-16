@@ -7,6 +7,7 @@ use crate::engine::zone::ZoneEngine;
 use crate::engine::Engine;
 use crate::entity::build::Build;
 use crate::entity::character::Character;
+use crate::entity::corpse::AnimatedCorpse;
 use crate::entity::player::Player;
 use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
@@ -281,6 +282,16 @@ impl MyGame {
             builds.insert(build.id, build);
         }
 
+        // ANIMATED CORPSES
+        let animated_corpses_list = server
+            .client
+            .get_animated_corpses(player.world_position.0, player.world_position.1)
+            .unwrap();
+        let mut animated_corpses: HashMap<i32, AnimatedCorpse> = HashMap::new();
+        for animated_corpse in animated_corpses_list.into_iter() {
+            animated_corpses.insert(animated_corpse.id, animated_corpse);
+        }
+
         self.engine = Box::new(ZoneEngine::new(
             tiles,
             tile_sheet_image,
@@ -295,6 +306,7 @@ impl MyGame {
             stuffs,
             resources,
             builds,
+            animated_corpses,
             request_clicks,
         ));
     }

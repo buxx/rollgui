@@ -4,6 +4,7 @@ use url::Url;
 
 use crate::entity::build::Build;
 use crate::entity::character::Character;
+use crate::entity::corpse::AnimatedCorpse;
 use crate::entity::player::{ApiCharacter, Player};
 use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
@@ -402,5 +403,28 @@ impl Client {
             self.check_response(self.client.get(url.as_str()).send().unwrap())?;
         let text_response: String = response.text().unwrap();
         Ok(util::str_version_to_tuple(&text_response))
+    }
+
+    pub fn get_animated_corpses(
+        &self,
+        world_row_i: i32,
+        world_col_i: i32,
+    ) -> Result<Vec<AnimatedCorpse>, ClientError> {
+        let url = format!(
+            "{}/ac/?world_row_i={}&world_col_i={}",
+            self.get_base_path(),
+            world_row_i,
+            world_col_i
+        );
+        let response: Response =
+            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+
+        let value = response.json::<Value>().unwrap();
+        let mut animated_corpses: Vec<AnimatedCorpse> = vec![];
+        for item in value.as_array().unwrap().iter() {
+            let animated_corpse: AnimatedCorpse = serde_json::from_value(item.clone()).unwrap();
+            animated_corpses.push(animated_corpse);
+        }
+        Ok(animated_corpses)
     }
 }

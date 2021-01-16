@@ -1,6 +1,7 @@
 use crate::engine::Engine;
 use crate::entity::build::Build;
 use crate::entity::character::Character;
+use crate::entity::corpse::AnimatedCorpse;
 use crate::entity::player::Player;
 use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
@@ -109,6 +110,7 @@ pub struct ZoneEngine {
     stuffs: HashMap<String, Stuff>,
     resources: Vec<Resource>,
     builds: HashMap<i32, Build>,
+    animated_corpses: HashMap<i32, AnimatedCorpse>,
     builds_positions: HashMap<(i16, i16), Vec<i32>>,
     link_button_ids: HashMap<String, i32>,
     link_button_pressed: i32,
@@ -143,6 +145,7 @@ impl ZoneEngine {
         stuffs: HashMap<String, Stuff>,
         resources: Vec<Resource>,
         builds: HashMap<i32, Build>,
+        animated_corpses: HashMap<i32, AnimatedCorpse>,
         request_clicks: Option<RequestClicks>,
     ) -> Self {
         let top_bar = if request_clicks.is_some() {
@@ -197,6 +200,7 @@ impl ZoneEngine {
             stuffs,
             resources,
             builds,
+            animated_corpses,
             builds_positions: HashMap::new(),
             link_button_ids: HashMap::new(),
             link_button_pressed: -1,
@@ -414,6 +418,30 @@ impl ZoneEngine {
         sprites
     }
 
+    fn get_animated_corpses(&mut self) -> Vec<Sprite> {
+        let mut sprites: Vec<Sprite> = vec![];
+
+        for animated_corpse in self.animated_corpses.values().into_iter() {
+            let real_x = self.get_real_x(animated_corpse.position().1 as i16 * TILE_WIDTH);
+            let real_y = self.get_real_y(animated_corpse.position().0 as i16 * TILE_HEIGHT);
+            if real_x < 0
+                || real_x < START_SCREEN_X
+                || real_x > self.end_screen_x
+                || real_y < 0
+                || real_y > self.end_screen_y
+            {
+                continue;
+            }
+
+            sprites.push(
+                self.tile_sheet
+                    .create_sprite_for(&animated_corpse.type_, real_x, real_y),
+            );
+        }
+
+        sprites
+    }
+
     fn try_travel(&mut self, moves: &Vec<(i16, i16)>) -> Option<MainMessage> {
         for try_player_move in moves.iter() {
             // Test if next requested move is an travel
@@ -624,6 +652,7 @@ impl Engine for ZoneEngine {
         sprites.extend(self.get_build_sprites());
         sprites.extend(self.get_stuff_sprites());
         sprites.extend(self.get_resource_sprites());
+        sprites.extend(self.get_animated_corpses());
         sprites.extend(self.get_characters_sprites());
         sprites.push(Sprite {
             source: Rectangle {
@@ -740,6 +769,20 @@ impl Engine for ZoneEngine {
                 ZoneEventType::NewBuild { build } => {
                     self.builds.insert(build.id, build);
                     self.update_builds_data();
+                }
+                ZoneEventType::AnimatedCorpseMove {
+                    to_row_i,
+                    to_col_i,
+                    animated_corpse_id,
+                } => {
+                    if let Some(mut moved_animated_corpse) =
+                        self.animated_corpses.get_mut(&animated_corpse_id)
+                    {
+                        moved_animated_corpse.zone_row_i = to_row_i;
+                        moved_animated_corpse.zone_col_i = to_col_i;
+                    } else {
+                        eprintln!("Unknown animated corpse {} for move", animated_corpse_id)
+                    }
                 }
                 ZoneEventType::NewChatMessage {
                     character_id: _,

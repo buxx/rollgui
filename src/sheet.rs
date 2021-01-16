@@ -15,7 +15,7 @@ pub struct TileSheet {
     tile_height: i16,
 }
 
-const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 69] = [
+const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 70] = [
     ("SEA", None, (7, 0)),
     ("JUNGLE", None, (7, 4)),
     ("PLAIN", None, (7, 2)),
@@ -88,6 +88,7 @@ const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 69] = [
     ("ANIMAL_SKIN_CLOTHES", None, (3, 17)),
     ("LEATHER_CLOTHES", None, (3, 16)),
     ("LEATHER_BRIGANDINE", None, (3, 19)),
+    ("HARE", None, (3, 21)),
 ];
 
 impl TileSheet {

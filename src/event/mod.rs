@@ -19,6 +19,7 @@ pub const NEW_RESUME_TEXT: &str = "NEW_RESUME_TEXT";
 pub const NEW_BUILD: &str = "NEW_BUILD";
 pub const REQUEST_CHAT: &str = "REQUEST_CHAT";
 pub const NEW_CHAT_MESSAGE: &str = "NEW_CHAT_MESSAGE";
+pub const ANIMATED_CORPSE_MOVE: &str = "ANIMATED_CORPSE_MOVE";
 
 #[derive(SerializeDerive, DeserializeDerive, Debug)]
 #[serde(untagged)]
@@ -74,6 +75,11 @@ pub enum ZoneEventType {
         conversation_id: Option<i32>,
         conversation_title: Option<String>,
         message: String,
+    },
+    AnimatedCorpseMove {
+        to_row_i: i32,
+        to_col_i: i32,
+        animated_corpse_id: i32,
     },
 }
 
@@ -201,6 +207,14 @@ impl ZoneEvent {
                     },
                 })
             }
+            &ANIMATED_CORPSE_MOVE => Ok(ZoneEvent {
+                event_type_name: String::from(ANIMATED_CORPSE_MOVE),
+                event_type: ZoneEventType::AnimatedCorpseMove {
+                    to_row_i: data["to_row_i"].as_i64().unwrap() as i32,
+                    to_col_i: data["to_col_i"].as_i64().unwrap() as i32,
+                    animated_corpse_id: data["animated_corpse_id"].as_i64().unwrap() as i32,
+                },
+            }),
             _ => Err(RollingError {
                 message: format!("Unknown event {}", &type_),
             }),
