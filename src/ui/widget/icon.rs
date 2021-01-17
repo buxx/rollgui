@@ -21,6 +21,7 @@ pub enum Class {
     Health3,
     Health4,
     Warning,
+    Tiredness,
 }
 
 #[derive(Debug)]
@@ -148,6 +149,13 @@ pub const WARNING: Rectangle<u16> = Rectangle {
     height: 20,
 };
 
+pub const TIREDNESS: Rectangle<u16> = Rectangle {
+    x: 200,
+    y: 420,
+    width: 20,
+    height: 20,
+};
+
 fn get_icon_rectangle(icon: Class) -> Rectangle<u16> {
     match icon {
         Class::Empty => EMPTY,
@@ -167,6 +175,7 @@ fn get_icon_rectangle(icon: Class) -> Rectangle<u16> {
         Class::Health3 => HEALTH3,
         Class::Health4 => HEALTH4,
         Class::Warning => WARNING,
+        Class::Tiredness => TIREDNESS,
     }
 }
 

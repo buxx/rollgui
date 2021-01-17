@@ -659,7 +659,7 @@ impl Engine for ZoneEngine {
                 x: 904,
                 y: 0,
                 width: 120,
-                height: 200,
+                height: 225,
             },
             position: Point::new(frame.width() - RIGHT_MENU_WIDTH as f32 - 5.0, 0.0),
             scale: (1.0, 1.0),
@@ -1375,6 +1375,7 @@ impl Engine for ZoneEngine {
                 "Soif" => icon::Icon::new(icon::Class::Water),
                 "A boire" => icon::Icon::new(icon::Class::AnyWater),
                 "A manger" => icon::Icon::new(icon::Class::AnyHam),
+                "Fatigue" => icon::Icon::new(icon::Class::Tiredness),
                 "Suivis" => icon::Icon::new(icon::Class::Followed),
                 "Suiveurs" => icon::Icon::new(icon::Class::Follower),
                 "Combattants" => icon::Icon::new(icon::Class::Shield),
@@ -1407,7 +1408,13 @@ impl Engine for ZoneEngine {
                 }
             }
             if item.value_is_float {
-                if contains_string(&item.classes, "inverted_percent") {
+                if contains_string(&item.classes, "inverted_percent") || contains_string(&item.classes, "percent") {
+                    let progress = if contains_string(&item.classes, "inverted_percent") {
+                        (100.0 - item.value_float.unwrap()) / 100.0
+                    } else {
+                        item.value_float.unwrap() / 100.0
+                    };
+
                     let color_class = if contains_string(&item.classes, "yellow") {
                         progress_bar::ColorClass::Yellow
                     } else if contains_string(&item.classes, "red") {
@@ -1419,7 +1426,7 @@ impl Engine for ZoneEngine {
                         if self.blinker.visible(250, 'h') {
                             right_column_2 = right_column_2.push(
                                 progress_bar::ProgressBar::new(
-                                    (100.0 - item.value_float.unwrap()) / 100.0,
+                                    progress,
                                     progress_bar::Class::SimpleThin,
                                     color_class,
                                 )
