@@ -86,7 +86,7 @@ impl progress_bar::Renderer for Renderer {
             scale: (1.0, 2.0),
         });
 
-        let scale_width = bounds.width * progress;
+        let scale_width = (bounds.width - 2.0) * progress;
         // COLOR CENTER
         self.sprites.add(Sprite {
             source: Rectangle {
