@@ -148,15 +148,30 @@ impl ZoneEngine {
         animated_corpses: HashMap<i32, AnimatedCorpse>,
         request_clicks: Option<RequestClicks>,
     ) -> Self {
-        let top_bar = if request_clicks.is_some() {
-            Some(TopBar {
-                text: "Appuyez sur Echap pour annuler le mode construction".to_string(),
-                text_color: Color::WHITE,
-                display_buttons: false,
-                on_click: Some(Message::DismissRequestClicks),
-            })
+        let (top_bar, close_unread_conversation_top_bar_start) = if request_clicks.is_some() {
+            (
+                Some(TopBar {
+                    text: "Appuyez sur Echap pour annuler le mode construction".to_string(),
+                    text_color: Color::WHITE,
+                    display_buttons: false,
+                    on_click: Some(Message::DismissRequestClicks),
+                }),
+                None,
+            )
         } else {
-            None
+            if characters.len() > 0 {
+                (
+                    Some(TopBar {
+                        text: "Appuyez sur ENTRER pour ouvrir le chat".to_string(),
+                        text_color: Color::WHITE,
+                        display_buttons: false,
+                        on_click: Some(Message::RequestChat(None)),
+                    }),
+                    Some(SystemTime::now()),
+                )
+            } else {
+                (None, None)
+            }
         };
 
         let mut zone_engine = Self {
@@ -217,7 +232,7 @@ impl ZoneEngine {
             previous_chat_button_state: fixed_button::State::new(),
             next_chat_button_state: fixed_button::State::new(),
             unread_conversation_id: vec![],
-            close_unread_conversation_top_bar_start: None,
+            close_unread_conversation_top_bar_start,
         };
         zone_engine.update_link_button_data();
         zone_engine.update_builds_data();
