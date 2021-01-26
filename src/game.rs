@@ -117,7 +117,7 @@ impl MyGame {
             if server.client.player_is_dead(&character_id).unwrap() {
                 println!("Yes, it is dead");
                 self.engine = Box::new(DescriptionEngine::new(
-                    Some(self.player.as_ref().unwrap().clone()),
+                    None,
                     // TODO: manage error cases
                     server
                         .client
