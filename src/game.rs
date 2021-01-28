@@ -432,7 +432,7 @@ impl Game for MyGame {
                         server.config.ip.clone(),
                         server.config.port,
                         request_clicks,
-                        false,
+                        true,
                     );
                 }
                 MainMessage::ToStartup => {
