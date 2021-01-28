@@ -5,7 +5,7 @@ use crate::entity::corpse::AnimatedCorpse;
 use crate::entity::player::Player;
 use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
-use crate::event::ZoneEventType;
+use crate::event::{TopBarMessageType, ZoneEventType};
 use crate::game::{TILE_HEIGHT, TILE_WIDTH};
 use crate::gui::lang::model::RequestClicks;
 use crate::input::MyGameInput;
@@ -59,6 +59,7 @@ fn contains_string(classes: &Vec<String>, search: &str) -> bool {
     false
 }
 
+#[derive(Debug, Clone)]
 pub struct TopBar {
     text: String,
     text_color: Color,
@@ -127,7 +128,8 @@ pub struct ZoneEngine {
     previous_chat_button_state: fixed_button::State,
     next_chat_button_state: fixed_button::State,
     unread_conversation_id: Vec<Option<i32>>,
-    close_unread_conversation_top_bar_start: Option<SystemTime>,
+    replace_top_bar_start: Option<SystemTime>,
+    replace_top_bar_by: Option<TopBar>,
 }
 
 impl ZoneEngine {
@@ -148,7 +150,7 @@ impl ZoneEngine {
         animated_corpses: HashMap<i32, AnimatedCorpse>,
         request_clicks: Option<RequestClicks>,
     ) -> Self {
-        let (top_bar, close_unread_conversation_top_bar_start) = if request_clicks.is_some() {
+        let (top_bar, replace_top_bar_start) = if request_clicks.is_some() {
             (
                 Some(TopBar {
                     text: "Appuyez sur Echap pour annuler le mode construction".to_string(),
@@ -232,7 +234,8 @@ impl ZoneEngine {
             previous_chat_button_state: fixed_button::State::new(),
             next_chat_button_state: fixed_button::State::new(),
             unread_conversation_id: vec![],
-            close_unread_conversation_top_bar_start,
+            replace_top_bar_start,
+            replace_top_bar_by: None,
         };
         zone_engine.update_link_button_data();
         zone_engine.update_builds_data();
@@ -708,13 +711,15 @@ impl Engine for ZoneEngine {
         self.end_screen_y = window.height() as i16;
         self.update_zone_display();
 
-        if let Some(close_unread_conversation_top_bar_start) =
-            self.close_unread_conversation_top_bar_start.as_mut()
-        {
-            if close_unread_conversation_top_bar_start.elapsed().unwrap() > Duration::from_secs(10)
-            {
-                self.close_unread_conversation_top_bar_start = None;
-                self.top_bar = None;
+        if let Some(replace_top_bar_start) = self.replace_top_bar_start.as_mut() {
+            if replace_top_bar_start.elapsed().unwrap() > Duration::from_secs(3) {
+                if let Some(replace_top_bar_by) = &self.replace_top_bar_by {
+                    self.top_bar = Some(replace_top_bar_by.clone());
+                } else {
+                    self.top_bar = None;
+                };
+                self.replace_top_bar_start = None;
+                self.replace_top_bar_by = None;
             }
         }
 
@@ -858,8 +863,7 @@ impl Engine for ZoneEngine {
                                             });
                                         }
                                     }
-                                    self.close_unread_conversation_top_bar_start =
-                                        Some(SystemTime::now());
+                                    self.replace_top_bar_start = Some(SystemTime::now());
                                     self.unread_conversation_id.push(conversation_id);
                                 } else {
                                     self.unread_conversation_id.push(conversation_id);
@@ -867,6 +871,29 @@ impl Engine for ZoneEngine {
                             }
                         }
                     }
+                }
+                ZoneEventType::TopBarMessage { message, type_ } => {
+                    let text_color = match type_ {
+                        TopBarMessageType::NORMAL => Color::WHITE,
+                        TopBarMessageType::ERROR => Color::RED,
+                    };
+                    let previous_top_bar =
+                        if let Some(replace_top_bar_by) = self.replace_top_bar_by.as_ref() {
+                            Some(replace_top_bar_by.clone())
+                        } else if let Some(top_bar) = self.top_bar.as_ref() {
+                            Some(top_bar.clone())
+                        } else {
+                            None
+                        };
+
+                    self.top_bar = Some(TopBar {
+                        text: message,
+                        text_color,
+                        display_buttons: false,
+                        on_click: None,
+                    });
+                    self.replace_top_bar_start = Some(SystemTime::now());
+                    self.replace_top_bar_by = previous_top_bar;
                 }
                 _ => println!("unknown event type {:?}", &event.event_type),
             }
@@ -1224,14 +1251,14 @@ impl Engine for ZoneEngine {
                 self.display_chat_required = false;
                 self.chat_input_value = "".to_string();
                 self.unread_conversation_id = vec![];
-                self.close_unread_conversation_top_bar_start = None;
+                self.replace_top_bar_start = None;
             }
             Message::DismissRequestClicks => {
                 self.request_clicks = None;
             }
             Message::RequestChat(conversation_id) => {
                 self.display_chat_required = true;
-                self.close_unread_conversation_top_bar_start = None;
+                self.replace_top_bar_start = None;
                 self.top_bar = None;
                 self.socket.send(event::ZoneEvent {
                     event_type_name: String::from(event::REQUEST_CHAT),
@@ -1423,7 +1450,9 @@ impl Engine for ZoneEngine {
                 }
             }
             if item.value_is_float {
-                if contains_string(&item.classes, "inverted_percent") || contains_string(&item.classes, "percent") {
+                if contains_string(&item.classes, "inverted_percent")
+                    || contains_string(&item.classes, "percent")
+                {
                     let progress = if contains_string(&item.classes, "inverted_percent") {
                         (100.0 - item.value_float.unwrap()) / 100.0
                     } else {

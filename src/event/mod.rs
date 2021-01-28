@@ -20,6 +20,14 @@ pub const NEW_BUILD: &str = "NEW_BUILD";
 pub const REQUEST_CHAT: &str = "REQUEST_CHAT";
 pub const NEW_CHAT_MESSAGE: &str = "NEW_CHAT_MESSAGE";
 pub const ANIMATED_CORPSE_MOVE: &str = "ANIMATED_CORPSE_MOVE";
+pub const TOP_BAR_MESSAGE: &str = "TOP_BAR_MESSAGE";
+
+#[derive(SerializeDerive, DeserializeDerive, Debug)]
+#[serde(untagged)]
+pub enum TopBarMessageType {
+    NORMAL,
+    ERROR,
+}
 
 #[derive(SerializeDerive, DeserializeDerive, Debug)]
 #[serde(untagged)]
@@ -80,6 +88,10 @@ pub enum ZoneEventType {
         to_row_i: i32,
         to_col_i: i32,
         animated_corpse_id: i32,
+    },
+    TopBarMessage {
+        message: String,
+        type_: TopBarMessageType,
     },
 }
 
@@ -213,6 +225,16 @@ impl ZoneEvent {
                     to_row_i: data["to_row_i"].as_i64().unwrap() as i32,
                     to_col_i: data["to_col_i"].as_i64().unwrap() as i32,
                     animated_corpse_id: data["animated_corpse_id"].as_i64().unwrap() as i32,
+                },
+            }),
+            &TOP_BAR_MESSAGE => Ok(ZoneEvent {
+                event_type_name: String::from(TOP_BAR_MESSAGE),
+                event_type: ZoneEventType::TopBarMessage {
+                    message: data["message"].as_str().unwrap().to_string(),
+                    type_: match data["type_"].as_str().unwrap() {
+                        "ERROR" => TopBarMessageType::ERROR,
+                        _ => TopBarMessageType::NORMAL,
+                    },
                 },
             }),
             _ => Err(RollingError {
