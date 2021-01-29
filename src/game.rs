@@ -28,6 +28,7 @@ use coffee::{graphics, Game, Timer};
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
 use std::error::Error;
+use std::time::{Duration, SystemTime};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -44,6 +45,7 @@ pub struct MyGame {
     exit_requested: bool,
     pending_action: Option<MainMessage>,
     loading_displayed: bool,
+    last_tick: SystemTime,
 }
 
 fn get_db(db_file_path: &str) -> PickleDb {
@@ -346,6 +348,7 @@ impl Game for MyGame {
             exit_requested: false,
             pending_action: None,
             loading_displayed: false,
+            last_tick: SystemTime::now(),
         })
     }
 
@@ -357,6 +360,13 @@ impl Game for MyGame {
     }
 
     fn update(&mut self, window: &Window) {
+        let last_tick_duration = Duration::from_millis(self.last_tick.elapsed().unwrap_or(Duration::from_millis(0)).as_millis() as u64);
+        let duration_16 = Duration::from_millis(16);
+        if last_tick_duration < duration_16 {  // target is ~60fps
+            std::thread::sleep(duration_16 - last_tick_duration);
+        }
+        self.last_tick = SystemTime::now();
+
         if self.loading_displayed {
             let main_message = self.pending_action.as_ref().unwrap().clone();
             self.pending_action = None;
