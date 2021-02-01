@@ -140,6 +140,8 @@ impl MyGame {
                     true,
                 ));
                 self.pending_illustration = description.illustration_name;
+                self.illustration = None;
+                self.illustration_bg = None;
                 return;
             }
         }
@@ -156,6 +158,8 @@ impl MyGame {
             true,
         ));
         self.pending_illustration = description.illustration_name;
+        self.illustration = None;
+        self.illustration_bg = None;
     }
 
     fn create_server(
@@ -366,6 +370,8 @@ impl Game for MyGame {
     fn interact(&mut self, input: &mut MyGameInput, window: &mut Window) {
         if let Some(pending_illustration) = self.pending_illustration.clone() {
             self.pending_illustration = None;
+            self.illustration = None;
+            self.illustration_bg = None;
 
             match graphics::Image::new(window.gpu(), format!("cache/{}", &pending_illustration)) {
                 Ok(image) => self.illustration = Some(image),
@@ -430,6 +436,8 @@ impl Game for MyGame {
                         false,
                     ));
                     self.pending_illustration = description.illustration_name;
+                    self.illustration = None;
+                    self.illustration_bg = None;
                 }
                 MainMessage::NewCharacterId { character_id } => {
                     println!("New character {}", &character_id);
@@ -469,6 +477,8 @@ impl Game for MyGame {
                         false,
                     ));
                     self.pending_illustration = description.illustration_name;
+                    self.illustration = None;
+                    self.illustration_bg = None;
                 }
                 MainMessage::DescriptionToZone { request_clicks } => {
                     // FIXME: manage errors
