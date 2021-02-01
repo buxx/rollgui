@@ -9,9 +9,7 @@ use crate::ui::widget::text::Text;
 use crate::ui::Column;
 use crate::ui::Element;
 use crate::util::Blinker;
-use coffee::graphics::{
-    Batch, Color, Frame, HorizontalAlignment, Sprite, VerticalAlignment, Window,
-};
+use coffee::graphics::{Batch, Color, Frame, HorizontalAlignment, Sprite, VerticalAlignment, Window, Image};
 use coffee::input::keyboard;
 use coffee::{graphics, Timer};
 use std::collections::HashMap;
@@ -174,7 +172,7 @@ impl Engine for WorldEngine {
         None
     }
 
-    fn layout(&mut self, window: &Window) -> Element {
+    fn layout(&mut self, window: &Window, illustration: Option<Image>) -> Element {
         Column::new()
             .width(window.width() as u32)
             .height(window.height() as u32)

@@ -28,9 +28,7 @@ use crate::ui::Column;
 use crate::ui::Element;
 use crate::ui::Row;
 use crate::{event, util};
-use coffee::graphics::{
-    Batch, Color, Frame, HorizontalAlignment, Point, Rectangle, Sprite, VerticalAlignment, Window,
-};
+use coffee::graphics::{Batch, Color, Frame, HorizontalAlignment, Point, Rectangle, Sprite, VerticalAlignment, Window, Image};
 use coffee::input::keyboard;
 use coffee::input::mouse;
 use coffee::ui::Align;
@@ -1276,7 +1274,7 @@ impl Engine for ZoneEngine {
         None
     }
 
-    fn layout(&mut self, window: &Window) -> Element {
+    fn layout(&mut self, window: &Window, illustration: Option<Image>) -> Element {
         let event_class = if self.player.unread_event && self.blinker.visible(500, 'E') {
             thin_button::Class::Primary
         } else {

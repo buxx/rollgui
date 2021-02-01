@@ -17,10 +17,10 @@ use crate::ui::widget::{button, fixed_button, state_less_button};
 use crate::ui::Element;
 use crate::ui::{Column, Row};
 use crate::util;
-use coffee::graphics::{Color, Frame, HorizontalAlignment, Point, VerticalAlignment, Window};
+use coffee::graphics::{Color, Frame, HorizontalAlignment, Point, VerticalAlignment, Window, Image};
 use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
-use coffee::Timer;
+use coffee::{Timer, graphics};
 use serde_json::{Map, Number, Value};
 use std::cmp::max;
 use std::collections::HashMap;
@@ -756,7 +756,7 @@ impl Engine for DescriptionEngine {
         None
     }
 
-    fn layout(&mut self, window: &Window) -> Element {
+    fn layout(&mut self, window: &Window, illustration: Option<Image>) -> Element {
         if self.pending_request.is_some() {
             self.loading_displayed = true;
             Column::new()
@@ -799,6 +799,10 @@ impl Engine for DescriptionEngine {
                 .max_width(768)
                 .spacing(5)
                 .push(Text::new(&title).size(50).class(Some(text::Class::H1)));
+
+            if let Some(illustration) = illustration {
+                content = content.push(coffee::ui::Image::new(&illustration).width(768).height(320));
+            };
 
             if let Some(error_message) = self.error_message.as_ref() {
                 content = content.push(Text::new(error_message).color(Color::RED));

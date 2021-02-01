@@ -17,6 +17,9 @@ use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 use std::{fmt, fs, io};
+use coffee::graphics;
+use coffee::graphics::Gpu;
+use std::io::Write;
 
 #[derive(Debug)]
 pub enum ClientError {
@@ -323,6 +326,9 @@ impl Client {
         let response: Response = self.check_response(request.send().unwrap())?;
         let mut description = response.json::<Description>().unwrap();
         description.origin_url = Some(url);
+
+        // FIXME BS NOW: put in cache here is illustration unknown
+
         Ok(description)
     }
 
@@ -426,5 +432,16 @@ impl Client {
             animated_corpses.push(animated_corpse);
         }
         Ok(animated_corpses)
+    }
+
+    pub fn cache_media(&self, media_name: &str) -> Result<(), ClientError> {
+        let url = format!("{}/media/{}", self.get_base_path(), media_name);
+        let mut response: Response =
+            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let mut buf: Vec<u8> = vec![];
+        response.copy_to(&mut buf);
+        fs::create_dir_all(Path::new("cache")).unwrap();
+        File::create(Path::new(&format!("cache/{}", media_name))).unwrap().write(&buf).unwrap();
+        Ok(())
     }
 }

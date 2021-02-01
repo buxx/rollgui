@@ -6,7 +6,7 @@ use crate::ui::widget::button::Button;
 use crate::ui::widget::text::Text;
 use crate::ui::Column;
 use crate::ui::Element;
-use coffee::graphics::{Color, Frame, Window};
+use coffee::graphics::{Color, Frame, Window, Image};
 use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
 use coffee::Timer;
@@ -61,7 +61,7 @@ impl Engine for ExitEngine {
 
         None
     }
-    fn layout(&mut self, window: &Window) -> Element {
+    fn layout(&mut self, window: &Window, illustration: Option<Image>) -> Element {
         let ExitEngine {
             confirm_button,
             cancel_button,
