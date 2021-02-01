@@ -48,6 +48,8 @@ pub struct MyGame {
     pending_action: Option<MainMessage>,
     loading_displayed: bool,
     last_tick: SystemTime,
+    pending_illustration: Option<String>,
+    illustration: Option<graphics::Image>,
 }
 
 fn get_db(db_file_path: &str) -> PickleDb {
@@ -120,36 +122,39 @@ impl MyGame {
             // FIXME: manage error case
             if server.client.player_is_dead(&character_id).unwrap() {
                 println!("Yes, it is dead");
+                let description = server
+                    .client
+                    .describe(
+                        format!("/character/{}/post_mortem", character_id).as_str(),
+                        None,
+                        None,
+                    )
+                    .unwrap();
                 self.engine = Box::new(DescriptionEngine::new(
                     None,
                     // TODO: manage error cases
-                    server
-                        .client
-                        .describe(
-                            format!("/character/{}/post_mortem", character_id).as_str(),
-                            None,
-                            None,
-                        )
-                        .unwrap(),
+                    description.clone(),
                     server.clone(),
                     None,
                     true,
                 ));
+                self.pending_illustration = description.illustration_name;
                 return;
             }
         }
-
+        let description = server
+            .client
+            .describe("/_describe/character/create", None, None)
+            .unwrap();
         self.engine = Box::new(DescriptionEngine::new(
             None,
             // FIXME: manage error cases
-            server
-                .client
-                .describe("/_describe/character/create", None, None)
-                .unwrap(),
+            description.clone(),
             server.clone(),
             None,
             true,
         ));
+        self.pending_illustration = description.illustration_name;
     }
 
     fn create_server(
@@ -351,10 +356,25 @@ impl Game for MyGame {
             pending_action: None,
             loading_displayed: false,
             last_tick: SystemTime::now(),
+            pending_illustration: None,
+            illustration: None,
         })
     }
 
     fn interact(&mut self, input: &mut MyGameInput, window: &mut Window) {
+        if let Some(pending_illustration) = self.pending_illustration.clone() {
+            self.pending_illustration = None;
+            match graphics::Image::new(window.gpu(), format!("cache/{}", &pending_illustration)) {
+                Ok(image) => self.illustration = Some(image),
+                Err(error) => {
+                    eprintln!(
+                        "Error when loading illustration {}: {}",
+                        pending_illustration, error
+                    )
+                }
+            };
+        }
+
         match self.engine.interact(input, window) {
             Some(main_message) => self.proceed_main_message(main_message),
             None => {}
@@ -395,6 +415,7 @@ impl Game for MyGame {
                         back_url.clone(),
                         false,
                     ));
+                    self.pending_illustration = description.illustration_name;
                 }
                 MainMessage::NewCharacterId { character_id } => {
                     println!("New character {}", &character_id);
@@ -428,11 +449,12 @@ impl Game for MyGame {
                         .unwrap();
                     self.engine = Box::new(DescriptionEngine::new(
                         Some(self.player.as_ref().unwrap().clone()),
-                        description,
+                        description.clone(),
                         self.server.as_ref().unwrap().clone(),
                         back_url.clone(),
                         false,
                     ));
+                    self.pending_illustration = description.illustration_name;
                 }
                 MainMessage::DescriptionToZone { request_clicks } => {
                     // FIXME: manage errors
@@ -509,7 +531,7 @@ impl UserInterface for MyGame {
                 )
                 .into()
         } else {
-            self.engine.layout(window)
+            self.engine.layout(window, self.illustration.clone())
         }
     }
 }

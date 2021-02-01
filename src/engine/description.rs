@@ -17,7 +17,9 @@ use crate::ui::widget::{button, fixed_button, state_less_button};
 use crate::ui::Element;
 use crate::ui::{Column, Row};
 use crate::util;
-use coffee::graphics::{Color, Frame, HorizontalAlignment, Point, VerticalAlignment, Window};
+use coffee::graphics::{
+    Color, Frame, HorizontalAlignment, Image, Point, VerticalAlignment, Window,
+};
 use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
 use coffee::Timer;
@@ -27,6 +29,9 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 const BLINK_MS: u128 = 250;
+const CONTENT_WIDTH: u32 = 768;
+const ILLUSTRATION_WIDTH: u32 = CONTENT_WIDTH;
+const ILLUSTRATION_HEIGHT: u32 = 300;
 
 pub struct DescriptionEngine {
     player: Option<Player>,
@@ -756,7 +761,7 @@ impl Engine for DescriptionEngine {
         None
     }
 
-    fn layout(&mut self, window: &Window) -> Element {
+    fn layout(&mut self, window: &Window, illustration: Option<Image>) -> Element {
         if self.pending_request.is_some() {
             self.loading_displayed = true;
             Column::new()
@@ -796,9 +801,17 @@ impl Engine for DescriptionEngine {
             let mut ignore_checkbox_ids: Vec<i32> = vec![];
 
             let mut content = Column::new()
-                .max_width(768)
+                .max_width(CONTENT_WIDTH)
                 .spacing(5)
                 .push(Text::new(&title).size(50).class(Some(text::Class::H1)));
+
+            if let Some(illustration) = illustration {
+                content = content.push(
+                    coffee::ui::Image::new(&illustration)
+                        .width(ILLUSTRATION_WIDTH)
+                        .height(ILLUSTRATION_HEIGHT),
+                );
+            };
 
             if let Some(error_message) = self.error_message.as_ref() {
                 content = content.push(Text::new(error_message).color(Color::RED));

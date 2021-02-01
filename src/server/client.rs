@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
 use std::error::Error;
 use std::fs::File;
+use std::io::Write;
 use std::path::Path;
 use std::{fmt, fs, io};
 
@@ -323,6 +324,22 @@ impl Client {
         let response: Response = self.check_response(request.send().unwrap())?;
         let mut description = response.json::<Description>().unwrap();
         description.origin_url = Some(url);
+
+        if let Some(illustration_name) = &description.illustration_name {
+            match self.cache_media(&illustration_name) {
+                Ok(_) => {}
+                Err(error) => {
+                    let message = &format!(
+                        "Error when retrieve media {}: {}",
+                        illustration_name,
+                        ClientError::get_message(&error),
+                    );
+                    eprintln!("{}", message);
+                    sentry::capture_message(message, sentry::Level::Error);
+                }
+            }
+        }
+
         Ok(description)
     }
 
@@ -426,5 +443,19 @@ impl Client {
             animated_corpses.push(animated_corpse);
         }
         Ok(animated_corpses)
+    }
+
+    pub fn cache_media(&self, media_name: &str) -> Result<(), ClientError> {
+        let url = format!("{}/media/{}", self.get_base_path(), media_name);
+        let mut response: Response =
+            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let mut buf: Vec<u8> = vec![];
+        response.copy_to(&mut buf).unwrap();
+        fs::create_dir_all(Path::new("cache")).unwrap();
+        File::create(Path::new(&format!("cache/{}", media_name)))
+            .unwrap()
+            .write(&buf)
+            .unwrap();
+        Ok(())
     }
 }

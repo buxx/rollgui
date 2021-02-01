@@ -6,7 +6,7 @@ use crate::ui::widget::button::Button;
 use crate::ui::widget::text::Text;
 use crate::ui::Column;
 use crate::ui::Element;
-use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
+use coffee::graphics::{Color, Frame, HorizontalAlignment, Image, VerticalAlignment, Window};
 use coffee::ui::{Align, Justify};
 use coffee::Timer;
 
@@ -61,7 +61,7 @@ impl Engine for StartupEngine {
 
         None
     }
-    fn layout(&mut self, window: &Window) -> Element {
+    fn layout(&mut self, window: &Window, _illustration: Option<Image>) -> Element {
         let StartupEngine {
             local_server_button,
             s2_bux_fr_server_button,

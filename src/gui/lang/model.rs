@@ -61,6 +61,7 @@ pub struct Description {
     pub footer_with_build_id: Option<i32>,
     pub footer_with_affinity_id: Option<i32>,
     pub footer_with_business_id: Option<i32>,
+    pub illustration_name: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

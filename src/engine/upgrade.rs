@@ -7,7 +7,7 @@ use crate::ui::widget::button::Button;
 use crate::ui::widget::text::Text;
 use crate::ui::{Column, Element};
 use crate::util;
-use coffee::graphics::{Color, Frame, Window};
+use coffee::graphics::{Color, Frame, Image, Window};
 use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
 use coffee::Timer;
@@ -164,7 +164,7 @@ impl Engine for UpgradeEngine {
         None
     }
 
-    fn layout(&mut self, window: &Window) -> Element {
+    fn layout(&mut self, window: &Window, _illustration: Option<Image>) -> Element {
         let title = if self.mandatory {
             "Votre version n'est plus compatible avec ce serveur"
         } else {

@@ -10,7 +10,7 @@ use crate::ui::Column;
 use crate::ui::Element;
 use crate::util::Blinker;
 use coffee::graphics::{
-    Batch, Color, Frame, HorizontalAlignment, Sprite, VerticalAlignment, Window,
+    Batch, Color, Frame, HorizontalAlignment, Image, Sprite, VerticalAlignment, Window,
 };
 use coffee::input::keyboard;
 use coffee::{graphics, Timer};
@@ -174,7 +174,7 @@ impl Engine for WorldEngine {
         None
     }
 
-    fn layout(&mut self, window: &Window) -> Element {
+    fn layout(&mut self, window: &Window, _illustration: Option<Image>) -> Element {
         Column::new()
             .width(window.width() as u32)
             .height(window.height() as u32)
