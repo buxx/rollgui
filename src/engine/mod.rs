@@ -12,7 +12,7 @@ pub mod world;
 pub mod zone;
 
 pub trait Engine {
-    fn draw(&mut self, frame: &mut Frame, timer: &Timer);
+    fn draw(&mut self, frame: &mut Frame, timer: &Timer, illustration: Option<Image>);
     fn update(&mut self, window: &Window) -> Option<MainMessage>;
     fn interact(&mut self, input: &mut MyGameInput, window: &mut Window) -> Option<MainMessage>;
     fn react(&mut self, event: Message, window: &mut Window) -> Option<MainMessage>;

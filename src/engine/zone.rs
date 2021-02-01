@@ -662,7 +662,7 @@ impl Drop for ZoneEngine {
 }
 
 impl Engine for ZoneEngine {
-    fn draw(&mut self, frame: &mut Frame, _timer: &Timer) {
+    fn draw(&mut self, frame: &mut Frame, _timer: &Timer, _illustration: Option<Image>) {
         frame.clear(Color::BLACK);
         let mut sprites: Vec<Sprite> = vec![];
 

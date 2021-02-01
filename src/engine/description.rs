@@ -18,7 +18,8 @@ use crate::ui::Element;
 use crate::ui::{Column, Row};
 use crate::util;
 use coffee::graphics::{
-    Color, Frame, HorizontalAlignment, Image, Point, VerticalAlignment, Window,
+    Batch, Color, Frame, HorizontalAlignment, Image, Point, Rectangle, Sprite, VerticalAlignment,
+    Window,
 };
 use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
@@ -516,8 +517,28 @@ fn part_is_search_by_str(part: &Part) -> bool {
 }
 
 impl Engine for DescriptionEngine {
-    fn draw(&mut self, frame: &mut Frame, _timer: &Timer) {
+    fn draw(&mut self, frame: &mut Frame, _timer: &Timer, illustration: Option<Image>) {
         frame.clear(Color::BLACK);
+
+        if let Some(illustration) = illustration {
+            let illustration_width = illustration.width();
+            let illustration_height = illustration.height();
+            let mut batch = Batch::new(illustration);
+            batch.extend(vec![Sprite {
+                source: Rectangle {
+                    x: 0,
+                    y: 0,
+                    width: illustration_width,
+                    height: illustration_height,
+                },
+                position: Point::new(0.0, 0.0),
+                scale: (
+                    frame.width() / illustration_width as f32,
+                    frame.height() / illustration_height as f32,
+                ),
+            }]);
+            batch.draw(&mut frame.as_target());
+        };
     }
 
     fn update(&mut self, _window: &Window) -> Option<MainMessage> {

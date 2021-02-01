@@ -50,6 +50,7 @@ pub struct MyGame {
     last_tick: SystemTime,
     pending_illustration: Option<String>,
     illustration: Option<graphics::Image>,
+    illustration_bg: Option<graphics::Image>,
 }
 
 fn get_db(db_file_path: &str) -> PickleDb {
@@ -358,17 +359,30 @@ impl Game for MyGame {
             last_tick: SystemTime::now(),
             pending_illustration: None,
             illustration: None,
+            illustration_bg: None,
         })
     }
 
     fn interact(&mut self, input: &mut MyGameInput, window: &mut Window) {
         if let Some(pending_illustration) = self.pending_illustration.clone() {
             self.pending_illustration = None;
+
             match graphics::Image::new(window.gpu(), format!("cache/{}", &pending_illustration)) {
                 Ok(image) => self.illustration = Some(image),
                 Err(error) => {
                     eprintln!(
                         "Error when loading illustration {}: {}",
+                        pending_illustration, error
+                    )
+                }
+            };
+
+            match graphics::Image::new(window.gpu(), format!("cache/bg/{}", &pending_illustration))
+            {
+                Ok(image) => self.illustration_bg = Some(image),
+                Err(error) => {
+                    eprintln!(
+                        "Error when loading illustration bg {}: {}",
                         pending_illustration, error
                     )
                 }
@@ -493,7 +507,7 @@ impl Game for MyGame {
         if self.pending_action.is_some() {
             frame.clear(Color::BLACK);
         } else {
-            self.engine.draw(frame, timer)
+            self.engine.draw(frame, timer, self.illustration_bg.clone())
         }
     }
 

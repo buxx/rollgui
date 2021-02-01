@@ -337,6 +337,18 @@ impl Client {
                     eprintln!("{}", message);
                     sentry::capture_message(message, sentry::Level::Error);
                 }
+            };
+            match self.cache_media_bg(&illustration_name) {
+                Ok(_) => {}
+                Err(error) => {
+                    let message = &format!(
+                        "Error when retrieve media bg {}: {}",
+                        illustration_name,
+                        ClientError::get_message(&error),
+                    );
+                    eprintln!("{}", message);
+                    sentry::capture_message(message, sentry::Level::Error);
+                }
             }
         }
 
@@ -453,6 +465,20 @@ impl Client {
         response.copy_to(&mut buf).unwrap();
         fs::create_dir_all(Path::new("cache")).unwrap();
         File::create(Path::new(&format!("cache/{}", media_name)))
+            .unwrap()
+            .write(&buf)
+            .unwrap();
+        Ok(())
+    }
+
+    pub fn cache_media_bg(&self, media_name: &str) -> Result<(), ClientError> {
+        let url = format!("{}/media_bg/{}", self.get_base_path(), media_name);
+        let mut response: Response =
+            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let mut buf: Vec<u8> = vec![];
+        response.copy_to(&mut buf).unwrap();
+        fs::create_dir_all(Path::new("cache/bg")).unwrap();
+        File::create(Path::new(&format!("cache/bg/{}", media_name)))
             .unwrap()
             .write(&buf)
             .unwrap();

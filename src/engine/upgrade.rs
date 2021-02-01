@@ -75,7 +75,7 @@ impl UpgradeEngine {
 }
 
 impl Engine for UpgradeEngine {
-    fn draw(&mut self, frame: &mut Frame, _timer: &Timer) {
+    fn draw(&mut self, frame: &mut Frame, _timer: &Timer, _illustration: Option<Image>) {
         frame.clear(Color::BLACK);
     }
 
