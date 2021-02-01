@@ -37,7 +37,7 @@ pub fn main() -> Result<()> {
     };
 
     <game::MyGame as UserInterface>::run(WindowSettings {
-        title: String::from("Coffee"),
+        title: String::from("Rolling"),
         size: (1024, 768),
         resizable: true,
         fullscreen: false,
