@@ -826,12 +826,14 @@ impl Engine for DescriptionEngine {
                 .spacing(5)
                 .push(Text::new(&title).size(50).class(Some(text::Class::H1)));
 
-            if let Some(illustration) = illustration {
-                content = content.push(
-                    coffee::ui::Image::new(&illustration)
-                        .width(ILLUSTRATION_WIDTH)
-                        .height(ILLUSTRATION_HEIGHT),
-                );
+            if !description.disable_illustration_row {
+                if let Some(illustration) = illustration {
+                    content = content.push(
+                        coffee::ui::Image::new(&illustration)
+                            .width(ILLUSTRATION_WIDTH)
+                            .height(ILLUSTRATION_HEIGHT),
+                    );
+                };
             };
 
             if let Some(error_message) = self.error_message.as_ref() {

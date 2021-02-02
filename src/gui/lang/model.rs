@@ -62,6 +62,7 @@ pub struct Description {
     pub footer_with_affinity_id: Option<i32>,
     pub footer_with_business_id: Option<i32>,
     pub illustration_name: Option<String>,
+    pub disable_illustration_row: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
