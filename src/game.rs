@@ -402,10 +402,6 @@ impl Game for MyGame {
     }
 
     fn update(&mut self, window: &Window) {
-        // Slow down computing to preserve cpu
-        util::sleep_if_required(TARGET_FRAME_DURATION_MS, &self.last_tick);
-        self.last_tick = SystemTime::now();
-
         if self.loading_displayed {
             let main_message = self.pending_action.as_ref().unwrap().clone();
             self.pending_action = None;
@@ -514,6 +510,10 @@ impl Game for MyGame {
     }
 
     fn draw(&mut self, frame: &mut Frame, timer: &Timer) {
+        // Slow down computing to preserve cpu
+        util::sleep_if_required(TARGET_FRAME_DURATION_MS, &self.last_tick);
+        self.last_tick = SystemTime::now();
+
         if self.pending_action.is_some() {
             frame.clear(Color::BLACK);
         } else {
