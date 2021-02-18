@@ -538,8 +538,10 @@ impl UserInterface for MyGame {
     }
 
     fn layout(&mut self, window: &Window) -> Element {
-        if self.pending_action.is_some() {
-            self.loading_displayed = true;
+        if self.pending_action.is_some() || self.pending_illustration.is_some() {
+            if self.pending_action.is_some() {
+                self.loading_displayed = true;
+            }
             Column::new()
                 .width(window.width() as u32)
                 .height(window.height() as u32)
