@@ -695,6 +695,12 @@ impl Engine for DescriptionEngine {
                     back_url: self.future_back_url.clone(),
                 });
             }
+            Message::WebBrowserLinkButtonPressed(url) => {
+                println!("Open url {} with web browser", url);
+                if webbrowser::open(&url).is_ok() {
+                    // ..
+                }
+            }
             Message::GroupLinkButtonReleased(label) => {
                 self.current_link_group_name = Some(label.clone());
             }
@@ -1118,11 +1124,16 @@ impl Engine for DescriptionEngine {
                     }
 
                     if display_normal_button {
+                        let on_press = if item.is_web_browser_link {
+                            Message::WebBrowserLinkButtonPressed(item.form_action.as_ref().unwrap().clone())
+                        } else {
+                            Message::LinkButtonPressed(id)
+                        };
                         content = content.push(
                             StateLessButton::new(
                                 self.link_button_pressed == id,
                                 &display_label,
-                                Message::LinkButtonPressed(id),
+                                on_press,
                                 Message::LinkButtonReleased(
                                     item.form_action.as_ref().unwrap().clone(),
                                 ),

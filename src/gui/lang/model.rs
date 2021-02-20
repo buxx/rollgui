@@ -35,6 +35,7 @@ pub struct Part {
     pub choices: Option<Vec<String>>,
     pub search_by_str: bool,
     pub classes: Vec<String>,
+    pub is_web_browser_link: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -98,6 +98,7 @@ pub struct ZoneEngine {
     inventory_menu_button_state: thin_button::State,
     action_menu_button_state: thin_button::State,
     build_menu_button_state: thin_button::State,
+    info_menu_button_state: thin_button::State,
     exit_menu_button_state: thin_button::State,
     resume_text: Vec<ItemModel>,
     around_items_button_state: fixed_button::State,
@@ -202,6 +203,7 @@ impl ZoneEngine {
             inventory_menu_button_state: thin_button::State::new(),
             action_menu_button_state: thin_button::State::new(),
             build_menu_button_state: thin_button::State::new(),
+            info_menu_button_state: thin_button::State::new(),
             exit_menu_button_state: thin_button::State::new(),
             resume_text,
             around_items_button_state: fixed_button::State::new(),
@@ -1187,6 +1189,12 @@ impl Engine for ZoneEngine {
                     back_url: None,
                 })
             }
+            Message::ServerInfosMenuButtonPressed => {
+                return Some(MainMessage::ToDescriptionWithUrl {
+                    url: "/system/describe/infos".to_string(),
+                    back_url: None,
+                })
+            }
             Message::ExitMenuButtonPressed => return Some(MainMessage::ToExit),
             Message::LinkButtonPressed(id) => {
                 self.link_button_pressed = id;
@@ -1388,6 +1396,12 @@ impl Engine for ZoneEngine {
                 Button::new(&mut self.build_menu_button_state, "Construire")
                     .class(thin_button::Class::Secondary)
                     .on_press(Message::BuildMenuButtonPressed)
+                    .width(175),
+            )
+            .push(
+                Button::new(&mut self.info_menu_button_state, "Infos serveur")
+                    .class(thin_button::Class::Secondary)
+                    .on_press(Message::ServerInfosMenuButtonPressed)
                     .width(175),
             )
             .push(
