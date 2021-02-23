@@ -458,6 +458,11 @@ impl Client {
     }
 
     pub fn cache_media(&self, media_name: &str) -> Result<(), ClientError> {
+        if Path::new(&format!("cache/{}", media_name)).exists() {
+            println!("Media {} already in cache", media_name);
+            return Ok(())
+        }
+        println!("Download media {}", media_name);
         let url = format!("{}/media/{}", self.get_base_path(), media_name);
         let mut response: Response =
             self.check_response(self.client.get(url.as_str()).send().unwrap())?;
@@ -472,6 +477,12 @@ impl Client {
     }
 
     pub fn cache_media_bg(&self, media_name: &str) -> Result<(), ClientError> {
+        if Path::new(&format!("cache/bg/{}", media_name)).exists() {
+            println!("Media bg {} already in cache", media_name);
+            return Ok(())
+        }
+        println!("Download media bg {}", media_name);
+
         let url = format!("{}/media_bg/{}", self.get_base_path(), media_name);
         let mut response: Response =
             self.check_response(self.client.get(url.as_str()).send().unwrap())?;
