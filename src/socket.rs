@@ -13,7 +13,7 @@ use std::time::Duration;
 use std::time::SystemTime;
 use websocket::{ClientBuilder, Message, WebSocketError};
 
-use crate::event;
+use crate::{event, util};
 
 pub struct ZoneSocket {
     ws_address: String,
@@ -57,11 +57,17 @@ impl ZoneSocket {
         let ws_reader_closed = Arc::clone(&self.ws_reader_closed);
         let ws_sender_closed = Arc::clone(&self.ws_sender_closed);
 
-        let ws_client = ClientBuilder::new(self.ws_address.as_str())
-            .unwrap()
-            .connect_insecure()
-            .unwrap();
-        let (mut ws_reader, mut ws_writer) = ws_client.split().unwrap();
+        let token = util::rand_string(32);
+        let (mut ws_reader, mut ws_writer) = (
+            ClientBuilder::new(&format!("{}&token={}", self.ws_address, token))
+                .unwrap()
+                .connect(None)
+                .unwrap(),
+            ClientBuilder::new(&format!("{}&reader_token={}", self.ws_address, token))
+                .unwrap()
+                .connect(None)
+                .unwrap(),
+        );
 
         // ws reader
         let ws_reader_handle = thread::spawn(move || {
@@ -134,18 +140,21 @@ impl ZoneSocket {
     }
 
     // FIXME BS NOW: sur https ENTER n'ouvre plus le chat ...
+    // Explication: le serveur répond parfois directement sur le ws qui parle, or ici le ws_reader
+    // n'écoute plus les réponses ...
     pub fn connect(&mut self) {
         let from_main_receiver = Arc::clone(&self.from_main_receiver);
         let from_websocket_sender = Arc::clone(&self.from_websocket_sender);
         let ws_reader_closed = Arc::clone(&self.ws_reader_closed);
         let ws_sender_closed = Arc::clone(&self.ws_sender_closed);
 
+        let token = util::rand_string(32);
         let (mut ws_reader, mut ws_writer) = (
-            ClientBuilder::new(self.ws_address.as_str())
+            ClientBuilder::new(&format!("{}&token={}", self.ws_address, token))
                 .unwrap()
                 .connect(None)
                 .unwrap(),
-            ClientBuilder::new(self.ws_address.as_str())
+            ClientBuilder::new(&format!("{}&reader_token={}", self.ws_address, token))
                 .unwrap()
                 .connect(None)
                 .unwrap(),
@@ -155,6 +164,7 @@ impl ZoneSocket {
         let ws_reader_handle = thread::spawn(move || {
             let from_websocket_sender = from_websocket_sender.lock().unwrap();
             for message in ws_reader.incoming_messages() {
+                println!("RECEIVE {:?}", message);
                 match message {
                     Ok(OwnedMessage::Text(msg)) => {
                         let value: Value = serde_json::from_str(&msg).unwrap();

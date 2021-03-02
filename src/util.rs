@@ -1,5 +1,7 @@
 use crate::error::RollingError;
 use crate::level::Level;
+use rand::distributions::{Alphanumeric, Standard, Uniform};
+use rand::{thread_rng, Rng};
 use std::collections::HashMap;
 use std::error::Error;
 use std::io::Read;
@@ -491,4 +493,11 @@ pub fn sleep_if_required(target_frame_ms: u64, last_tick: &SystemTime) {
     if last_tick_duration < target_duration {
         std::thread::sleep(target_duration - last_tick_duration);
     }
+}
+
+pub fn rand_string(length: usize) -> String {
+    thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(length)
+        .collect()
 }
