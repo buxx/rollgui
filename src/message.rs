@@ -1,4 +1,5 @@
 use crate::gui::lang::model::{Description, RequestClicks};
+use crate::server;
 
 #[derive(Debug, Clone)]
 pub enum MainMessage {
@@ -7,8 +8,7 @@ pub enum MainMessage {
     ToWorld,
     ExitRequested,
     StartupToZone {
-        server_ip: String,
-        server_port: u16,
+        address: server::ServerAddress,
         disable_version_check: bool,
     },
     DescriptionToZone {
@@ -17,9 +17,19 @@ pub enum MainMessage {
     NewCharacterId {
         character_id: String,
     },
+    SetServer {
+        server: server::Server,
+    },
+    CreateAccount {
+        address: server::ServerAddress,
+    },
+    AccountCreated {
+        address: server::ServerAddress,
+    },
     ToDescriptionWithDescription {
         description: Description,
         back_url: Option<String>,
+        client: server::client::Client,
     },
     ToDescriptionWithUrl {
         url: String,
@@ -33,10 +43,14 @@ pub enum Message {
     CancelButtonPressed,
     DownloadButtonPressed,
     ContinueButtonPressed,
+    PasswordLostButtonPressed,
+    CreateAccountButtonPressed,
     ResetProgressBar,
     LocalServerPressed,
     S2BuxFrServerPressed,
     TextInputSelected(i32),
+    LoginInputSelected(i32),
+    PasswordInputSelected(i32),
     SubmitButtonPressed,
     CheckBoxChecked(i32),
     CheckBoxUnchecked(i32),
@@ -69,6 +83,7 @@ pub enum Message {
     ActionMenuButtonPressed,
     BuildMenuButtonPressed,
     ServerInfosMenuButtonPressed,
+    OpenAccountButtonPressed,
     ExitMenuButtonPressed,
     ToStartupPressed,
     AroundItemsButtonPressed,

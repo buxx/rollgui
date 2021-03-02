@@ -51,7 +51,7 @@ impl ZoneSocket {
         }
     }
 
-    pub fn connect(&mut self) {
+    pub fn connect_unsecure(&mut self) {
         let from_main_receiver = Arc::clone(&self.from_main_receiver);
         let from_websocket_sender = Arc::clone(&self.from_websocket_sender);
         let ws_reader_closed = Arc::clone(&self.ws_reader_closed);
@@ -62,6 +62,94 @@ impl ZoneSocket {
             .connect_insecure()
             .unwrap();
         let (mut ws_reader, mut ws_writer) = ws_client.split().unwrap();
+
+        // ws reader
+        let ws_reader_handle = thread::spawn(move || {
+            let from_websocket_sender = from_websocket_sender.lock().unwrap();
+            for message in ws_reader.incoming_messages() {
+                match message {
+                    Ok(OwnedMessage::Text(msg)) => {
+                        let value: Value = serde_json::from_str(&msg).unwrap();
+                        match event::ZoneEvent::from_value(value) {
+                            Ok(event) => {
+                                let mut break_ = false;
+                                if let event::ZoneEventType::ServerPermitClose = event.event_type {
+                                    break_ = true;
+                                }
+
+                                if let Err(SendError(_e)) = from_websocket_sender.send(event) {
+                                    eprintln!("WebSocket(receiver): Something went wrong during process of received event");
+                                }
+
+                                if break_ {
+                                    println!("WebSocket(receiver): Receive close event");
+                                    break;
+                                }
+                            }
+                            Err(err) => println!("Error while decoding event: {}", err.message),
+                        }
+                    }
+                    Ok(OwnedMessage::Close(_)) => {
+                        println!("WebSocket(receiver): Close");
+                        break;
+                    }
+                    Err(WebSocketError::NoDataAvailable) => {
+                        println!("WebSocket(receiver): WebSocketError: NoDataAvailable");
+                        break;
+                    }
+                    _ => eprintln!(
+                        "WebSocket(receiver): Unknown websocket message received: {:?}",
+                        message
+                    ), // TODO add ping/pong (OwnedMessage::ping|pong)
+                }
+            }
+
+            let mut closed = ws_reader_closed.lock().unwrap();
+            *closed = true;
+            println!("WebSocket(receiver): Closing ...");
+        });
+
+        // ws sender
+        let ws_sender_handle = thread::spawn(move || {
+            let from_main_receiver = from_main_receiver.lock().unwrap();
+
+            for received in from_main_receiver.iter() {
+                let message_json_str = serde_json::to_string(&received).unwrap();
+                let message = Message::text(message_json_str);
+                ws_writer.send_message(&message).unwrap();
+
+                if let event::ZoneEventType::ClientWantClose = received.event_type {
+                    // Get out for loop (and finish thread)
+                    println!("WebSocket(sender): Closing ...");
+                    break;
+                }
+            }
+
+            let mut closed = ws_sender_closed.lock().unwrap();
+            *closed = true;
+        });
+
+        self.ws_reader_handle = Some(ws_reader_handle);
+        self.ws_sender_handle = Some(ws_sender_handle);
+    }
+
+    // FIXME BS NOW: sur https ENTER n'ouvre plus le chat ...
+    pub fn connect(&mut self) {
+        let from_main_receiver = Arc::clone(&self.from_main_receiver);
+        let from_websocket_sender = Arc::clone(&self.from_websocket_sender);
+        let ws_reader_closed = Arc::clone(&self.ws_reader_closed);
+        let ws_sender_closed = Arc::clone(&self.ws_sender_closed);
+
+        let (mut ws_reader, mut ws_writer) = (
+            ClientBuilder::new(self.ws_address.as_str())
+                .unwrap()
+                .connect(None)
+                .unwrap(),
+            ClientBuilder::new(self.ws_address.as_str())
+                .unwrap()
+                .connect(None)
+                .unwrap(),
+        );
 
         // ws reader
         let ws_reader_handle = thread::spawn(move || {

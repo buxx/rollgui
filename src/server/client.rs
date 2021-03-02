@@ -10,6 +10,7 @@ use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
 use crate::gui::lang::model::Description;
 use crate::gui::lang::model::ErrorResponse;
+use crate::server::ServerAddress;
 use crate::util;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Number, Value};
@@ -22,6 +23,7 @@ use std::{fmt, fs, io};
 #[derive(Debug)]
 pub enum ClientError {
     NotFound { message: String },
+    Unauthorized,
     PlayerNotFound { message: String },
     ClientSideError { message: String },
     ServerSideError { message: String },
@@ -46,6 +48,7 @@ impl ClientError {
             ClientError::UnknownError { message } => {
                 format!("Unknown error: {}", message).to_string()
             }
+            ClientError::Unauthorized => "Unauthorized".to_string(),
         };
     }
 }
@@ -75,23 +78,30 @@ pub struct ListOfItemModel {
 
 #[derive(Clone)]
 pub struct Client {
-    server_ip: String,
-    server_port: u16,
+    pub address: ServerAddress,
     client: reqwest::blocking::Client,
+    pub credentials: (String, String),
+}
+
+impl fmt::Debug for Client {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Client")
+            .field("address", &self.address)
+            .finish()
+    }
 }
 
 impl Client {
-    pub fn new(server_ip: &str, server_port: u16) -> Self {
+    pub fn new(address: ServerAddress, credentials: (String, String)) -> Self {
         Self {
-            server_ip: String::from(server_ip),
-            server_port,
+            address,
             client: reqwest::blocking::Client::new(),
+            credentials,
         }
     }
 
     fn get_base_path(&self) -> String {
-        // TODO https
-        return format!("http://{}:{}", self.server_ip, self.server_port);
+        self.address.to_string()
     }
 
     fn check_response(&self, response: Response) -> Result<Response, ClientError> {
@@ -99,6 +109,10 @@ impl Client {
             return Err(ClientError::NotFound {
                 message: "Not Found".to_string(),
             });
+        }
+
+        if response.status().as_u16() == 401 {
+            return Err(ClientError::Unauthorized);
         }
 
         if response.status().is_client_error() {
@@ -118,11 +132,39 @@ impl Client {
         Ok(response)
     }
 
+    pub fn get_current_character_id(
+        &self,
+        credentials: (String, String),
+    ) -> Result<String, ClientError> {
+        println!("Retrieve current character from server");
+        let url = format!("{}/account/current_character_id", self.get_base_path());
+        // TODO manage error
+        let mut response: Response = self
+            .client
+            .get(url.as_str())
+            .basic_auth(credentials.0, Some(credentials.1))
+            .send()
+            .unwrap();
+
+        match self.check_response(response) {
+            Err(ClientError::NotFound { message }) => {
+                return Err(ClientError::PlayerNotFound { message })
+            }
+            Err(client_error) => return Err(client_error),
+            Ok(resp) => return Ok(resp.text().unwrap().clone()),
+        }
+    }
+
     pub fn get_player(&self, id: &str) -> Result<Player, ClientError> {
         println!("Retrieve character '{}' from server", id);
         let url = format!("{}/character/{}", self.get_base_path(), id);
         // TODO manage error
-        let mut response: Response = self.client.get(url.as_str()).send().unwrap();
+        let mut response: Response = self
+            .client
+            .get(url.as_str())
+            .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+            .send()
+            .unwrap();
 
         match self.check_response(response) {
             Err(ClientError::NotFound { message }) => {
@@ -174,8 +216,14 @@ impl Client {
         );
 
         let url = format!("{}/character", self.get_base_path());
-        let response: Response =
-            self.check_response(self.client.post(url.as_str()).json(&data).send().unwrap())?;
+        let response: Response = self.check_response(
+            self.client
+                .post(url.as_str())
+                .json(&data)
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
 
         let character: ApiCharacter = response.json::<ApiCharacter>().unwrap();
 
@@ -201,8 +249,13 @@ impl Client {
     pub fn get_tiles_data(&self) -> Result<Value, ClientError> {
         println!("Retrieve tiles from server");
         let url = format!("{}/zones/tiles", self.get_base_path());
-        let response: Response =
-            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let response: Response = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
 
         Ok(response.json::<Value>().unwrap())
     }
@@ -215,8 +268,13 @@ impl Client {
             world_row_i,
             world_col_i
         );
-        let response: Response =
-            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let response: Response = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
 
         Ok(response.json::<Value>().unwrap())
     }
@@ -233,8 +291,13 @@ impl Client {
             world_row_i,
             world_col_i
         );
-        let response: Response =
-            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let response: Response = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
 
         Ok(response.json::<Vec<Character>>().unwrap())
     }
@@ -251,8 +314,13 @@ impl Client {
             world_row_i,
             world_col_i
         );
-        let response: Response =
-            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let response: Response = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
 
         Ok(response.json::<Vec<Stuff>>().unwrap())
     }
@@ -269,8 +337,13 @@ impl Client {
             world_row_i,
             world_col_i
         );
-        let response: Response =
-            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let response: Response = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
 
         Ok(response.json::<Vec<Resource>>().unwrap())
     }
@@ -287,8 +360,13 @@ impl Client {
             world_row_i,
             world_col_i
         );
-        let response: Response =
-            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let response: Response = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
 
         Ok(response.json::<Vec<Build>>().unwrap())
     }
@@ -296,8 +374,13 @@ impl Client {
     pub fn get_world_source(&self) -> Result<String, ClientError> {
         println!("Retrieve world source from server");
         let url = format!("{}/world/source", self.get_base_path());
-        let response: Response =
-            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let response: Response = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
 
         Ok(response.text().unwrap().to_string())
     }
@@ -321,7 +404,12 @@ impl Client {
             request = request.json(&data_);
         }
 
-        let response: Response = self.check_response(request.send().unwrap())?;
+        let response: Response = self.check_response(
+            request
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
         let mut description = response.json::<Description>().unwrap();
         description.origin_url = Some(url);
 
@@ -364,8 +452,13 @@ impl Client {
             self.get_base_path(),
             character_id
         );
-        let response: Response =
-            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let response: Response = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
 
         Ok(response.json::<ListOfItemModel>().unwrap().items)
     }
@@ -399,7 +492,13 @@ impl Client {
 
     pub fn player_is_dead(&self, character_id: &str) -> Result<bool, ClientError> {
         let url = format!("{}/character/{}/dead", self.get_base_path(), character_id);
-        let result = self.check_response(self.client.get(url.as_str()).send().unwrap());
+        let result = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        );
         if let Err(ClientError::NotFound { message: _ }) = result {
             return Ok(false);
         }
@@ -413,8 +512,13 @@ impl Client {
 
     pub fn download_image(&self, image_id: i32, image_extension: &str) -> Result<(), ClientError> {
         let url = format!("{}/image/{}", self.get_base_path(), image_id);
-        let mut response: Response =
-            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let mut response: Response = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
         // FIXME BS: user dir or (MUST BE IN STATIC)
         let file_path = format!("static/cache/{}{}", image_id, image_extension);
         fs::create_dir_all("static/cache").unwrap();
@@ -445,8 +549,13 @@ impl Client {
             world_row_i,
             world_col_i
         );
-        let response: Response =
-            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let response: Response = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
 
         let value = response.json::<Value>().unwrap();
         let mut animated_corpses: Vec<AnimatedCorpse> = vec![];
@@ -460,12 +569,17 @@ impl Client {
     pub fn cache_media(&self, media_name: &str) -> Result<(), ClientError> {
         if Path::new(&format!("cache/{}", media_name)).exists() {
             println!("Media {} already in cache", media_name);
-            return Ok(())
+            return Ok(());
         }
         println!("Download media {}", media_name);
         let url = format!("{}/media/{}", self.get_base_path(), media_name);
-        let mut response: Response =
-            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let mut response: Response = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
         let mut buf: Vec<u8> = vec![];
         response.copy_to(&mut buf).unwrap();
         fs::create_dir_all(Path::new("cache")).unwrap();
@@ -479,13 +593,18 @@ impl Client {
     pub fn cache_media_bg(&self, media_name: &str) -> Result<(), ClientError> {
         if Path::new(&format!("cache/bg/{}", media_name)).exists() {
             println!("Media bg {} already in cache", media_name);
-            return Ok(())
+            return Ok(());
         }
         println!("Download media bg {}", media_name);
 
         let url = format!("{}/media_bg/{}", self.get_base_path(), media_name);
-        let mut response: Response =
-            self.check_response(self.client.get(url.as_str()).send().unwrap())?;
+        let mut response: Response = self.check_response(
+            self.client
+                .get(url.as_str())
+                .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
+                .send()
+                .unwrap(),
+        )?;
         let mut buf: Vec<u8> = vec![];
         response.copy_to(&mut buf).unwrap();
         fs::create_dir_all(Path::new("cache/bg")).unwrap();

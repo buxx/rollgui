@@ -22,6 +22,7 @@ pub struct TextInput<Id> {
     blink_char: Option<char>,
     class: Option<text::Class>,
     height: u32,
+    is_password: bool,
 }
 
 impl<I> std::fmt::Debug for TextInput<I>
@@ -34,6 +35,7 @@ where
             .field("value", &self.value)
             .field("color", &self.color)
             .field("hover_color", &self.hover_color)
+            .field("is_password", &self.is_password)
             .finish()
     }
 }
@@ -60,6 +62,7 @@ impl<I> TextInput<I> {
             blink_char,
             class,
             height: 25,
+            is_password: false,
         }
     }
 
@@ -75,6 +78,11 @@ impl<I> TextInput<I> {
 
     pub fn height(mut self, height: u32) -> Self {
         self.height = height;
+        self
+    }
+
+    pub fn is_password(mut self, is_password: bool) -> Self {
+        self.is_password = is_password;
         self
     }
 }
@@ -119,7 +127,12 @@ where
     ) -> MouseCursor {
         let hover = layout.bounds().contains(cursor_position);
         let color = if hover { self.hover_color } else { self.color };
-        let mut text = format!("{}: {}", self.label, self.value);
+        let value = if !self.is_password {
+            self.value.clone()
+        } else {
+            "*".repeat(self.value.len())
+        };
+        let mut text = format!("{}: {}", self.label, value);
         if let Some(blink_char) = self.blink_char {
             text.push(blink_char);
         }

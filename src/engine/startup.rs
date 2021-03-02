@@ -1,6 +1,7 @@
 use crate::engine::Engine;
 use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
+use crate::server;
 use crate::ui::widget::button;
 use crate::ui::widget::button::Button;
 use crate::ui::widget::text::Text;
@@ -43,15 +44,13 @@ impl Engine for StartupEngine {
         match event {
             Message::LocalServerPressed => {
                 return Some(MainMessage::StartupToZone {
-                    server_ip: "127.0.0.1".to_string(),
-                    server_port: 5000,
+                    address: server::ServerAddress::unsecure("127.0.0.1", 5000),
                     disable_version_check: false,
                 })
             }
             Message::S2BuxFrServerPressed => {
                 return Some(MainMessage::StartupToZone {
-                    server_ip: "91.121.134.31".to_string(),
-                    server_port: 7431,
+                    address: server::ServerAddress::new("rolling-server.bux.fr", 443),
                     disable_version_check: false,
                 })
             }

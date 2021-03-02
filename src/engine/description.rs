@@ -3,8 +3,7 @@ use crate::entity::player::Player;
 use crate::gui::lang::model::{Description, Part};
 use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
-use crate::server::client::ClientError;
-use crate::server::Server;
+use crate::server::client;
 use crate::ui::widget::button::Button;
 use crate::ui::widget::checkbox::Checkbox;
 use crate::ui::widget::fixed_button::Button as FixedButton;
@@ -37,7 +36,7 @@ const ILLUSTRATION_HEIGHT: u32 = 300;
 pub struct DescriptionEngine {
     player: Option<Player>,
     description: Description,
-    server: Server,
+    client: client::Client,
     error_message: Option<String>,
     text_input_selected: i32,
     text_input_ids: HashMap<String, i32>,
@@ -89,7 +88,7 @@ impl DescriptionEngine {
     pub fn new(
         player: Option<Player>,
         description: Description,
-        server: Server,
+        client: client::Client,
         back_url: Option<String>,
         force_back_startup: bool,
     ) -> Self {
@@ -246,7 +245,7 @@ impl DescriptionEngine {
         Self {
             player,
             description,
-            server,
+            client,
             error_message: None,
             text_input_selected,
             text_input_ids,
@@ -560,14 +559,14 @@ impl Engine for DescriptionEngine {
             self.pending_request = None;
             self.loading_displayed = false;
 
-            let try_description = self.server.client.describe(
+            let try_description = self.client.describe(
                 url.as_str(),
                 Some(form_data.clone()),
                 Some(form_query.clone()),
             );
             match try_description {
                 Result::Err(client_error) => {
-                    self.error_message = Some(ClientError::get_message(&client_error));
+                    self.error_message = Some(client::ClientError::get_message(&client_error));
                 }
                 Result::Ok(description) => {
                     if let Some(character_id) = description.new_character_id {
@@ -575,9 +574,15 @@ impl Engine for DescriptionEngine {
                             character_id: character_id.clone(),
                         });
                     }
+                    if description.account_created {
+                        return Some(MainMessage::AccountCreated {
+                            address: self.client.address.clone(),
+                        });
+                    }
                     return Some(MainMessage::ToDescriptionWithDescription {
                         description,
                         back_url: self.future_back_url.clone(),
+                        client: self.client.clone(),
                     });
                 }
             }
@@ -628,6 +633,7 @@ impl Engine for DescriptionEngine {
                 }
             }
             Some(keyboard::KeyCode::Tab) => {
+                input.key_code = None;
                 if self
                     .text_input_names
                     .contains_key(&(self.text_input_selected + 1))
@@ -870,18 +876,22 @@ impl Engine for DescriptionEngine {
                         } else if part_is_input(form_item) {
                             let form_item_name = form_item.name.as_ref().unwrap().clone();
                             let form_item_id = text_input_ids.get(&form_item_name).unwrap();
-                            content = content.push(TextInput::new(
-                                *form_item_id,
-                                &label,
-                                text_input_values.get(&form_item_id).unwrap(),
-                                Message::TextInputSelected,
-                                if text_input_selected == *form_item_id {
-                                    blink_char
-                                } else {
-                                    None
-                                },
-                                None,
-                            ));
+                            let is_password = form_item.classes.contains(&"password".to_string());
+                            content = content.push(
+                                TextInput::new(
+                                    *form_item_id,
+                                    &label,
+                                    text_input_values.get(&form_item_id).unwrap(),
+                                    Message::TextInputSelected,
+                                    if text_input_selected == *form_item_id {
+                                        blink_char
+                                    } else {
+                                        None
+                                    },
+                                    None,
+                                )
+                                .is_password(is_password),
+                            );
                         } else if part_is_checkbox(form_item) {
                             let name = form_item.name.as_ref().unwrap().clone();
                             let id = self.checkbox_ids.get(&name).unwrap().clone();
@@ -1125,7 +1135,9 @@ impl Engine for DescriptionEngine {
 
                     if display_normal_button {
                         let on_press = if item.is_web_browser_link {
-                            Message::WebBrowserLinkButtonPressed(item.form_action.as_ref().unwrap().clone())
+                            Message::WebBrowserLinkButtonPressed(
+                                item.form_action.as_ref().unwrap().clone(),
+                            )
                         } else {
                             Message::LinkButtonPressed(id)
                         };

@@ -1,4 +1,5 @@
 use crate::gui::lang::model::Description;
+use crate::server;
 
 #[derive(Debug, Clone)]
 pub enum Action {
@@ -6,8 +7,7 @@ pub enum Action {
         character_id: String,
     },
     StartupToZone {
-        server_ip: String,
-        server_port: u16,
+        address: server::ServerAddress,
     },
     ZoneToWorld,
     WorldToZone,

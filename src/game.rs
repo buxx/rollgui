@@ -1,5 +1,6 @@
 use crate::engine::description::DescriptionEngine;
 use crate::engine::exit::ExitEngine;
+use crate::engine::login::LoginEngine;
 use crate::engine::startup::StartupEngine;
 use crate::engine::upgrade::UpgradeEngine;
 use crate::engine::world::WorldEngine;
@@ -15,12 +16,13 @@ use crate::gui::lang::model::RequestClicks;
 use crate::input::MyGameInput;
 use crate::level::Level;
 use crate::message::{MainMessage, Message};
+use crate::server::client::Client;
 use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles as ZoneTiles;
 use crate::ui::renderer::Renderer;
 use crate::ui::widget::text::Text;
 use crate::ui::{Column, Element};
-use crate::{config, event, server, util};
+use crate::{event, server, util};
 use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
 use coffee::load::{loading_screen, Task};
 use coffee::ui::{Align, Justify, UserInterface};
@@ -62,54 +64,33 @@ fn get_db(db_file_path: &str) -> PickleDb {
 }
 
 impl MyGame {
-    fn get_server_config(&self, server_ip: &str, server_port: u16) -> config::ServerConfig {
-        if let Some(server_config) = self
+    fn get_server_last_username(&self, address: server::ServerAddress) -> String {
+        if let Some(last_username) = self
             .db
-            .get::<config::ServerConfig>(format!("server_{}_{}", server_ip, server_port).as_str())
+            .get::<String>(format!("server_{}_{}", address.host, address.port).as_str())
         {
-            return server_config;
+            return last_username;
         }
 
-        config::ServerConfig {
-            ip: server_ip.to_string(),
-            port: server_port,
-            character_id: None,
-        }
+        "".to_string()
     }
 
-    fn setup_startup_to_zone_engine(
-        &mut self,
-        server_ip: String,
-        server_port: u16,
-        request_clicks: Option<RequestClicks>,
-        disable_version_check: bool,
-    ) {
-        // FIXME BS: manage error cases
-        self.server = Some(self.create_server(server_ip, server_port).unwrap());
-        let server = self.server.as_ref().unwrap().clone();
+    fn set_server_last_username(&mut self, address: server::ServerAddress, username: &str) {
+        self.db
+            .set(
+                format!("server_{}_{}", address.host, address.port).as_str(),
+                &username,
+            )
+            .unwrap();
+    }
 
-        if !disable_version_check {
-            let server_version = server.client.get_version().unwrap();
-            let client_version = util::str_version_to_tuple(VERSION);
-            println!("Check is compatible");
-            if !util::is_compatible_versions(server_version, client_version) {
-                println!("Version is not compatible");
-                let last_compatible_version = util::get_last_compatible_version(server_version);
-                self.setup_upgrade_engine(last_compatible_version, true);
-                return;
-            } else {
-                println!("Version is compatible");
-                let last_compatible_version = util::get_last_compatible_version(server_version);
-                println!(
-                    "Is there newer version ? ({:?} != {:?})",
-                    last_compatible_version, client_version
-                );
-                if last_compatible_version != client_version {
-                    self.setup_upgrade_engine(last_compatible_version, false);
-                    return;
-                }
-            }
+    fn setup_startup_to_zone_engine(&mut self, request_clicks: Option<RequestClicks>) {
+        println!("setup_startup_to_zone_engine");
+        if self.server.is_none() {
+            self.engine = Box::new(StartupEngine::new());
+            return;
         }
+        let server = self.server.as_ref().unwrap().clone();
 
         // FIXME BS: manage error cases
         if let Some(player) = self.create_player().unwrap() {
@@ -118,7 +99,7 @@ impl MyGame {
             return;
         }
 
-        if let Some(character_id) = &server.config.character_id {
+        if let Some(character_id) = server.character_id.clone() {
             println!("Maybe character is dead ?");
             // FIXME: manage error case
             if server.client.player_is_dead(&character_id).unwrap() {
@@ -135,7 +116,7 @@ impl MyGame {
                     None,
                     // TODO: manage error cases
                     description.clone(),
-                    server.clone(),
+                    server.client.clone(),
                     None,
                     true,
                 ));
@@ -153,7 +134,7 @@ impl MyGame {
             None,
             // FIXME: manage error cases
             description.clone(),
-            server.clone(),
+            server.client.clone(),
             None,
             true,
         ));
@@ -162,22 +143,48 @@ impl MyGame {
         self.illustration_bg = None;
     }
 
-    fn create_server(
-        &self,
-        server_ip: String,
-        server_port: u16,
-    ) -> Result<server::Server, Box<dyn Error>> {
-        let server_config = self.get_server_config(&server_ip, server_port);
-        let client = server::client::Client::new(&server_ip, server_port);
-        Ok(server::Server::new(client, server_config)?)
+    fn setup_create_account(&mut self, address: server::ServerAddress) {
+        println!("setup_create_account");
+        let client = server::client::Client::new(address, ("".to_string(), "".to_string()));
+        let description = client.describe("/account/create", None, None).unwrap();
+        self.engine = Box::new(DescriptionEngine::new(
+            None,
+            description.clone(),
+            client.clone(),
+            None,
+            true,
+        ));
+        self.pending_illustration = description.illustration_name;
+        self.illustration = None;
+        self.illustration_bg = None;
+    }
+
+    fn setup_create_character(&mut self) {
+        println!("setup_create_character");
+        let server = self.server.as_ref().unwrap().clone();
+        let description = server
+            .client
+            .describe("/_describe/character/create", None, None)
+            .unwrap();
+        self.engine = Box::new(DescriptionEngine::new(
+            None,
+            description.clone(),
+            server.client.clone(),
+            None,
+            true,
+        ));
+        self.pending_illustration = description.illustration_name;
+        self.illustration = None;
+        self.illustration_bg = None;
     }
 
     fn create_player(&self) -> Result<Option<Player>, Box<dyn Error>> {
+        println!("create_player");
         // Server must exist at this step
         let server = self.server.as_ref().unwrap();
 
         println!("Try to create Player with local data?");
-        if let Some(character_id) = &server.config.character_id {
+        if let Some(character_id) = &server.character_id {
             println!("Character '{}' locally found", character_id);
             return match server.client.get_player(character_id) {
                 Ok(player) => {
@@ -196,15 +203,57 @@ impl MyGame {
         return Ok(None);
     }
 
-    fn setup_upgrade_engine(&mut self, version: (u8, u8, u8), mandatory: bool) {
-        self.engine = Box::new(UpgradeEngine::new(
-            version,
-            mandatory,
-            self.server.as_ref().unwrap().clone(),
+    fn setup_upgrade_engine(
+        &mut self,
+        version: (u8, u8, u8),
+        mandatory: bool,
+        address: server::ServerAddress,
+    ) {
+        println!("setup_upgrade_engine");
+        self.engine = Box::new(UpgradeEngine::new(version, mandatory, address));
+    }
+
+    fn setup_login_engine(
+        &mut self,
+        address: server::ServerAddress,
+        disable_version_check: bool,
+        message: Option<String>,
+    ) {
+        println!("setup_login_engine");
+        let client = Client::new(address.clone(), ("".to_string(), "".to_string()));
+
+        if !disable_version_check {
+            let server_version = client.get_version().unwrap();
+            let client_version = util::str_version_to_tuple(VERSION);
+            println!("Check is compatible");
+            if !util::is_compatible_versions(server_version, client_version) {
+                println!("Version is not compatible");
+                let last_compatible_version = util::get_last_compatible_version(server_version);
+                self.setup_upgrade_engine(last_compatible_version, true, address.clone());
+                return;
+            } else {
+                println!("Version is compatible");
+                let last_compatible_version = util::get_last_compatible_version(server_version);
+                println!(
+                    "Is there newer version ? ({:?} != {:?})",
+                    last_compatible_version, client_version
+                );
+                if last_compatible_version != client_version {
+                    self.setup_upgrade_engine(last_compatible_version, false, address);
+                    return;
+                }
+            }
+        }
+
+        self.engine = Box::new(LoginEngine::new(
+            address.clone(),
+            message,
+            self.get_server_last_username(address.clone()),
         ));
     }
 
     fn setup_zone_engine(&mut self, request_clicks: Option<RequestClicks>) {
+        println!("setup_zone_engine");
         // Player and Server must exist at this step
         let server = self.server.as_ref().unwrap();
         let player = self.player.as_ref().unwrap();
@@ -230,16 +279,21 @@ impl MyGame {
             .clone();
         let level = Level::new(&zone_raw, &tiles, world_tile_type_id).unwrap();
 
-        // TODO: https
         let mut socket = ZoneSocket::new(format!(
-            "http://{}:{}/zones/{}/{}/events?character_id={}",
-            server.config.ip,
-            server.config.port,
+            "{}/zones/{}/{}/events?character_id={}",
+            server
+                .address
+                .with_credentials(&server.client.credentials.0, &server.client.credentials.1,),
             player.world_position.0,
             player.world_position.1,
             player.id
         ));
-        socket.connect();
+        if server.address.secure {
+            socket.connect();
+        } else {
+            socket.connect_unsecure();
+        };
+
         socket.send(event::ZoneEvent {
             event_type_name: String::from(event::CLIENT_REQUIRE_AROUND),
             event_type: event::ZoneEventType::ClientRequireAround {
@@ -409,25 +463,25 @@ impl Game for MyGame {
 
             match main_message {
                 MainMessage::StartupToZone {
-                    server_ip,
-                    server_port,
+                    address,
                     disable_version_check,
                 } => {
-                    self.setup_startup_to_zone_engine(
-                        server_ip.clone(),
-                        server_port,
-                        None,
-                        disable_version_check,
-                    );
+                    println!("Set login engine");
+                    self.setup_login_engine(address, disable_version_check, None);
                 }
                 MainMessage::ToDescriptionWithDescription {
                     description,
                     back_url,
+                    client,
                 } => {
+                    let player = match self.player.as_ref() {
+                        None => None,
+                        Some(player) => Some(player.clone()),
+                    };
                     self.engine = Box::new(DescriptionEngine::new(
-                        Some(self.player.as_ref().unwrap().clone()),
+                        player,
                         description.clone(),
-                        self.server.as_ref().unwrap().clone(),
+                        client,
                         back_url.clone(),
                         false,
                     ));
@@ -435,26 +489,29 @@ impl Game for MyGame {
                     self.illustration = None;
                     self.illustration_bg = None;
                 }
-                MainMessage::NewCharacterId { character_id } => {
-                    println!("New character {}", &character_id);
-                    self.server.as_mut().unwrap().config.character_id = Some(character_id.clone());
-                    self.db
-                        .set(
-                            format!(
-                                "server_{}_{}",
-                                self.server.as_ref().unwrap().config.ip,
-                                self.server.as_ref().unwrap().config.port
-                            )
-                            .as_str(),
-                            &self.server.as_ref().unwrap().config,
-                        )
-                        .unwrap();
-                    self.setup_startup_to_zone_engine(
-                        self.server.as_ref().unwrap().config.ip.clone(),
-                        self.server.as_ref().unwrap().config.port,
-                        None,
-                        false,
+                MainMessage::CreateAccount { address } => {
+                    self.setup_create_account(address);
+                }
+                MainMessage::AccountCreated { address } => {
+                    self.setup_login_engine(
+                        address,
+                        true,
+                        Some("Veuillez maintenant vous identifier".to_string()),
                     );
+                }
+                MainMessage::NewCharacterId { character_id } => {
+                    self.server.as_mut().unwrap().character_id = Some(character_id.clone());
+                    self.setup_startup_to_zone_engine(None);
+                }
+                MainMessage::SetServer { server } => {
+                    println!("Set server");
+                    self.server = Some(server.clone());
+                    self.set_server_last_username(server.address, &server.client.credentials.0);
+                    if self.server.as_mut().unwrap().character_id.is_none() {
+                        self.setup_create_character();
+                    } else {
+                        self.setup_startup_to_zone_engine(None);
+                    }
                 }
                 MainMessage::ToDescriptionWithUrl { url, back_url } => {
                     // FIXME: manage errors
@@ -465,10 +522,15 @@ impl Game for MyGame {
                         .client
                         .describe(&url, None, None)
                         .unwrap();
+                    let player = if let Some(player) = self.player.as_ref() {
+                        Some(player.clone())
+                    } else {
+                        None
+                    };
                     self.engine = Box::new(DescriptionEngine::new(
-                        Some(self.player.as_ref().unwrap().clone()),
+                        player,
                         description.clone(),
-                        self.server.as_ref().unwrap().clone(),
+                        self.server.as_ref().unwrap().client.clone(),
                         back_url.clone(),
                         false,
                     ));
@@ -477,14 +539,7 @@ impl Game for MyGame {
                     self.illustration_bg = None;
                 }
                 MainMessage::DescriptionToZone { request_clicks } => {
-                    // FIXME: manage errors
-                    let server = self.server.as_mut().unwrap().clone(); // must succeed
-                    self.setup_startup_to_zone_engine(
-                        server.config.ip.clone(),
-                        server.config.port,
-                        request_clicks,
-                        true,
-                    );
+                    self.setup_startup_to_zone_engine(request_clicks);
                 }
                 MainMessage::ToStartup => {
                     self.engine = Box::new(StartupEngine::new());

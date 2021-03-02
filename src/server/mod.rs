@@ -1,24 +1,73 @@
-use crate::config;
 use crate::tile::world::Tiles as WorldTiles;
 use crate::util;
 use crate::world;
 use std::error::Error;
+use std::fmt;
 
 pub mod client;
 
+#[derive(Clone, Debug)]
+pub struct ServerAddress {
+    pub host: String,
+    pub port: u16,
+    pub secure: bool,
+}
+
+impl ServerAddress {
+    pub fn new(host: &str, port: u16) -> Self {
+        Self {
+            host: host.to_string(),
+            port,
+            secure: true,
+        }
+    }
+
+    pub fn unsecure(host: &str, port: u16) -> Self {
+        Self {
+            host: host.to_string(),
+            port,
+            secure: false,
+        }
+    }
+
+    pub fn with_credentials(&self, login: &str, password: &str) -> String {
+        let protocol = if self.secure { "https" } else { "http" };
+        format!(
+            "{}://{}:{}@{}:{}",
+            protocol, login, password, self.host, self.port
+        )
+    }
+}
+
+impl fmt::Display for ServerAddress {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let protocol = if self.secure { "https" } else { "http" };
+        write!(f, "{}://{}:{}", protocol, self.host, self.port)
+    }
+}
+
 #[derive(Clone)]
 pub struct Server {
-    pub config: config::ServerConfig,
+    pub address: ServerAddress,
+    pub character_id: Option<String>,
     pub client: client::Client,
     pub world: world::World,
     pub world_tiles: WorldTiles,
-    // TODO: tiles, possible moves, etc
+}
+
+impl fmt::Debug for Server {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Server")
+            .field("address", &self.address)
+            .finish()
+    }
 }
 
 impl Server {
     pub fn new(
         client: client::Client,
-        config: config::ServerConfig,
+        address: ServerAddress,
+        character_id: String,
     ) -> Result<Self, Box<dyn Error>> {
         // TODO grab possible moves, etc from server
 
@@ -26,14 +75,21 @@ impl Server {
         let legend = util::extract_block_from_source("LEGEND", world_source.as_str())?;
         let world_raw = util::extract_block_from_source("GEO", world_source.as_str())?;
 
-        let tiles = WorldTiles::new(legend.as_str())?;
-        let world = world::World::new(world_raw.as_str(), &tiles)?;
+        let world_tiles = WorldTiles::new(legend.as_str())?;
+        let world = world::World::new(world_raw.as_str(), &world_tiles)?;
+
+        let character_id = if character_id == "" {
+            None
+        } else {
+            Some(character_id)
+        };
 
         Ok(Self {
-            config,
+            address,
+            character_id,
             client,
             world,
-            world_tiles: tiles,
+            world_tiles,
         })
     }
 }

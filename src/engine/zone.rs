@@ -99,6 +99,7 @@ pub struct ZoneEngine {
     action_menu_button_state: thin_button::State,
     build_menu_button_state: thin_button::State,
     info_menu_button_state: thin_button::State,
+    account_button_state: thin_button::State,
     exit_menu_button_state: thin_button::State,
     resume_text: Vec<ItemModel>,
     around_items_button_state: fixed_button::State,
@@ -204,6 +205,7 @@ impl ZoneEngine {
             action_menu_button_state: thin_button::State::new(),
             build_menu_button_state: thin_button::State::new(),
             info_menu_button_state: thin_button::State::new(),
+            account_button_state: thin_button::State::new(),
             exit_menu_button_state: thin_button::State::new(),
             resume_text,
             around_items_button_state: fixed_button::State::new(),
@@ -1195,6 +1197,13 @@ impl Engine for ZoneEngine {
                     back_url: None,
                 })
             }
+            Message::OpenAccountButtonPressed => {
+                let url = format!("{}/account/manage", self.server.address);
+                println!("Open url {} with web browser", url);
+                if webbrowser::open(&url).is_ok() {
+                    // ..
+                }
+            }
             Message::ExitMenuButtonPressed => return Some(MainMessage::ToExit),
             Message::LinkButtonPressed(id) => {
                 self.link_button_pressed = id;
@@ -1402,6 +1411,12 @@ impl Engine for ZoneEngine {
                 Button::new(&mut self.info_menu_button_state, "Infos serveur")
                     .class(thin_button::Class::Secondary)
                     .on_press(Message::ServerInfosMenuButtonPressed)
+                    .width(175),
+            )
+            .push(
+                Button::new(&mut self.account_button_state, "Mon compte")
+                    .class(thin_button::Class::Secondary)
+                    .on_press(Message::OpenAccountButtonPressed)
                     .width(175),
             )
             .push(

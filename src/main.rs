@@ -3,7 +3,6 @@ use coffee::ui::UserInterface;
 use coffee::Result;
 use ini::Ini;
 
-pub mod config;
 pub mod engine;
 pub mod entity;
 pub mod error;

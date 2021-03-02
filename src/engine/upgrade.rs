@@ -1,7 +1,7 @@
 use crate::engine::Engine;
 use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
-use crate::server::Server;
+use crate::server;
 use crate::ui::widget::button;
 use crate::ui::widget::button::Button;
 use crate::ui::widget::text::Text;
@@ -18,7 +18,7 @@ use std::{env, fs};
 pub struct UpgradeEngine {
     version: (u8, u8, u8),
     mandatory: bool,
-    server: Server,
+    client: server::client::Client,
     folder: String,
     already_on_disk: bool,
     display_downloading: bool,
@@ -31,7 +31,7 @@ pub struct UpgradeEngine {
 }
 
 impl UpgradeEngine {
-    pub fn new(version: (u8, u8, u8), mandatory: bool, server: Server) -> Self {
+    pub fn new(version: (u8, u8, u8), mandatory: bool, address: server::ServerAddress) -> Self {
         // Determine where is the reference folder (executable can be in x.y.z folder)
         let executable_name = if cfg!(windows) {
             "rollgui.exe"
@@ -60,7 +60,7 @@ impl UpgradeEngine {
         Self {
             version,
             mandatory,
-            server,
+            client: server::client::Client::new(address, ("".to_string(), "".to_string())),
             already_on_disk,
             folder: String::from(folder.to_str().unwrap()),
             display_downloading: false,
@@ -152,8 +152,7 @@ impl Engine for UpgradeEngine {
             }
             Message::ContinueButtonPressed => {
                 return Some(MainMessage::StartupToZone {
-                    server_ip: self.server.config.ip.clone(),
-                    server_port: self.server.config.port,
+                    address: self.client.address.clone(),
                     disable_version_check: true,
                 })
             }
