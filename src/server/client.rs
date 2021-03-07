@@ -18,6 +18,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
+use std::time::Duration;
 use std::{fmt, fs, io};
 
 #[derive(Debug)]
@@ -95,7 +96,10 @@ impl Client {
     pub fn new(address: ServerAddress, credentials: (String, String)) -> Self {
         Self {
             address,
-            client: reqwest::blocking::Client::new(),
+            client: reqwest::blocking::Client::builder()
+                .pool_idle_timeout(Some(Duration::from_secs(2)))
+                .build()
+                .expect("Fail to build client"),
             credentials,
         }
     }
