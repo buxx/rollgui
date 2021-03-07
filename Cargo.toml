@@ -1,6 +1,6 @@
 [package]
 name = "rollgui"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Bastien Sevajol <contact@bux.fr>"]
 edition = "2018"
 

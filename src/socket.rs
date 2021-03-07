@@ -164,7 +164,6 @@ impl ZoneSocket {
         let ws_reader_handle = thread::spawn(move || {
             let from_websocket_sender = from_websocket_sender.lock().unwrap();
             for message in ws_reader.incoming_messages() {
-                println!("RECEIVE {:?}", message);
                 match message {
                     Ok(OwnedMessage::Text(msg)) => {
                         let value: Value = serde_json::from_str(&msg).unwrap();
