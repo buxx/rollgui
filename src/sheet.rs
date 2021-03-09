@@ -40,7 +40,7 @@ const APPEARANCES: [(&str, Option<SheetPosition>, SheetPosition); 90] = [
     ("DIRT", None, (0, 0)),
     ("LEAF_TREE", None, (1, 7)),
     ("TROPICAL_TREE", None, (1, 8)),
-    ("DEAD_TREE", None, (0, 8)),
+    ("DEAD_TREE", None, (1, 9)),
     ("PLAYER", None, (6, 0)),
     ("PLAYER_LEFT", None, (6, 1)),
     ("CHARACTER", None, (6, 0)),
