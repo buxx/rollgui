@@ -1,6 +1,6 @@
 use crate::error::RollingError;
 use crate::level::Level;
-use rand::distributions::{Alphanumeric};
+use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use std::collections::HashMap;
 use std::error::Error;
