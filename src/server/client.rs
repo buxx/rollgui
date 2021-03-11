@@ -143,7 +143,7 @@ impl Client {
         println!("Retrieve current character from server");
         let url = format!("{}/account/current_character_id", self.get_base_path());
         // TODO manage error
-        let mut response: Response = self
+        let response: Response = self
             .client
             .get(url.as_str())
             .basic_auth(credentials.0, Some(credentials.1))

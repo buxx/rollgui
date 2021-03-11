@@ -12,7 +12,6 @@ use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
 use coffee::Timer;
 use std::time::Instant;
-use url::quirks::port;
 
 const BLINK_MS: u128 = 250;
 
@@ -197,7 +196,7 @@ impl Engine for LoginEngine {
         None
     }
 
-    fn layout(&mut self, window: &Window, illustration: Option<Image>) -> Element {
+    fn layout(&mut self, window: &Window, _illustration: Option<Image>) -> Element {
         let blink_char = self.get_blink_char();
         let mut column = Column::new()
             .width(window.width() as u32)
