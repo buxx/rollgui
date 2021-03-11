@@ -1349,7 +1349,7 @@ impl Engine for DescriptionEngine {
                 .height(20)
                 .push(
                     Text::new(&format!(
-                        "Echap: retour, ↑/↓/roulette: défilement{}",
+                        "Tab: champ suivant, Echap: retour, ↑/↓/roulette: défilement{}",
                         submit_info
                     ))
                     .size(20)
