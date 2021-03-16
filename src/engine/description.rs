@@ -4,15 +4,15 @@ use crate::gui::lang::model::{Description, Part};
 use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
 use crate::server::client;
-use crate::ui::widget::button::Button;
+use crate::ui::widget::button::{Button, State};
 use crate::ui::widget::checkbox::Checkbox;
-use crate::ui::widget::fixed_button::Button as FixedButton;
 use crate::ui::widget::radio::Radio;
 use crate::ui::widget::state_less_button::StateLessButton;
-use crate::ui::widget::text;
+use crate::ui::widget::state_less_fixed_button::Button as FixedButton;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::text_input::TextInput;
 use crate::ui::widget::{button, fixed_button, state_less_button};
+use crate::ui::widget::{state_less_fixed_button, text};
 use crate::ui::Element;
 use crate::ui::{Column, Row};
 use crate::util;
@@ -33,6 +33,16 @@ const CONTENT_WIDTH: u32 = 768;
 const ILLUSTRATION_WIDTH: u32 = CONTENT_WIDTH;
 const ILLUSTRATION_HEIGHT: u32 = 300;
 
+const BACK_BUTTON_ID: i32 = -1;
+const BACK_FROM_GROUP_BY_BUTTON_ID: i32 = -2;
+const BACK_WITH_CHARACTER_BUTTON_ID: i32 = -3;
+const BACK_WITH_AFFINITY_BUTTON_ID: i32 = -4;
+const BACK_WITH_BUILD_BUTTON_ID: i32 = -5;
+const BACK_ACTIONS_BUTTON_ID: i32 = -6;
+const BACK_INVENTORY_BUTTON_ID: i32 = -7;
+const BACK_ZONE_BUTTON_ID: i32 = -8;
+const SUBMIT_BUTTON_ID: i32 = -9;
+
 pub struct DescriptionEngine {
     player: Option<Player>,
     description: Description,
@@ -46,18 +56,10 @@ pub struct DescriptionEngine {
     link_button_ids: HashMap<String, i32>,
     link_button_pressed: i32,
     blink_time: Instant,
-    submit_button: button::State,
-    zone_button_state: fixed_button::State,
-    back_button_state: fixed_button::State,
-    back_with_character_button_state: fixed_button::State,
-    back_with_build_button_state: fixed_button::State,
-    back_inventory_button_state: fixed_button::State,
-    back_actions_button_state: fixed_button::State,
-    back_with_affinity_button_state: fixed_button::State,
+    blink_char: Option<char>,
     current_link_group_name: Option<String>,
     link_group_name_ids: HashMap<String, i32>,
     link_group_button_pressed: i32,
-    back_from_group_by_button: button::State,
     checkbox_ids: HashMap<String, i32>,
     checkbox_names: HashMap<i32, String>,
     checkbox_values: HashMap<i32, String>,
@@ -255,30 +257,13 @@ impl DescriptionEngine {
             link_button_ids,
             link_button_pressed: -1,
             blink_time: Instant::now(),
-            submit_button: button::State::new(),
-            zone_button_state: fixed_button::State::new(),
-            back_button_state: fixed_button::State::new(),
-            back_with_character_button_state: fixed_button::State::new(),
-            back_with_build_button_state: fixed_button::State::new(),
-            back_inventory_button_state: fixed_button::State::new(),
-            back_actions_button_state: fixed_button::State::new(),
-            back_with_affinity_button_state: fixed_button::State::new(),
+            blink_char: None,
             current_link_group_name: None,
             link_group_name_ids,
             link_group_button_pressed: -1,
-            back_from_group_by_button: button::State::new(),
             checkbox_ids,
             checkbox_names,
             checkbox_values,
-            // form_error_message: None,
-            // start_items_from: 0,
-            // illustration: None,
-            // illustration_passed: false,
-            // loading: false,
-            // loading_displayed: false,
-            // loading_closure: None,
-            // link_group_name: None,
-            // selections: HashMap::new(),
             back_url,
             future_back_url,
             choice_ids,
@@ -339,15 +324,15 @@ impl DescriptionEngine {
         }
     }
 
-    fn get_blink_char(&mut self) -> Option<char> {
+    fn update_blink_char(&mut self) {
         let elapsed = self.blink_time.elapsed().as_millis();
         if elapsed < BLINK_MS as u128 {
-            None
+            self.blink_char = None;
         } else if elapsed <= (BLINK_MS * 2) as u128 {
-            Some('_')
+            self.blink_char = Some('_');
         } else {
             self.blink_time = Instant::now();
-            None
+            self.blink_char = None;
         }
     }
 
@@ -425,6 +410,366 @@ impl DescriptionEngine {
         };
 
         self.pending_request = Some((form_action, final_form_data, final_form_query));
+    }
+
+    fn create_row_from_item(
+        &self,
+        item: Part,
+        window: &Window,
+        replaced_by_group_names: Vec<String>,
+    ) -> (Option<Row>, Vec<String>, Option<String>) {
+        let mut column = Column::new();
+        let mut pushed_in_row = false;
+        let mut submit_label = None;
+        let text_input_ids = self.text_input_ids.clone();
+        let text_input_values = self.text_input_values.clone();
+        let text_input_selected = self.text_input_selected.clone();
+        let mut ignore_checkbox_ids: Vec<i32> = vec![];
+        let mut total_item_i = 0;
+        let mut replaced_by_group_names: Vec<String> = replaced_by_group_names.clone();
+
+        if item.columns != 0 {
+            let mut row = Row::new();
+            for item_column in item.items {
+                if !item_column.is_column {
+                    eprintln!("Expected column here !")
+                } else {
+                    let mut column_ =
+                        Column::new().width(window.width() as u32 / item.columns as u32);
+                    for column_item in item_column.items {
+                        let (column_row, row_replaced_by_group_names, row_submit_label) = self
+                            .create_row_from_item(
+                                column_item,
+                                window,
+                                replaced_by_group_names.clone(),
+                            );
+                        replaced_by_group_names = row_replaced_by_group_names;
+                        if let Some(column_row) = column_row {
+                            column_ = column_.push(column_row);
+                        }
+                        if let Some(row_submit_label) = row_submit_label {
+                            submit_label = Some(row_submit_label);
+                        };
+                    }
+                    row = row.push(column_);
+                    pushed_in_row = true;
+                }
+            }
+
+            return (Some(row), replaced_by_group_names, submit_label)
+        } else {
+            if part_is_form(&item) {
+                let mut form_column = Column::new();
+                // FIXME BS NOW: il y a un gros bug d'affichage, voir FICHE, CREATION PERSO
+                // Déjà ici (partout car form ?) on voit que l'on ajoute chaque form item au même ROW
+                // il faut créer une nouvelle row pour chaque item.
+
+                submit_label = Some("Enregistrer".to_string());
+                if let Some(item_submit_label_) = item.submit_label.as_ref() {
+                    submit_label = Some(item_submit_label_.clone());
+                }
+
+                for form_item in item.items.iter() {
+                    total_item_i += 1;
+                    if total_item_i < self.start_items_from {
+                        continue;
+                    }
+                    let label = form_item
+                        .label
+                        .as_ref()
+                        .unwrap_or(form_item.text.as_ref().unwrap_or(&"".to_string()))
+                        .clone();
+
+                    if part_is_pure_text(form_item) {
+                        form_column = form_column.push(get_text_from_item(form_item));
+                        pushed_in_row = true;
+                    } else if part_is_input(form_item) {
+                        let form_item_name = form_item.name.as_ref().unwrap().clone();
+                        let form_item_id = text_input_ids.get(&form_item_name).unwrap();
+                        let is_password = form_item.classes.contains(&"password".to_string());
+                        form_column = form_column.push(
+                            TextInput::new(
+                                *form_item_id,
+                                &label,
+                                text_input_values.get(&form_item_id).unwrap(),
+                                Message::TextInputSelected,
+                                if text_input_selected == *form_item_id {
+                                    self.blink_char
+                                } else {
+                                    None
+                                },
+                                None,
+                            )
+                            .is_password(is_password),
+                        );
+                        pushed_in_row = true;
+                    } else if part_is_checkbox(form_item) {
+                        let name = form_item.name.as_ref().unwrap().clone();
+                        let id = self.checkbox_ids.get(&name).unwrap().clone();
+
+                        if !ignore_checkbox_ids.contains(&id) {
+                            let mut column1 = Column::new();
+                            let mut column2 = Column::new();
+
+                            let mut started = false;
+                            let mut counter = 0;
+                            for form_item_ in item.items.iter() {
+                                if part_is_checkbox(form_item_) {
+                                    let name_ = form_item_.name.as_ref().unwrap().clone();
+                                    let id_ = self.checkbox_ids.get(&name_).unwrap().clone();
+                                    let label_ = form_item_
+                                        .label
+                                        .as_ref()
+                                        .unwrap_or(
+                                            form_item_.text.as_ref().unwrap_or(&"".to_string()),
+                                        )
+                                        .clone();
+
+                                    if id_ == id {
+                                        started = true;
+                                    }
+
+                                    if started && !ignore_checkbox_ids.contains(&id_) {
+                                        let checkbox = Checkbox::new(
+                                            self.checkbox_values.get(&id_).is_some(),
+                                            &label_,
+                                            move |c| {
+                                                if c {
+                                                    Message::CheckBoxChecked(id_)
+                                                } else {
+                                                    Message::CheckBoxUnchecked(id_)
+                                                }
+                                            },
+                                        );
+
+                                        if (counter % 2) == 0 {
+                                            column1 = column1.push(checkbox);
+                                        } else {
+                                            column2 = column2.push(checkbox);
+                                        }
+
+                                        counter += 1;
+                                        ignore_checkbox_ids.push(id_);
+                                    }
+                                } else {
+                                    if started {
+                                        form_column = form_column
+                                            .push(Row::new().push(column1).push(column2));
+                                        pushed_in_row = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } else if part_is_link(form_item) {
+                        let label = form_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
+                        let display_label = if item.text.is_some() && item.label.is_some() {
+                            format!(
+                                "{}: {}",
+                                item.label.as_ref().unwrap().clone(),
+                                item.text.as_ref().unwrap().clone()
+                            )
+                        } else {
+                            label.clone()
+                        };
+                        let id = *self.link_button_ids.get(&label).unwrap();
+                        form_column = form_column.push(
+                            StateLessButton::new(
+                                self.link_button_pressed == id,
+                                &display_label,
+                                Message::LinkButtonPressed(id),
+                                Message::LinkButtonReleased(
+                                    form_item.form_action.as_ref().unwrap().clone(),
+                                ),
+                            )
+                            .width(768)
+                            .class(state_less_button::Class::Primary),
+                        );
+                        pushed_in_row = true;
+                    } else if part_is_choices(form_item) {
+                        let radio_id = *self
+                            .choice_ids
+                            .get(form_item.name.as_ref().unwrap())
+                            .unwrap();
+
+                        let choices = form_item.choices.as_ref().unwrap();
+                        let count_by_column = (choices.len() as f32 / 2.0).ceil() as i32;
+                        let mut column1 = Column::new();
+                        let mut column2 = Column::new();
+                        let mut choices_chunks = choices.chunks(count_by_column as usize);
+                        let chunk1 = choices_chunks.next().unwrap();
+                        let chunk2 = choices_chunks.next().unwrap();
+
+                        for choice in chunk1 {
+                            let value_id = self.choice_values_ids.get(choice).unwrap();
+                            column1 = column1.push(Radio::new(
+                                value_id,
+                                choice,
+                                self.choice_values_ids
+                                    .get(self.choice_values.get(&radio_id).unwrap()),
+                                move |value_id| Message::ChoicePressed(radio_id, *value_id),
+                            ));
+                        }
+                        for choice in chunk2 {
+                            let value_id = self.choice_values_ids.get(choice).unwrap();
+                            column2 = column2.push(Radio::new(
+                                value_id,
+                                choice,
+                                self.choice_values_ids
+                                    .get(self.choice_values.get(&radio_id).unwrap()),
+                                move |value_id| Message::ChoicePressed(radio_id, *value_id),
+                            ));
+                        }
+
+                        let row_ = Row::new().push(column1).push(column2);
+                        form_column = form_column.push(row_);
+                        pushed_in_row = true;
+
+                    // for choice in choices.iter() {
+                    //     let value_id = self.choice_values_ids.get(choice).unwrap();
+                    //     content = content.push(Radio::new(
+                    //         value_id,
+                    //         choice,
+                    //         self.choice_values_ids
+                    //             .get(self.choice_values.get(&radio_id).unwrap()),
+                    //         move |value_id| Message::ChoicePressed(radio_id, *value_id),
+                    //     ));
+                    // }
+                    } else if part_is_search_by_str(form_item) {
+                        let id = self
+                            .search_by_str_ids
+                            .get(form_item.name.as_ref().unwrap())
+                            .unwrap()
+                            .clone();
+                        let input_value = self.search_by_str_values.get(&id).unwrap().clone();
+
+                        form_column = form_column.push(TextInput::new(
+                            id,
+                            "Saisissez le nom ici: ",
+                            &input_value,
+                            Message::SearchByStrInputPressed,
+                            if self.search_by_str_selected == id {
+                                self.blink_char
+                            } else {
+                                None
+                            },
+                            None,
+                        ));
+                        pushed_in_row = true;
+
+                        let mut choices: Vec<String> = form_item.choices.as_ref().unwrap().clone();
+                        let current_value = self.search_by_str_values.get(&id);
+                        if current_value.is_some() {
+                            choices = choices
+                                .into_iter()
+                                .filter(|string_| {
+                                    string_
+                                        .to_lowercase()
+                                        .matches(current_value.unwrap().to_lowercase().as_str())
+                                        .collect::<String>()
+                                        .len()
+                                        != 0
+                                })
+                                .collect();
+                        }
+                        for choice in choices.iter() {
+                            let label = choice.to_string();
+                            let choice_id =
+                                self.search_by_str_button_ids.get(&label).unwrap().clone();
+                            form_column = form_column.push(
+                                StateLessButton::new(
+                                    self.search_by_str_button_pressed == choice_id,
+                                    &label,
+                                    Message::SearchByStrButtonPressed(id, choice_id),
+                                    Message::SearchByStrButtonReleased(id, choice_id),
+                                )
+                                .width(768)
+                                .class(state_less_button::Class::Positive),
+                            );
+                            pushed_in_row = true;
+                        }
+                    }
+                }
+                column = column.push(form_column);
+            } else if part_is_pure_text(&item) {
+                column = column.push(get_text_from_item(&item));
+                pushed_in_row = true;
+            } else if part_is_link(&item) {
+                let label = item
+                    .label
+                    .as_ref()
+                    .unwrap_or(item.text.as_ref().unwrap_or(&"Continuer".to_string()))
+                    .clone();
+                let display_label = if item.text.is_some() && item.label.is_some() {
+                    format!(
+                        "{}: {}",
+                        item.label.as_ref().unwrap().clone(),
+                        item.text.as_ref().unwrap().clone()
+                    )
+                } else {
+                    label.clone()
+                };
+                let id = *self.link_button_ids.get(&label).unwrap();
+                let mut display_normal_button = false;
+
+                if self.current_link_group_name.is_some() {
+                    // display normal button if have same group name
+                    if self.current_link_group_name.as_ref() == item.link_group_name.as_ref() {
+                        display_normal_button = true;
+                    }
+                } else {
+                    if let Some(link_group_name) = item.link_group_name.as_ref() {
+                        if !replaced_by_group_names.contains(link_group_name) {
+                            let group_button_id = *self
+                                .link_group_name_ids
+                                .get(&link_group_name.clone())
+                                .unwrap();
+                            column = column.push(
+                                StateLessButton::new(
+                                    self.link_group_button_pressed == group_button_id,
+                                    &link_group_name,
+                                    Message::GroupLinkButtonPressed(group_button_id),
+                                    Message::GroupLinkButtonReleased(link_group_name.clone()),
+                                )
+                                .width(768)
+                                .class(state_less_button::Class::Primary),
+                            );
+                            pushed_in_row = true;
+                            replaced_by_group_names.push(link_group_name.clone());
+                        }
+                    } else {
+                        display_normal_button = true;
+                    }
+                }
+
+                if display_normal_button {
+                    let on_press = if item.is_web_browser_link {
+                        Message::WebBrowserLinkButtonPressed(
+                            item.form_action.as_ref().unwrap().clone(),
+                        )
+                    } else {
+                        Message::LinkButtonPressed(id)
+                    };
+                    column = column.push(
+                        StateLessButton::new(
+                            self.link_button_pressed == id,
+                            &display_label,
+                            on_press,
+                            Message::LinkButtonReleased(item.form_action.as_ref().unwrap().clone()),
+                        )
+                        .width(768)
+                        .class(state_less_button::Class::Primary),
+                    );
+                    pushed_in_row = true;
+                }
+            }
+        }
+
+        if pushed_in_row {
+            (Some(Row::new().push(column)), replaced_by_group_names, submit_label)
+        } else {
+            (None, replaced_by_group_names, submit_label)
+        }
     }
 }
 
@@ -587,6 +932,8 @@ impl Engine for DescriptionEngine {
                 }
             }
         }
+
+        self.update_blink_char();
 
         None
     }
@@ -797,7 +1144,7 @@ impl Engine for DescriptionEngine {
     fn layout(&mut self, window: &Window, illustration: Option<Image>) -> Element {
         if self.pending_request.is_some() {
             self.loading_displayed = true;
-            Column::new()
+            return Column::new()
                 .width(window.width() as u32)
                 .height(window.height() as u32)
                 .align_items(Align::Center)
@@ -810,564 +1157,300 @@ impl Engine for DescriptionEngine {
                         .horizontal_alignment(HorizontalAlignment::Center)
                         .vertical_alignment(VerticalAlignment::Center),
                 )
-                .into()
-        } else {
-            let description = self.description.clone();
-            let title = description
-                .title
-                .as_ref()
-                .unwrap_or(&"Sans titre".to_string())
-                .clone();
-            let items = description.items;
+                .into();
+        }
 
-            if self.start_items_from >= self.total_items_count {
-                self.start_items_from = self.total_items_count - 1;
-            }
+        let description = self.description.clone();
+        let title = description
+            .title
+            .as_ref()
+            .unwrap_or(&"Sans titre".to_string())
+            .clone();
+        let items = description.items;
 
-            let blink_char = self.get_blink_char();
-            let mut must_add_submit = false;
-            let mut submit_label = String::from("Enregistrer");
-            let text_input_ids = self.text_input_ids.clone();
-            let text_input_values = self.text_input_values.clone();
-            let text_input_selected = self.text_input_selected.clone();
-            let mut replaced_by_group_names: Vec<String> = vec![];
-            let mut ignore_checkbox_ids: Vec<i32> = vec![];
+        if self.start_items_from >= self.total_items_count {
+            self.start_items_from = self.total_items_count - 1;
+        }
 
-            let mut content = Column::new()
-                .max_width(CONTENT_WIDTH)
-                .spacing(5)
-                .push(Text::new(&title).size(50).class(Some(text::Class::H1)));
+        let mut content = Column::new()
+            .max_width(CONTENT_WIDTH)
+            .spacing(5)
+            .push(Text::new(&title).size(50).class(Some(text::Class::H1)));
 
-            if !description.disable_illustration_row {
-                if let Some(illustration) = illustration {
-                    content = content.push(
-                        coffee::ui::Image::new(&illustration)
-                            .width(ILLUSTRATION_WIDTH)
-                            .height(ILLUSTRATION_HEIGHT),
-                    );
-                };
+        if !description.disable_illustration_row {
+            if let Some(illustration) = illustration {
+                content = content.push(
+                    coffee::ui::Image::new(&illustration)
+                        .width(ILLUSTRATION_WIDTH)
+                        .height(ILLUSTRATION_HEIGHT),
+                );
             };
+        };
 
-            if let Some(error_message) = self.error_message.as_ref() {
-                content = content.push(Text::new(error_message).color(Color::RED));
+        if let Some(error_message) = self.error_message.as_ref() {
+            content = content.push(Text::new(error_message).color(Color::RED));
+        }
+
+        let mut replaced_by_group_names: Vec<String> = vec![];
+        let mut submit_label: Option<String> = None;
+        for (i, item) in items.into_iter().enumerate() {
+            if i < self.start_items_from as usize {
+                continue;
             }
-
-            let mut total_item_i = 0;
-            for item in items.iter() {
-                if part_is_form(&item) {
-                    must_add_submit = true;
-                    if let Some(submit_label_) = item.submit_label.as_ref() {
-                        submit_label = submit_label_.clone()
-                    }
-
-                    for form_item in item.items.iter() {
-                        total_item_i += 1;
-                        if total_item_i < self.start_items_from {
-                            continue;
-                        }
-                        let label = form_item
-                            .label
-                            .as_ref()
-                            .unwrap_or(form_item.text.as_ref().unwrap_or(&"".to_string()))
-                            .clone();
-
-                        if part_is_pure_text(form_item) {
-                            content = content.push(get_text_from_item(form_item));
-                        } else if part_is_input(form_item) {
-                            let form_item_name = form_item.name.as_ref().unwrap().clone();
-                            let form_item_id = text_input_ids.get(&form_item_name).unwrap();
-                            let is_password = form_item.classes.contains(&"password".to_string());
-                            content = content.push(
-                                TextInput::new(
-                                    *form_item_id,
-                                    &label,
-                                    text_input_values.get(&form_item_id).unwrap(),
-                                    Message::TextInputSelected,
-                                    if text_input_selected == *form_item_id {
-                                        blink_char
-                                    } else {
-                                        None
-                                    },
-                                    None,
-                                )
-                                .is_password(is_password),
-                            );
-                        } else if part_is_checkbox(form_item) {
-                            let name = form_item.name.as_ref().unwrap().clone();
-                            let id = self.checkbox_ids.get(&name).unwrap().clone();
-
-                            if !ignore_checkbox_ids.contains(&id) {
-                                let mut column1 = Column::new();
-                                let mut column2 = Column::new();
-
-                                let mut started = false;
-                                let mut counter = 0;
-                                for form_item_ in item.items.iter() {
-                                    if part_is_checkbox(form_item_) {
-                                        let name_ = form_item_.name.as_ref().unwrap().clone();
-                                        let id_ = self.checkbox_ids.get(&name_).unwrap().clone();
-                                        let label_ = form_item_
-                                            .label
-                                            .as_ref()
-                                            .unwrap_or(
-                                                form_item_.text.as_ref().unwrap_or(&"".to_string()),
-                                            )
-                                            .clone();
-
-                                        if id_ == id {
-                                            started = true;
-                                        }
-
-                                        if started && !ignore_checkbox_ids.contains(&id_) {
-                                            let checkbox = Checkbox::new(
-                                                self.checkbox_values.get(&id_).is_some(),
-                                                &label_,
-                                                move |c| {
-                                                    if c {
-                                                        Message::CheckBoxChecked(id_)
-                                                    } else {
-                                                        Message::CheckBoxUnchecked(id_)
-                                                    }
-                                                },
-                                            );
-
-                                            if (counter % 2) == 0 {
-                                                column1 = column1.push(checkbox);
-                                            } else {
-                                                column2 = column2.push(checkbox);
-                                            }
-
-                                            counter += 1;
-                                            ignore_checkbox_ids.push(id_);
-                                        }
-                                    } else {
-                                        if started {
-                                            content = content
-                                                .push(Row::new().push(column1).push(column2));
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        } else if part_is_link(form_item) {
-                            let label =
-                                form_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
-                            let display_label = if item.text.is_some() && item.label.is_some() {
-                                format!(
-                                    "{}: {}",
-                                    item.label.as_ref().unwrap().clone(),
-                                    item.text.as_ref().unwrap().clone()
-                                )
-                            } else {
-                                label.clone()
-                            };
-                            let id = *self.link_button_ids.get(&label).unwrap();
-                            content = content.push(
-                                StateLessButton::new(
-                                    self.link_button_pressed == id,
-                                    &display_label,
-                                    Message::LinkButtonPressed(id),
-                                    Message::LinkButtonReleased(
-                                        form_item.form_action.as_ref().unwrap().clone(),
-                                    ),
-                                )
-                                .width(768)
-                                .class(state_less_button::Class::Primary),
-                            );
-                        } else if part_is_choices(form_item) {
-                            let radio_id = *self
-                                .choice_ids
-                                .get(form_item.name.as_ref().unwrap())
-                                .unwrap();
-
-                            let choices = form_item.choices.as_ref().unwrap();
-                            let count_by_column = (choices.len() as f32 / 2.0).ceil() as i32;
-                            let mut column1 = Column::new();
-                            let mut column2 = Column::new();
-                            let mut choices_chunks = choices.chunks(count_by_column as usize);
-                            let chunk1 = choices_chunks.next().unwrap();
-                            let chunk2 = choices_chunks.next().unwrap();
-
-                            for choice in chunk1 {
-                                let value_id = self.choice_values_ids.get(choice).unwrap();
-                                column1 = column1.push(Radio::new(
-                                    value_id,
-                                    choice,
-                                    self.choice_values_ids
-                                        .get(self.choice_values.get(&radio_id).unwrap()),
-                                    move |value_id| Message::ChoicePressed(radio_id, *value_id),
-                                ));
-                            }
-                            for choice in chunk2 {
-                                let value_id = self.choice_values_ids.get(choice).unwrap();
-                                column2 = column2.push(Radio::new(
-                                    value_id,
-                                    choice,
-                                    self.choice_values_ids
-                                        .get(self.choice_values.get(&radio_id).unwrap()),
-                                    move |value_id| Message::ChoicePressed(radio_id, *value_id),
-                                ));
-                            }
-
-                            let row = Row::new().push(column1).push(column2);
-                            content = content.push(row);
-
-                        // for choice in choices.iter() {
-                        //     let value_id = self.choice_values_ids.get(choice).unwrap();
-                        //     content = content.push(Radio::new(
-                        //         value_id,
-                        //         choice,
-                        //         self.choice_values_ids
-                        //             .get(self.choice_values.get(&radio_id).unwrap()),
-                        //         move |value_id| Message::ChoicePressed(radio_id, *value_id),
-                        //     ));
-                        // }
-                        } else if part_is_search_by_str(form_item) {
-                            let id = self
-                                .search_by_str_ids
-                                .get(form_item.name.as_ref().unwrap())
-                                .unwrap()
-                                .clone();
-                            let input_value = self.search_by_str_values.get(&id).unwrap().clone();
-
-                            content = content.push(TextInput::new(
-                                id,
-                                "Saisissez le nom ici: ",
-                                &input_value,
-                                Message::SearchByStrInputPressed,
-                                if self.search_by_str_selected == id {
-                                    blink_char
-                                } else {
-                                    None
-                                },
-                                None,
-                            ));
-
-                            let mut choices: Vec<String> =
-                                form_item.choices.as_ref().unwrap().clone();
-                            let current_value = self.search_by_str_values.get(&id);
-                            if current_value.is_some() {
-                                choices = choices
-                                    .into_iter()
-                                    .filter(|string_| {
-                                        string_
-                                            .to_lowercase()
-                                            .matches(current_value.unwrap().to_lowercase().as_str())
-                                            .collect::<String>()
-                                            .len()
-                                            != 0
-                                    })
-                                    .collect();
-                            }
-                            for choice in choices.iter() {
-                                let label = choice.to_string();
-                                let choice_id =
-                                    self.search_by_str_button_ids.get(&label).unwrap().clone();
-                                content = content.push(
-                                    StateLessButton::new(
-                                        self.search_by_str_button_pressed == choice_id,
-                                        &label,
-                                        Message::SearchByStrButtonPressed(id, choice_id),
-                                        Message::SearchByStrButtonReleased(id, choice_id),
-                                    )
-                                    .width(768)
-                                    .class(state_less_button::Class::Positive),
-                                );
-                            }
-                        }
-                    }
-                } else if part_is_pure_text(item) {
-                    total_item_i += 1;
-                    if total_item_i < self.start_items_from {
-                        continue;
-                    }
-                    content = content.push(get_text_from_item(item));
-                } else if part_is_link(item) {
-                    total_item_i += 1;
-                    if total_item_i < self.start_items_from {
-                        continue;
-                    }
-                    let label = item
-                        .label
-                        .as_ref()
-                        .unwrap_or(item.text.as_ref().unwrap_or(&"Continuer".to_string()))
-                        .clone();
-                    let display_label = if item.text.is_some() && item.label.is_some() {
-                        format!(
-                            "{}: {}",
-                            item.label.as_ref().unwrap().clone(),
-                            item.text.as_ref().unwrap().clone()
-                        )
-                    } else {
-                        label.clone()
-                    };
-                    let id = *self.link_button_ids.get(&label).unwrap();
-                    let mut display_normal_button = false;
-
-                    if self.current_link_group_name.is_some() {
-                        // display normal button if have same group name
-                        if self.current_link_group_name.as_ref() == item.link_group_name.as_ref() {
-                            display_normal_button = true;
-                        }
-                    } else {
-                        if let Some(link_group_name) = item.link_group_name.as_ref() {
-                            if !replaced_by_group_names.contains(link_group_name) {
-                                let group_button_id = *self
-                                    .link_group_name_ids
-                                    .get(&link_group_name.clone())
-                                    .unwrap();
-                                content = content.push(
-                                    StateLessButton::new(
-                                        self.link_group_button_pressed == group_button_id,
-                                        &link_group_name,
-                                        Message::GroupLinkButtonPressed(group_button_id),
-                                        Message::GroupLinkButtonReleased(link_group_name.clone()),
-                                    )
-                                    .width(768)
-                                    .class(state_less_button::Class::Primary),
-                                );
-                                replaced_by_group_names.push(link_group_name.clone());
-                            }
-                        } else {
-                            display_normal_button = true;
-                        }
-                    }
-
-                    if display_normal_button {
-                        let on_press = if item.is_web_browser_link {
-                            Message::WebBrowserLinkButtonPressed(
-                                item.form_action.as_ref().unwrap().clone(),
-                            )
-                        } else {
-                            Message::LinkButtonPressed(id)
-                        };
-                        content = content.push(
-                            StateLessButton::new(
-                                self.link_button_pressed == id,
-                                &display_label,
-                                on_press,
-                                Message::LinkButtonReleased(
-                                    item.form_action.as_ref().unwrap().clone(),
-                                ),
-                            )
-                            .width(768)
-                            .class(state_less_button::Class::Primary),
-                        );
-                    }
-                }
+            // let blink_char = self.get_blink_char();
+            let (row, row_replaced_by_group_names, row_submit_label) =
+                self.create_row_from_item(item, window, replaced_by_group_names.clone());
+            replaced_by_group_names = row_replaced_by_group_names;
+            if let Some(row) = row {
+                content = content.push(row);
             }
+            if let Some(row_submit_label) = row_submit_label {
+                submit_label = Some(row_submit_label);
+            };
+        }
 
-            if must_add_submit {
-                content = content.push(
-                    Button::new(&mut self.submit_button, &submit_label)
-                        .on_press(Message::SubmitButtonPressed)
-                        .width(768)
-                        .class(button::Class::Primary),
-                );
-            }
+        let mut submit_info = "";
+        if let Some(submit_label) = submit_label {
+            submit_info = ", Entrer: Valider";
+            content = content.push(
+                StateLessButton::new(
+                    self.link_button_pressed == SUBMIT_BUTTON_ID,
+                    &submit_label,
+                    Message::LinkButtonPressed(SUBMIT_BUTTON_ID),
+                    Message::SubmitButtonPressed,
+                )
+                .width(768)
+                .class(state_less_button::Class::Primary),
+            );
+        }
 
-            for link_item in description.footer_links.iter() {
-                let label = link_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
-                let id = *self.link_button_ids.get(&label).unwrap();
-                content = content.push(
-                    StateLessButton::new(
-                        self.link_button_pressed == id,
-                        &label,
-                        Message::LinkButtonPressed(id),
-                        Message::LinkButtonReleased(
-                            link_item.form_action.as_ref().unwrap().clone(),
-                        ),
+        for link_item in description.footer_links.iter() {
+            let label = link_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
+            let id = *self.link_button_ids.get(&label).unwrap();
+            content = content.push(
+                StateLessButton::new(
+                    self.link_button_pressed == id,
+                    &label,
+                    Message::LinkButtonPressed(id),
+                    Message::LinkButtonReleased(link_item.form_action.as_ref().unwrap().clone()),
+                )
+                .width(768)
+                .class(state_less_button::Class::Primary),
+            );
+        }
+
+        if self.current_link_group_name.is_some() {
+            content = content.push(
+                StateLessButton::new(
+                    self.link_button_pressed == BACK_FROM_GROUP_BY_BUTTON_ID,
+                    "Retour",
+                    Message::LinkButtonPressed(BACK_FROM_GROUP_BY_BUTTON_ID),
+                    Message::GoBackFromGroupButtonPressed,
+                )
+                .width(768)
+                .class(state_less_button::Class::Secondary),
+            );
+        }
+
+        // Footer always links
+        if !self.force_back_startup {
+            let back_url = if description.back_url.is_some() {
+                description.back_url
+            } else {
+                self.back_url.clone()
+            };
+            let back_message = if back_url.is_some() && !self.description.back_url_is_zone {
+                Message::GoBackButtonPressed(back_url.unwrap())
+            } else {
+                Message::GoBackZoneButtonPressed
+            };
+            let footer_row = Row::new();
+
+            let back_column = Column::new()
+                .push(
+                    FixedButton::new(
+                        self.link_button_pressed == BACK_BUTTON_ID,
+                        "Retour",
+                        Message::LinkButtonPressed(BACK_BUTTON_ID),
+                        back_message,
                     )
-                    .width(768)
-                    .class(state_less_button::Class::Primary),
-                );
-            }
+                    .width(128)
+                    .class(state_less_fixed_button::Class::Back),
+                )
+                .align_items(Align::End)
+                .padding(15);
+            let footer_row = footer_row.push(back_column);
 
-            if self.current_link_group_name.is_some() {
-                content = content.push(
-                    Button::new(&mut self.back_from_group_by_button, "Retour")
-                        .on_press(Message::GoBackFromGroupButtonPressed)
-                        .width(768)
-                        .class(button::Class::Secondary),
-                );
-            }
-
-            // Footer always links
-            if !self.force_back_startup {
-                let back_url = if description.back_url.is_some() {
-                    description.back_url
-                } else {
-                    self.back_url.clone()
-                };
-                let back_message = if back_url.is_some() && !self.description.back_url_is_zone {
-                    Message::GoBackButtonPressed(back_url.unwrap())
-                } else {
-                    Message::GoBackZoneButtonPressed
-                };
-                let footer_row = Row::new();
-
-                let back_column = Column::new()
+            let footer_row = if self.description.footer_with_character_id.is_some() {
+                let with_character_column = Column::new()
                     .push(
-                        FixedButton::new(&mut self.back_button_state, "Retour")
-                            .on_press(back_message)
-                            .width(128)
-                            .class(fixed_button::Class::Back),
-                    )
-                    .align_items(Align::End)
-                    .padding(15);
-                let footer_row = footer_row.push(back_column);
-
-                let footer_row = if self.description.footer_with_character_id.is_some() {
-                    let with_character_column = Column::new()
-                        .push(
-                            FixedButton::new(
-                                &mut self.back_with_character_button_state,
-                                "Personnage",
-                            )
-                            .on_press(Message::GoBackWithCharacterButtonPressed(
+                        FixedButton::new(
+                            self.link_button_pressed == BACK_WITH_CHARACTER_BUTTON_ID,
+                            "Personnage",
+                            Message::LinkButtonPressed(BACK_WITH_CHARACTER_BUTTON_ID),
+                            Message::GoBackWithCharacterButtonPressed(
                                 self.description
                                     .footer_with_character_id
                                     .as_ref()
                                     .unwrap()
                                     .clone(),
-                            ))
-                            .width(128)
-                            .class(fixed_button::Class::Character),
+                            ),
                         )
-                        .align_items(Align::End)
-                        .padding(15);
-                    let footer_row = footer_row.push(with_character_column);
-                    footer_row
-                } else {
-                    footer_row
-                };
-
-                let footer_row = if self.description.footer_with_affinity_id.is_some() {
-                    let with_affinity_column = Column::new()
-                        .push(
-                            FixedButton::new(&mut self.back_with_affinity_button_state, "Affinité")
-                                .on_press(Message::GoBackWithAffinityButtonPressed(
-                                    self.description
-                                        .footer_with_affinity_id
-                                        .as_ref()
-                                        .unwrap()
-                                        .clone(),
-                                ))
-                                .width(128)
-                                .class(fixed_button::Class::Affinity),
-                        )
-                        .align_items(Align::End)
-                        .padding(15);
-                    let footer_row = footer_row.push(with_affinity_column);
-                    footer_row
-                } else {
-                    footer_row
-                };
-
-                let footer_row = if self.description.footer_with_build_id.is_some() {
-                    let with_build_column = Column::new()
-                        .push(
-                            FixedButton::new(&mut self.back_with_build_button_state, "Bâtiment")
-                                .on_press(Message::GoBackWithBuildButtonPressed(
-                                    self.description
-                                        .footer_with_build_id
-                                        .as_ref()
-                                        .unwrap()
-                                        .clone(),
-                                ))
-                                .width(128)
-                                .class(fixed_button::Class::Build),
-                        )
-                        .align_items(Align::End)
-                        .padding(15);
-                    let footer_row = footer_row.push(with_build_column);
-                    footer_row
-                } else {
-                    footer_row
-                };
-
-                let footer_row = if self.description.footer_actions {
-                    let actions_column = Column::new()
-                        .push(
-                            FixedButton::new(&mut self.back_actions_button_state, "Actions")
-                                .on_press(Message::GoBackActionButtonPressed)
-                                .width(128)
-                                .class(fixed_button::Class::Action),
-                        )
-                        .align_items(Align::End)
-                        .padding(15);
-                    let footer_row = footer_row.push(actions_column);
-                    footer_row
-                } else {
-                    footer_row
-                };
-
-                let footer_row = if self.description.footer_inventory {
-                    let inventory_column = Column::new()
-                        .push(
-                            FixedButton::new(&mut self.back_inventory_button_state, "Inventaire")
-                                .on_press(Message::GoBackInventoryButtonPressed)
-                                .width(128)
-                                .class(fixed_button::Class::Item),
-                        )
-                        .align_items(Align::End)
-                        .padding(15);
-                    let footer_row = footer_row.push(inventory_column);
-                    footer_row
-                } else {
-                    footer_row
-                };
-
-                let zone_column = Column::new()
-                    .push(
-                        FixedButton::new(&mut self.zone_button_state, "Zone")
-                            .on_press(Message::GoBackZoneButtonPressed)
-                            .width(128)
-                            .class(fixed_button::Class::Zone),
-                    )
-                    .align_items(Align::Start)
-                    .padding(15);
-                let footer_row = footer_row.push(zone_column);
-
-                content = content.push(footer_row);
-            } else {
-                content = content.push(
-                    FixedButton::new(&mut self.back_button_state, "Retour")
-                        .on_press(Message::ToStartupPressed)
                         .width(128)
-                        .class(fixed_button::Class::Back),
-                );
-            }
-
-            let submit_info = if must_add_submit {
-                ", Entrer: Valider"
+                        .class(state_less_fixed_button::Class::Character),
+                    )
+                    .align_items(Align::End)
+                    .padding(15);
+                let footer_row = footer_row.push(with_character_column);
+                footer_row
             } else {
-                ""
+                footer_row
             };
-            let info = Column::new()
-                .max_width(window.width() as u32)
-                .height(20)
-                .push(
-                    Text::new(&format!(
-                        "Tab: champ suivant, Echap: retour, ↑/↓/roulette: défilement{}",
-                        submit_info
-                    ))
-                    .size(20)
-                    .color(Color::WHITE)
-                    .horizontal_alignment(HorizontalAlignment::Right)
-                    .vertical_alignment(VerticalAlignment::Top),
-                );
 
-            Column::new()
-                .width(window.width() as u32)
-                .padding(0)
-                .spacing(2)
-                .align_items(Align::Center)
-                .justify_content(Justify::Center)
-                .push(info)
-                .push(content.spacing(8))
-                .into()
+            let footer_row = if self.description.footer_with_affinity_id.is_some() {
+                let with_affinity_column = Column::new()
+                    .push(
+                        FixedButton::new(
+                            self.link_button_pressed == BACK_WITH_AFFINITY_BUTTON_ID,
+                            "Affinité",
+                            Message::LinkButtonPressed(BACK_WITH_AFFINITY_BUTTON_ID),
+                            Message::GoBackWithAffinityButtonPressed(
+                                self.description
+                                    .footer_with_affinity_id
+                                    .as_ref()
+                                    .unwrap()
+                                    .clone(),
+                            ),
+                        )
+                        .width(128)
+                        .class(state_less_fixed_button::Class::Affinity),
+                    )
+                    .align_items(Align::End)
+                    .padding(15);
+                let footer_row = footer_row.push(with_affinity_column);
+                footer_row
+            } else {
+                footer_row
+            };
+
+            let footer_row = if self.description.footer_with_build_id.is_some() {
+                let with_build_column = Column::new()
+                    .push(
+                        FixedButton::new(
+                            self.link_button_pressed == BACK_WITH_BUILD_BUTTON_ID,
+                            "Bâtiment",
+                            Message::LinkButtonPressed(BACK_WITH_BUILD_BUTTON_ID),
+                            Message::GoBackWithBuildButtonPressed(
+                                self.description
+                                    .footer_with_build_id
+                                    .as_ref()
+                                    .unwrap()
+                                    .clone(),
+                            ),
+                        )
+                        .width(128)
+                        .class(state_less_fixed_button::Class::Build),
+                    )
+                    .align_items(Align::End)
+                    .padding(15);
+                let footer_row = footer_row.push(with_build_column);
+                footer_row
+            } else {
+                footer_row
+            };
+
+            let footer_row = if self.description.footer_actions {
+                let actions_column = Column::new()
+                    .push(
+                        FixedButton::new(
+                            self.link_button_pressed == BACK_ACTIONS_BUTTON_ID,
+                            "Actions",
+                            Message::LinkButtonPressed(BACK_ACTIONS_BUTTON_ID),
+                            Message::GoBackActionButtonPressed,
+                        )
+                        .width(128)
+                        .class(state_less_fixed_button::Class::Action),
+                    )
+                    .align_items(Align::End)
+                    .padding(15);
+                let footer_row = footer_row.push(actions_column);
+                footer_row
+            } else {
+                footer_row
+            };
+
+            let footer_row = if self.description.footer_inventory {
+                let inventory_column = Column::new()
+                    .push(
+                        FixedButton::new(
+                            self.link_button_pressed == BACK_INVENTORY_BUTTON_ID,
+                            "Inventaire",
+                            Message::LinkButtonPressed(BACK_INVENTORY_BUTTON_ID),
+                            Message::GoBackInventoryButtonPressed,
+                        )
+                        .width(128)
+                        .class(state_less_fixed_button::Class::Item),
+                    )
+                    .align_items(Align::End)
+                    .padding(15);
+                let footer_row = footer_row.push(inventory_column);
+                footer_row
+            } else {
+                footer_row
+            };
+
+            let zone_column = Column::new()
+                .push(
+                    FixedButton::new(
+                        self.link_button_pressed == BACK_ZONE_BUTTON_ID,
+                        "Zone",
+                        Message::LinkButtonPressed(BACK_ZONE_BUTTON_ID),
+                        Message::GoBackZoneButtonPressed,
+                    )
+                    .width(128)
+                    .class(state_less_fixed_button::Class::Zone),
+                )
+                .align_items(Align::Start)
+                .padding(15);
+            let footer_row = footer_row.push(zone_column);
+
+            content = content.push(footer_row);
+        } else {
+            content = content.push(
+                FixedButton::new(
+                    self.link_button_pressed == BACK_BUTTON_ID,
+                    "Retour",
+                    Message::LinkButtonPressed(BACK_BUTTON_ID),
+                    Message::ToStartupPressed,
+                )
+                .width(128)
+                .class(state_less_fixed_button::Class::Back),
+            );
         }
+
+        let info = Column::new()
+            .max_width(window.width() as u32)
+            .height(20)
+            .push(
+                Text::new(&format!(
+                    "Tab: champ suivant, Echap: retour, ↑/↓/roulette: défilement{}",
+                    submit_info
+                ))
+                .size(20)
+                .color(Color::WHITE)
+                .horizontal_alignment(HorizontalAlignment::Right)
+                .vertical_alignment(VerticalAlignment::Top),
+            );
+
+        Column::new()
+            .width(window.width() as u32)
+            .padding(0)
+            .spacing(2)
+            .align_items(Align::Center)
+            .justify_content(Justify::Center)
+            .push(info)
+            .push(content.spacing(8))
+            .into()
     }
 
     fn teardown(&mut self) {}

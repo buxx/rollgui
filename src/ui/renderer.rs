@@ -9,6 +9,7 @@ mod progress_bar;
 mod radio;
 mod slider;
 mod state_less_button;
+mod state_less_fixed_button;
 mod text;
 mod text_input;
 mod thin_button;

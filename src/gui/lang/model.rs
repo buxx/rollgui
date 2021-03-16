@@ -36,6 +36,8 @@ pub struct Part {
     pub search_by_str: bool,
     pub classes: Vec<String>,
     pub is_web_browser_link: bool,
+    pub columns: u8,
+    pub is_column: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
