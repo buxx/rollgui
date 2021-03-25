@@ -49,6 +49,7 @@ const CHAT_MESSAGE_COUNT: i32 = 15;
 const TOP_BAR_BUTTON_WIDTH: u32 = 100;
 const MARGIN_RIGHT_CHAT: u32 = 25;
 const CHAT_LINE_HEIGHT: u32 = 20;
+const BORDERS_TO_SEE_PLAYER_LEN: i16 = 15;
 
 fn contains_string(classes: &Vec<String>, search: &str) -> bool {
     for class in classes.iter() {
@@ -570,16 +571,16 @@ impl ZoneEngine {
         let player_from_bottom_right_cols = player_bottom_right_left_x / TILE_WIDTH;
         let player_from_bottom_right_rows = player_from_bottom_right_y / TILE_HEIGHT;
 
-        if player_from_top_left_cols < 5 {
+        if player_from_top_left_cols < BORDERS_TO_SEE_PLAYER_LEN {
             self.start_zone_col_i -= 1;
         }
-        if player_from_top_left_rows < 5 {
+        if player_from_top_left_rows < BORDERS_TO_SEE_PLAYER_LEN {
             self.start_zone_row_i -= 1;
         }
-        if player_from_bottom_right_cols < 5 {
+        if player_from_bottom_right_cols < BORDERS_TO_SEE_PLAYER_LEN {
             self.start_zone_col_i += 1;
         }
-        if player_from_bottom_right_rows < 5 {
+        if player_from_bottom_right_rows < BORDERS_TO_SEE_PLAYER_LEN {
             self.start_zone_row_i += 1;
         }
     }
