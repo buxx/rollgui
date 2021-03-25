@@ -362,9 +362,40 @@ dependencies = [
 
 [[package]]
 name = "cocoa"
+version = "0.20.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c49e86fc36d5704151f5996b7b3795385f50ce09e3be0f47a0cfde869681cf8"
+dependencies = [
+ "bitflags",
+ "block",
+ "core-foundation 0.7.0",
+ "core-graphics 0.19.2",
+ "foreign-types",
+ "libc",
+ "objc",
+]
+
+[[package]]
+name = "cocoa"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c54201c07dcf3a5ca33fececb8042aed767ee4bfd5a0235a8ceabcda956044b2"
+dependencies = [
+ "bitflags",
+ "block",
+ "cocoa-foundation",
+ "core-foundation 0.9.1",
+ "core-graphics 0.22.1",
+ "foreign-types",
+ "libc",
+ "objc",
+]
+
+[[package]]
+name = "cocoa"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f63902e9223530efb4e26ccd0cf55ec30d592d3b42e21a28defc42a9586e832"
 dependencies = [
  "bitflags",
  "block",
@@ -394,15 +425,14 @@ dependencies = [
 [[package]]
 name = "coffee"
 version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "623c08ab96becc7f068903d7b18250e61ebfd1cf3a4b04ef8b25446e4c55d464"
+source = "git+https://github.com/buxx/coffee#c8c289ce9e77108d0ac6bf07f86d44097615ce0f"
 dependencies = [
  "gfx",
  "gfx_core",
  "gfx_device_gl",
  "gfx_glyph 0.15.0",
  "gilrs",
- "glutin 0.24.0",
+ "glutin 0.24.1",
  "image",
  "lyon_tessellation",
  "nalgebra",
@@ -1139,15 +1169,15 @@ dependencies = [
 
 [[package]]
 name = "glutin"
-version = "0.24.0"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "611023dea5047f3e9047aecb9e361852dcfd0881129daf5d110106ca2b14f3f3"
+checksum = "9a9666c8fd9afd008f6559e2468c35e11aad1d110d525bb3b354e4138ec0e20f"
 dependencies = [
  "android_glue",
  "cgl",
- "cocoa 0.19.1",
- "core-foundation 0.6.4",
- "core-graphics 0.17.3",
+ "cocoa 0.20.2",
+ "core-foundation 0.7.0",
+ "core-graphics 0.19.2",
  "glutin_egl_sys",
  "glutin_emscripten_sys",
  "glutin_gles2_sys",
@@ -1166,9 +1196,9 @@ dependencies = [
 
 [[package]]
 name = "glutin"
-version = "0.25.1"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8bae26a39a728b003e9fad473ea89527de0de050143b4df866f18bb154bc86e"
+checksum = "1ae1cbb9176b9151c4ce03f012e3cd1c6c18c4be79edeaeb3d99f5d8085c5fa3"
 dependencies = [
  "android_glue",
  "cgl",
@@ -1188,7 +1218,7 @@ dependencies = [
  "wayland-client 0.28.2",
  "wayland-egl",
  "winapi 0.3.8",
- "winit 0.23.0",
+ "winit 0.24.0",
 ]
 
 [[package]]
@@ -2924,7 +2954,7 @@ dependencies = [
 
 [[package]]
 name = "rollgui"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "coffee",
  "futures 0.3.8",
@@ -2932,7 +2962,7 @@ dependencies = [
  "gfx_core",
  "gfx_device_gl",
  "gfx_glyph 0.17.0",
- "glutin 0.25.1",
+ "glutin 0.26.0",
  "image",
  "linked-hash-map",
  "native-tls",
@@ -4307,12 +4337,12 @@ dependencies = [
 
 [[package]]
 name = "winit"
-version = "0.23.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5bc559da567d8aa671bbcd08304d49e982c7bf2cb91e10288b9188931c1b772"
+checksum = "da4eda6fce0eb84bd0a33e3c8794eb902e1033d0a1d5a31bc4f19b1b4bbff597"
 dependencies = [
  "bitflags",
- "cocoa 0.23.0",
+ "cocoa 0.24.0",
  "core-foundation 0.9.1",
  "core-graphics 0.22.1",
  "core-video-sys",
