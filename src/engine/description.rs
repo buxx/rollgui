@@ -4,14 +4,13 @@ use crate::gui::lang::model::{Description, Part};
 use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
 use crate::server::client;
-use crate::ui::widget::button::{Button, State};
 use crate::ui::widget::checkbox::Checkbox;
 use crate::ui::widget::radio::Radio;
 use crate::ui::widget::state_less_button::StateLessButton;
 use crate::ui::widget::state_less_fixed_button::Button as FixedButton;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::text_input::TextInput;
-use crate::ui::widget::{button, fixed_button, state_less_button};
+use crate::ui::widget::{state_less_button};
 use crate::ui::widget::{state_less_fixed_button, text};
 use crate::ui::Element;
 use crate::ui::{Column, Row};
@@ -452,7 +451,6 @@ impl DescriptionEngine {
                         };
                     }
                     row = row.push(column_);
-                    pushed_in_row = true;
                 }
             }
 
