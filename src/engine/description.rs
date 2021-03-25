@@ -5,12 +5,13 @@ use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
 use crate::server::client;
 use crate::ui::widget::checkbox::Checkbox;
+use crate::ui::widget::link::Link;
 use crate::ui::widget::radio::Radio;
 use crate::ui::widget::state_less_button::StateLessButton;
 use crate::ui::widget::state_less_fixed_button::Button as FixedButton;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::text_input::TextInput;
-use crate::ui::widget::{state_less_button};
+use crate::ui::widget::{fixed_button, state_less_button};
 use crate::ui::widget::{state_less_fixed_button, text};
 use crate::ui::Element;
 use crate::ui::{Column, Row};
@@ -433,7 +434,8 @@ impl DescriptionEngine {
                 if !item_column.is_column {
                     eprintln!("Expected column here !")
                 } else {
-                    let column_width = (window.width() as u32 / item.columns as u32) * item_column.colspan as u32;
+                    let column_width =
+                        (window.width() as u32 / item.columns as u32) * item_column.colspan as u32;
                     let mut column_ = Column::new().width(column_width);
                     for column_item in item_column.items {
                         let (column_row, row_replaced_by_group_names, row_submit_label) = self
@@ -454,7 +456,7 @@ impl DescriptionEngine {
                 }
             }
 
-            return (Some(row), replaced_by_group_names, submit_label)
+            return (Some(row), replaced_by_group_names, submit_label);
         } else {
             if part_is_form(&item) {
                 let mut form_column = Column::new();
@@ -571,18 +573,37 @@ impl DescriptionEngine {
                             label.clone()
                         };
                         let id = *self.link_button_ids.get(&label).unwrap();
-                        form_column = form_column.push(
-                            StateLessButton::new(
-                                self.link_button_pressed == id,
-                                &display_label,
-                                Message::LinkButtonPressed(id),
-                                Message::LinkButtonReleased(
-                                    form_item.form_action.as_ref().unwrap().clone(),
-                                ),
-                            )
-                            .width(768)
-                            .class(state_less_button::Class::Primary),
-                        );
+
+                        if form_item.classes.contains(&"link".to_string()) {
+                            form_column = form_column.push(
+                                Link::new(
+                                    self.link_button_pressed == id,
+                                    &display_label,
+                                    Message::LinkButtonPressed(id),
+                                    Message::LinkButtonReleased(
+                                        form_item.form_action.as_ref().unwrap().clone(),
+                                    ),
+                                    Some(text::Class::BgGray2),
+                                )
+                                .fill_width()
+                                .height(fixed_button::NODE_HEIGHT)
+                                .vertical_alignment(VerticalAlignment::Center)
+                                .horizontal_alignment(HorizontalAlignment::Center),
+                            );
+                        } else {
+                            form_column = form_column.push(
+                                StateLessButton::new(
+                                    self.link_button_pressed == id,
+                                    &display_label,
+                                    Message::LinkButtonPressed(id),
+                                    Message::LinkButtonReleased(
+                                        form_item.form_action.as_ref().unwrap().clone(),
+                                    ),
+                                )
+                                .width(768)
+                                .class(state_less_button::Class::Primary),
+                            );
+                        }
                         pushed_in_row = true;
                     } else if part_is_choices(form_item) {
                         let radio_id = *self
@@ -722,16 +743,34 @@ impl DescriptionEngine {
                                 .link_group_name_ids
                                 .get(&link_group_name.clone())
                                 .unwrap();
-                            column = column.push(
-                                StateLessButton::new(
-                                    self.link_group_button_pressed == group_button_id,
-                                    &link_group_name,
-                                    Message::GroupLinkButtonPressed(group_button_id),
-                                    Message::GroupLinkButtonReleased(link_group_name.clone()),
-                                )
-                                .width(768)
-                                .class(state_less_button::Class::Primary),
-                            );
+
+                            if item.classes.contains(&"link".to_string()) {
+                                column = column.push(
+                                    Link::new(
+                                        self.link_group_button_pressed == group_button_id,
+                                        &link_group_name,
+                                        Message::GroupLinkButtonPressed(group_button_id),
+                                        Message::GroupLinkButtonReleased(link_group_name.clone()),
+                                        Some(text::Class::BgGray2),
+                                    )
+                                    .fill_width()
+                                    .height(fixed_button::NODE_HEIGHT)
+                                    .vertical_alignment(VerticalAlignment::Center)
+                                    .horizontal_alignment(HorizontalAlignment::Center),
+                                );
+                            } else {
+                                column = column.push(
+                                    StateLessButton::new(
+                                        self.link_group_button_pressed == group_button_id,
+                                        &link_group_name,
+                                        Message::GroupLinkButtonPressed(group_button_id),
+                                        Message::GroupLinkButtonReleased(link_group_name.clone()),
+                                    )
+                                    .width(768)
+                                    .class(state_less_button::Class::Primary),
+                                );
+                            }
+
                             pushed_in_row = true;
                             replaced_by_group_names.push(link_group_name.clone());
                         }
@@ -748,23 +787,49 @@ impl DescriptionEngine {
                     } else {
                         Message::LinkButtonPressed(id)
                     };
-                    column = column.push(
-                        StateLessButton::new(
-                            self.link_button_pressed == id,
-                            &display_label,
-                            on_press,
-                            Message::LinkButtonReleased(item.form_action.as_ref().unwrap().clone()),
-                        )
-                        .width(768)
-                        .class(state_less_button::Class::Primary),
-                    );
+
+                    if item.classes.contains(&"link".to_string()) {
+                        column = column.push(
+                            Link::new(
+                                self.link_button_pressed == id,
+                                &display_label,
+                                on_press,
+                                Message::LinkButtonReleased(
+                                    item.form_action.as_ref().unwrap().clone(),
+                                ),
+                                Some(text::Class::BgGray2),
+                            )
+                            .fill_width()
+                            .height(fixed_button::NODE_HEIGHT)
+                            .vertical_alignment(VerticalAlignment::Center)
+                            .horizontal_alignment(HorizontalAlignment::Center),
+                        );
+                    } else {
+                        column = column.push(
+                            StateLessButton::new(
+                                self.link_button_pressed == id,
+                                &display_label,
+                                on_press,
+                                Message::LinkButtonReleased(
+                                    item.form_action.as_ref().unwrap().clone(),
+                                ),
+                            )
+                            .width(768)
+                            .class(state_less_button::Class::Primary),
+                        );
+                    }
+
                     pushed_in_row = true;
                 }
             }
         }
 
         if pushed_in_row {
-            (Some(Row::new().push(column)), replaced_by_group_names, submit_label)
+            (
+                Some(Row::new().push(column)),
+                replaced_by_group_names,
+                submit_label,
+            )
         } else {
             (None, replaced_by_group_names, submit_label)
         }
