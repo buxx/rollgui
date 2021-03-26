@@ -42,6 +42,7 @@ const BACK_ACTIONS_BUTTON_ID: i32 = -6;
 const BACK_INVENTORY_BUTTON_ID: i32 = -7;
 const BACK_ZONE_BUTTON_ID: i32 = -8;
 const SUBMIT_BUTTON_ID: i32 = -9;
+const LINK_HEIGHT: u32 = 20;
 
 pub struct DescriptionEngine {
     player: Option<Player>,
@@ -586,9 +587,9 @@ impl DescriptionEngine {
                                     Some(text::Class::BgGray2),
                                 )
                                 .fill_width()
-                                .height(fixed_button::NODE_HEIGHT)
-                                .vertical_alignment(VerticalAlignment::Center)
-                                .horizontal_alignment(HorizontalAlignment::Center),
+                                .height(LINK_HEIGHT)
+                                .vertical_alignment(VerticalAlignment::Top)
+                                .horizontal_alignment(HorizontalAlignment::Left),
                             );
                         } else {
                             form_column = form_column.push(
@@ -754,9 +755,9 @@ impl DescriptionEngine {
                                         Some(text::Class::BgGray2),
                                     )
                                     .fill_width()
-                                    .height(fixed_button::NODE_HEIGHT)
-                                    .vertical_alignment(VerticalAlignment::Center)
-                                    .horizontal_alignment(HorizontalAlignment::Center),
+                                    .height(LINK_HEIGHT)
+                                    .vertical_alignment(VerticalAlignment::Top)
+                                    .horizontal_alignment(HorizontalAlignment::Left),
                                 );
                             } else {
                                 column = column.push(
@@ -800,9 +801,9 @@ impl DescriptionEngine {
                                 Some(text::Class::BgGray2),
                             )
                             .fill_width()
-                            .height(fixed_button::NODE_HEIGHT)
-                            .vertical_alignment(VerticalAlignment::Center)
-                            .horizontal_alignment(HorizontalAlignment::Center),
+                            .height(LINK_HEIGHT)
+                            .vertical_alignment(VerticalAlignment::Top)
+                            .horizontal_alignment(HorizontalAlignment::Left),
                         );
                     } else {
                         column = column.push(
