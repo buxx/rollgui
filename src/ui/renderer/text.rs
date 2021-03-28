@@ -11,17 +11,17 @@ use std::cell::RefCell;
 use std::f32;
 
 const H1_X: u16 = 0;
-const H1_Y: u16 = 670;
+const H1_Y: u16 = 1460;
 const H1_WIDTH: u16 = 600;
 const H1_HEIGHT: u16 = 54;
 
 const H2_X: u16 = 0;
-const H2_Y: u16 = 724;
+const H2_Y: u16 = 1514;
 const H2_WIDTH: u16 = 600;
 const H2_HEIGHT: u16 = 37;
 
 const PARAGRAPH_X: u16 = 0;
-const PARAGRAPH_Y: u16 = 761;
+const PARAGRAPH_Y: u16 = 1551;
 const PARAGRAPH_WIDTH: u16 = 768;
 const PARAGRAPH_HEIGHT: u16 = 37;
 const PARAGRAPH_Y_BORDER: u16 = 8;

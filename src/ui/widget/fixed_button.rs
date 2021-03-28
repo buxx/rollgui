@@ -227,6 +227,10 @@ pub enum Class {
     Action,
     Affinity,
     Next,
+    PickItem,
+    DropItem,
+    PartialLeft,
+    PartialRight,
 }
 
 /// The renderer of a [`Button`].

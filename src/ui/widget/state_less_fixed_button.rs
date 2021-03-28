@@ -84,7 +84,7 @@ impl Button {
             class: Class::Back,
             on_press,
             on_release,
-            style: Style::default().min_width(100),
+            style: Style::default().min_width(42),
         }
     }
 
@@ -198,6 +198,12 @@ pub enum Class {
     Action,
     Affinity,
     Next,
+    PickItem,
+    DropItem,
+    PartialLeft,
+    PartialRight,
+    PartialPickItem,
+    PartialDropItem,
 }
 
 /// The renderer of a [`Button`].

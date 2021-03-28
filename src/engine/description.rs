@@ -7,11 +7,11 @@ use crate::server::client;
 use crate::ui::widget::checkbox::Checkbox;
 use crate::ui::widget::link::Link;
 use crate::ui::widget::radio::Radio;
+use crate::ui::widget::state_less_button;
 use crate::ui::widget::state_less_button::StateLessButton;
 use crate::ui::widget::state_less_fixed_button::Button as FixedButton;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::text_input::TextInput;
-use crate::ui::widget::{fixed_button, state_less_button};
 use crate::ui::widget::{state_less_fixed_button, text};
 use crate::ui::Element;
 use crate::ui::{Column, Row};
@@ -226,6 +226,27 @@ impl DescriptionEngine {
                     link_group_name_ids.insert(link_group_name.clone(), link_button_counter);
                 }
                 link_button_counter += 1;
+            } else if item.columns > 0 {
+                for item_columns in item.items.iter() {
+                    for column_item in item_columns.items.iter() {
+                        if part_is_link(column_item) {
+                            link_button_ids.insert(
+                                column_item
+                                    .label
+                                    .as_ref()
+                                    .unwrap_or(
+                                        column_item
+                                            .text
+                                            .as_ref()
+                                            .unwrap_or(&"Continuer".to_string()),
+                                    )
+                                    .clone(),
+                                link_button_counter,
+                            );
+                            link_button_counter += 1;
+                        }
+                    }
+                }
             }
         }
 
@@ -601,7 +622,7 @@ impl DescriptionEngine {
                                         form_item.form_action.as_ref().unwrap().clone(),
                                     ),
                                 )
-                                .width(768)
+                                .width(CONTENT_WIDTH)
                                 .class(state_less_button::Class::Primary),
                             );
                         }
@@ -703,7 +724,7 @@ impl DescriptionEngine {
                                     Message::SearchByStrButtonPressed(id, choice_id),
                                     Message::SearchByStrButtonReleased(id, choice_id),
                                 )
-                                .width(768)
+                                .width(CONTENT_WIDTH)
                                 .class(state_less_button::Class::Positive),
                             );
                             pushed_in_row = true;
@@ -767,7 +788,7 @@ impl DescriptionEngine {
                                         Message::GroupLinkButtonPressed(group_button_id),
                                         Message::GroupLinkButtonReleased(link_group_name.clone()),
                                     )
-                                    .width(768)
+                                    .width(CONTENT_WIDTH)
                                     .class(state_less_button::Class::Primary),
                                 );
                             }
@@ -806,18 +827,42 @@ impl DescriptionEngine {
                             .horizontal_alignment(HorizontalAlignment::Left),
                         );
                     } else {
-                        column = column.push(
-                            StateLessButton::new(
-                                self.link_button_pressed == id,
-                                &display_label,
-                                on_press,
-                                Message::LinkButtonReleased(
-                                    item.form_action.as_ref().unwrap().clone(),
-                                ),
-                            )
-                            .width(768)
-                            .class(state_less_button::Class::Primary),
-                        );
+                        let fixed_button_class: Option<state_less_fixed_button::Class> =
+                            if item.classes.contains(&"drop_item".to_string()) {
+                                Some(state_less_fixed_button::Class::DropItem)
+                            } else if item.classes.contains(&"partial_drop_item".to_string()) {
+                                Some(state_less_fixed_button::Class::PartialDropItem)
+                            } else {
+                                None
+                            };
+
+                        if let Some(fixed_button_class) = fixed_button_class {
+                            column = column.push(
+                                FixedButton::new(
+                                    self.link_button_pressed == id,
+                                    "",
+                                    on_press,
+                                    Message::LinkButtonReleased(
+                                        item.form_action.as_ref().unwrap().clone(),
+                                    ),
+                                )
+                                .fill_width()
+                                .class(fixed_button_class),
+                            );
+                        } else {
+                            column = column.push(
+                                StateLessButton::new(
+                                    self.link_button_pressed == id,
+                                    &display_label,
+                                    on_press,
+                                    Message::LinkButtonReleased(
+                                        item.form_action.as_ref().unwrap().clone(),
+                                    ),
+                                )
+                                .fill_width()
+                                .class(state_less_button::Class::Primary),
+                            );
+                        }
                     }
 
                     pushed_in_row = true;
@@ -1283,7 +1328,7 @@ impl Engine for DescriptionEngine {
                     Message::LinkButtonPressed(SUBMIT_BUTTON_ID),
                     Message::SubmitButtonPressed,
                 )
-                .width(768)
+                .width(CONTENT_WIDTH)
                 .class(state_less_button::Class::Primary),
             );
         }
@@ -1298,7 +1343,7 @@ impl Engine for DescriptionEngine {
                     Message::LinkButtonPressed(id),
                     Message::LinkButtonReleased(link_item.form_action.as_ref().unwrap().clone()),
                 )
-                .width(768)
+                .width(CONTENT_WIDTH)
                 .class(state_less_button::Class::Primary),
             );
         }
@@ -1311,7 +1356,7 @@ impl Engine for DescriptionEngine {
                     Message::LinkButtonPressed(BACK_FROM_GROUP_BY_BUTTON_ID),
                     Message::GoBackFromGroupButtonPressed,
                 )
-                .width(768)
+                .width(CONTENT_WIDTH)
                 .class(state_less_button::Class::Secondary),
             );
         }
