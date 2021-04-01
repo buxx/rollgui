@@ -883,7 +883,7 @@ impl DescriptionEngine {
 }
 
 fn part_is_pure_text(part: &Part) -> bool {
-    (part.text.is_some() || part.label.is_some() ) && !part.is_link
+    (part.text.is_some() || part.label.is_some() ) && !part.is_link && part.type_.is_none()
 }
 
 fn get_pure_text_class(item: &Part) -> Option<text::Class> {
