@@ -87,6 +87,41 @@ pub struct DescriptionEngine {
     scroll_by_arrow_ticker: util::Ticker,
 }
 
+fn update_link_button_ids_from_columns(
+    link_button_ids: &mut HashMap<String, i32>,
+    link_button_counter: &mut i32,
+    item: &Part,
+) {
+    if item.columns > 0 {
+        for item_columns in item.items.iter() {
+            for column_item in item_columns.items.iter() {
+                if column_item.columns > 0 {
+                    update_link_button_ids_from_columns(
+                        link_button_ids,
+                        link_button_counter,
+                        column_item,
+                    )
+                } else if part_is_link(column_item) {
+                    link_button_ids.insert(
+                        column_item
+                            .label
+                            .as_ref()
+                            .unwrap_or(
+                                column_item
+                                    .text
+                                    .as_ref()
+                                    .unwrap_or(&"Continuer".to_string()),
+                            )
+                            .clone(),
+                        link_button_counter.clone(),
+                    );
+                    *link_button_counter += 1;
+                }
+            }
+        }
+    }
+}
+
 impl DescriptionEngine {
     pub fn new(
         player: Option<Player>,
@@ -227,26 +262,11 @@ impl DescriptionEngine {
                 }
                 link_button_counter += 1;
             } else if item.columns > 0 {
-                for item_columns in item.items.iter() {
-                    for column_item in item_columns.items.iter() {
-                        if part_is_link(column_item) {
-                            link_button_ids.insert(
-                                column_item
-                                    .label
-                                    .as_ref()
-                                    .unwrap_or(
-                                        column_item
-                                            .text
-                                            .as_ref()
-                                            .unwrap_or(&"Continuer".to_string()),
-                                    )
-                                    .clone(),
-                                link_button_counter,
-                            );
-                            link_button_counter += 1;
-                        }
-                    }
-                }
+                update_link_button_ids_from_columns(
+                    &mut link_button_ids,
+                    &mut link_button_counter,
+                    item,
+                );
             }
         }
 
@@ -439,6 +459,7 @@ impl DescriptionEngine {
         item: Part,
         window: &Window,
         replaced_by_group_names: Vec<String>,
+        available_width: u32,
     ) -> (Option<Row>, Vec<String>, Option<String>) {
         let mut column = Column::new();
         let mut pushed_in_row = false;
@@ -457,7 +478,7 @@ impl DescriptionEngine {
                     eprintln!("Expected column here !")
                 } else {
                     let column_width =
-                        (window.width() as u32 / item.columns as u32) * item_column.colspan as u32;
+                        (available_width / item.columns as u32) * item_column.colspan as u32;
                     let mut column_ = Column::new().width(column_width);
                     for column_item in item_column.items {
                         let (column_row, row_replaced_by_group_names, row_submit_label) = self
@@ -465,6 +486,7 @@ impl DescriptionEngine {
                                 column_item,
                                 window,
                                 replaced_by_group_names.clone(),
+                                column_width,
                             );
                         replaced_by_group_names = row_replaced_by_group_names;
                         if let Some(column_row) = column_row {
@@ -828,7 +850,15 @@ impl DescriptionEngine {
                         );
                     } else {
                         let fixed_button_class: Option<state_less_fixed_button::Class> =
-                            if item.classes.contains(&"drop_item".to_string()) {
+                            if item.classes.contains(&"left".to_string()) {
+                                Some(state_less_fixed_button::Class::Back)
+                            } else if item.classes.contains(&"partial_left".to_string()) {
+                                Some(state_less_fixed_button::Class::PartialLeft)
+                            } else if item.classes.contains(&"right".to_string()) {
+                                Some(state_less_fixed_button::Class::Next)
+                            } else if item.classes.contains(&"partial_right".to_string()) {
+                                Some(state_less_fixed_button::Class::PartialRight)
+                            } else if item.classes.contains(&"drop_item".to_string()) {
                                 Some(state_less_fixed_button::Class::DropItem)
                             } else if item.classes.contains(&"partial_drop_item".to_string()) {
                                 Some(state_less_fixed_button::Class::PartialDropItem)
@@ -883,7 +913,7 @@ impl DescriptionEngine {
 }
 
 fn part_is_pure_text(part: &Part) -> bool {
-    (part.text.is_some() || part.label.is_some() ) && !part.is_link && part.type_.is_none()
+    (part.text.is_some() || part.label.is_some()) && !part.is_link && part.type_.is_none()
 }
 
 fn get_pure_text_class(item: &Part) -> Option<text::Class> {
@@ -1307,8 +1337,12 @@ impl Engine for DescriptionEngine {
                 continue;
             }
             // let blink_char = self.get_blink_char();
-            let (row, row_replaced_by_group_names, row_submit_label) =
-                self.create_row_from_item(item, window, replaced_by_group_names.clone());
+            let (row, row_replaced_by_group_names, row_submit_label) = self.create_row_from_item(
+                item,
+                window,
+                replaced_by_group_names.clone(),
+                CONTENT_WIDTH,
+            );
             replaced_by_group_names = row_replaced_by_group_names;
             if let Some(row) = row {
                 content = content.push(row);

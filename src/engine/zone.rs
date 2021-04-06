@@ -1217,7 +1217,11 @@ impl Engine for ZoneEngine {
             }
             Message::AroundItemsButtonPressed => {
                 return Some(MainMessage::ToDescriptionWithUrl {
-                    url: format!("/character/{}/describe_around_items", self.player.id).to_string(),
+                    url: format!(
+                        "/character/{}/action/TRANSFER_GROUND/TRANSFER_GROUND",
+                        self.player.id
+                    )
+                    .to_string(),
                     back_url: None,
                 })
             }
