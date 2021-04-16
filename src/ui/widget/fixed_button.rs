@@ -231,6 +231,7 @@ pub enum Class {
     DropItem,
     PartialLeft,
     PartialRight,
+    Create,
 }
 
 /// The renderer of a [`Button`].

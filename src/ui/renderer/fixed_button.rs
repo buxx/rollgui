@@ -61,6 +61,7 @@ impl fixed_button::Renderer for Renderer {
             fixed_button::Class::DropItem => 9,
             fixed_button::Class::PartialLeft => 10,
             fixed_button::Class::PartialRight => 11,
+            fixed_button::Class::Create => 12,
         };
 
         self.sprites.add(Sprite {
