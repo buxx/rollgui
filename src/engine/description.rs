@@ -504,256 +504,30 @@ impl DescriptionEngine {
         } else {
             if part_is_form(&item) {
                 let mut form_column = Column::new();
-                // FIXME BS NOW: il y a un gros bug d'affichage, voir FICHE, CREATION PERSO
-                // Déjà ici (partout car form ?) on voit que l'on ajoute chaque form item au même ROW
-                // il faut créer une nouvelle row pour chaque item.
 
                 submit_label = Some("Enregistrer".to_string());
                 if let Some(item_submit_label_) = item.submit_label.as_ref() {
                     submit_label = Some(item_submit_label_.clone());
                 }
 
-                for form_item in item.items.iter() {
-                    total_item_i += 1;
-                    if total_item_i < self.start_items_from {
-                        continue;
-                    }
-                    let label = form_item
-                        .label
-                        .as_ref()
-                        .unwrap_or(form_item.text.as_ref().unwrap_or(&"".to_string()))
-                        .clone();
-
-                    if part_is_pure_text(form_item) {
-                        form_column = form_column.push(get_text_from_item(form_item));
-                        pushed_in_row = true;
-                    } else if part_is_input(form_item) {
-                        let form_item_name = form_item.name.as_ref().unwrap().clone();
-                        let form_item_id = text_input_ids.get(&form_item_name).unwrap();
-                        let is_password = form_item.classes.contains(&"password".to_string());
-                        form_column = form_column.push(
-                            TextInput::new(
-                                *form_item_id,
-                                &label,
-                                text_input_values.get(&form_item_id).unwrap(),
-                                Message::TextInputSelected,
-                                if text_input_selected == *form_item_id {
-                                    self.blink_char
-                                } else {
-                                    None
-                                },
-                                None,
-                            )
-                            .is_password(is_password),
+                for form_item in item.items {
+                    let (column_row, row_replaced_by_group_names, row_submit_label) = self
+                        .create_row_from_item(
+                            form_item,
+                            window,
+                            replaced_by_group_names.clone(),
+                            window.width() as u32,
                         );
-                        pushed_in_row = true;
-                    } else if part_is_checkbox(form_item) {
-                        let name = form_item.name.as_ref().unwrap().clone();
-                        let id = self.checkbox_ids.get(&name).unwrap().clone();
-
-                        if !ignore_checkbox_ids.contains(&id) {
-                            let mut column1 = Column::new();
-                            let mut column2 = Column::new();
-
-                            let mut started = false;
-                            let mut counter = 0;
-                            for form_item_ in item.items.iter() {
-                                if part_is_checkbox(form_item_) {
-                                    let name_ = form_item_.name.as_ref().unwrap().clone();
-                                    let id_ = self.checkbox_ids.get(&name_).unwrap().clone();
-                                    let label_ = form_item_
-                                        .label
-                                        .as_ref()
-                                        .unwrap_or(
-                                            form_item_.text.as_ref().unwrap_or(&"".to_string()),
-                                        )
-                                        .clone();
-
-                                    if id_ == id {
-                                        started = true;
-                                    }
-
-                                    if started && !ignore_checkbox_ids.contains(&id_) {
-                                        let checkbox = Checkbox::new(
-                                            self.checkbox_values.get(&id_).is_some(),
-                                            &label_,
-                                            move |c| {
-                                                if c {
-                                                    Message::CheckBoxChecked(id_)
-                                                } else {
-                                                    Message::CheckBoxUnchecked(id_)
-                                                }
-                                            },
-                                        );
-
-                                        if (counter % 2) == 0 {
-                                            column1 = column1.push(checkbox);
-                                        } else {
-                                            column2 = column2.push(checkbox);
-                                        }
-
-                                        counter += 1;
-                                        ignore_checkbox_ids.push(id_);
-                                    }
-                                } else {
-                                    if started {
-                                        form_column = form_column
-                                            .push(Row::new().push(column1).push(column2));
-                                        pushed_in_row = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    } else if part_is_link(form_item) {
-                        let label = form_item.label.as_ref().unwrap_or(&" ".to_string()).clone();
-                        let display_label = if item.text.is_some() && item.label.is_some() {
-                            format!(
-                                "{}: {}",
-                                item.label.as_ref().unwrap().clone(),
-                                item.text.as_ref().unwrap().clone()
-                            )
-                        } else {
-                            label.clone()
-                        };
-                        let id = *self.link_button_ids.get(&label).unwrap();
-
-                        if form_item.classes.contains(&"link".to_string()) {
-                            form_column = form_column.push(
-                                Link::new(
-                                    self.link_button_pressed == id,
-                                    &display_label,
-                                    Message::LinkButtonPressed(id),
-                                    Message::LinkButtonReleased(
-                                        form_item.form_action.as_ref().unwrap().clone(),
-                                    ),
-                                    Some(text::Class::BgGray2),
-                                )
-                                .fill_width()
-                                .height(LINK_HEIGHT)
-                                .vertical_alignment(VerticalAlignment::Top)
-                                .horizontal_alignment(HorizontalAlignment::Left),
-                            );
-                        } else {
-                            form_column = form_column.push(
-                                StateLessButton::new(
-                                    self.link_button_pressed == id,
-                                    &display_label,
-                                    Message::LinkButtonPressed(id),
-                                    Message::LinkButtonReleased(
-                                        form_item.form_action.as_ref().unwrap().clone(),
-                                    ),
-                                )
-                                .width(CONTENT_WIDTH)
-                                .class(state_less_button::Class::Primary),
-                            );
-                        }
-                        pushed_in_row = true;
-                    } else if part_is_choices(form_item) {
-                        let radio_id = *self
-                            .choice_ids
-                            .get(form_item.name.as_ref().unwrap())
-                            .unwrap();
-
-                        let choices = form_item.choices.as_ref().unwrap();
-                        let count_by_column = (choices.len() as f32 / 2.0).ceil() as i32;
-                        let mut column1 = Column::new();
-                        let mut column2 = Column::new();
-                        let mut choices_chunks = choices.chunks(count_by_column as usize);
-                        let chunk1 = choices_chunks.next().unwrap();
-                        let chunk2 = choices_chunks.next().unwrap();
-
-                        for choice in chunk1 {
-                            let value_id = self.choice_values_ids.get(choice).unwrap();
-                            column1 = column1.push(Radio::new(
-                                value_id,
-                                choice,
-                                self.choice_values_ids
-                                    .get(self.choice_values.get(&radio_id).unwrap()),
-                                move |value_id| Message::ChoicePressed(radio_id, *value_id),
-                            ));
-                        }
-                        for choice in chunk2 {
-                            let value_id = self.choice_values_ids.get(choice).unwrap();
-                            column2 = column2.push(Radio::new(
-                                value_id,
-                                choice,
-                                self.choice_values_ids
-                                    .get(self.choice_values.get(&radio_id).unwrap()),
-                                move |value_id| Message::ChoicePressed(radio_id, *value_id),
-                            ));
-                        }
-
-                        let row_ = Row::new().push(column1).push(column2);
-                        form_column = form_column.push(row_);
-                        pushed_in_row = true;
-
-                    // for choice in choices.iter() {
-                    //     let value_id = self.choice_values_ids.get(choice).unwrap();
-                    //     content = content.push(Radio::new(
-                    //         value_id,
-                    //         choice,
-                    //         self.choice_values_ids
-                    //             .get(self.choice_values.get(&radio_id).unwrap()),
-                    //         move |value_id| Message::ChoicePressed(radio_id, *value_id),
-                    //     ));
-                    // }
-                    } else if part_is_search_by_str(form_item) {
-                        let id = self
-                            .search_by_str_ids
-                            .get(form_item.name.as_ref().unwrap())
-                            .unwrap()
-                            .clone();
-                        let input_value = self.search_by_str_values.get(&id).unwrap().clone();
-
-                        form_column = form_column.push(TextInput::new(
-                            id,
-                            "Saisissez le nom ici: ",
-                            &input_value,
-                            Message::SearchByStrInputPressed,
-                            if self.search_by_str_selected == id {
-                                self.blink_char
-                            } else {
-                                None
-                            },
-                            None,
-                        ));
-                        pushed_in_row = true;
-
-                        let mut choices: Vec<String> = form_item.choices.as_ref().unwrap().clone();
-                        let current_value = self.search_by_str_values.get(&id);
-                        if current_value.is_some() {
-                            choices = choices
-                                .into_iter()
-                                .filter(|string_| {
-                                    string_
-                                        .to_lowercase()
-                                        .matches(current_value.unwrap().to_lowercase().as_str())
-                                        .collect::<String>()
-                                        .len()
-                                        != 0
-                                })
-                                .collect();
-                        }
-                        for choice in choices.iter() {
-                            let label = choice.to_string();
-                            let choice_id =
-                                self.search_by_str_button_ids.get(&label).unwrap().clone();
-                            form_column = form_column.push(
-                                StateLessButton::new(
-                                    self.search_by_str_button_pressed == choice_id,
-                                    &label,
-                                    Message::SearchByStrButtonPressed(id, choice_id),
-                                    Message::SearchByStrButtonReleased(id, choice_id),
-                                )
-                                .width(CONTENT_WIDTH)
-                                .class(state_less_button::Class::Positive),
-                            );
-                            pushed_in_row = true;
-                        }
+                    replaced_by_group_names = row_replaced_by_group_names;
+                    if let Some(column_row) = column_row {
+                        form_column = form_column.push(column_row);
                     }
+                    if let Some(row_submit_label) = row_submit_label {
+                        submit_label = Some(row_submit_label);
+                    };
                 }
                 column = column.push(form_column);
+                pushed_in_row = true;
             } else if part_is_pure_text(&item) {
                 column = column.push(get_text_from_item(&item));
                 pushed_in_row = true;
@@ -772,7 +546,9 @@ impl DescriptionEngine {
                 } else {
                     label.clone()
                 };
-                let id = *self.link_button_ids.get(&label).unwrap();
+                // FIXME BS NOW ...
+                // let id = *self.link_button_ids.get(&label).unwrap();
+                let id: i32 = 0;
                 let mut display_normal_button = false;
 
                 if self.current_link_group_name.is_some() {
@@ -905,6 +681,188 @@ impl DescriptionEngine {
                         }
                     }
 
+                    pushed_in_row = true;
+                }
+            } else if part_is_input(&item) {
+                let form_item_name = item.name.as_ref().unwrap().clone();
+                let form_item_id = text_input_ids.get(&form_item_name).unwrap();
+                let is_password = item.classes.contains(&"password".to_string());
+                let label = item
+                        .label
+                        .as_ref()
+                        .unwrap_or(item.text.as_ref().unwrap_or(&"".to_string()))
+                        .clone();
+                column = column.push(
+                    TextInput::new(
+                        *form_item_id,
+                        &label,
+                        text_input_values.get(&form_item_id).unwrap(),
+                        Message::TextInputSelected,
+                        if text_input_selected == *form_item_id {
+                            self.blink_char
+                        } else {
+                            None
+                        },
+                        None,
+                    )
+                    .is_password(is_password),
+                );
+                pushed_in_row = true;
+            } else if part_is_checkbox(&item) {
+                let name = &item.name.as_ref().unwrap().clone();
+                let id = self.checkbox_ids.get(name).unwrap().clone();
+
+                if !ignore_checkbox_ids.contains(&id) {
+                    let mut column1 = Column::new();
+                    let mut column2 = Column::new();
+
+                    let mut started = false;
+                    let mut counter = 0;
+                    for form_item_ in item.items.iter() {
+                        if part_is_checkbox(form_item_) {
+                            let name_ = form_item_.name.as_ref().unwrap().clone();
+                            let id_ = self.checkbox_ids.get(&name_).unwrap().clone();
+                            let label_ = form_item_
+                                .label
+                                .as_ref()
+                                .unwrap_or(form_item_.text.as_ref().unwrap_or(&"".to_string()))
+                                .clone();
+
+                            if id_ == id {
+                                started = true;
+                            }
+
+                            if started && !ignore_checkbox_ids.contains(&id_) {
+                                let checkbox = Checkbox::new(
+                                    self.checkbox_values.get(&id_).is_some(),
+                                    &label_,
+                                    move |c| {
+                                        if c {
+                                            Message::CheckBoxChecked(id_)
+                                        } else {
+                                            Message::CheckBoxUnchecked(id_)
+                                        }
+                                    },
+                                );
+
+                                if (counter % 2) == 0 {
+                                    column1 = column1.push(checkbox);
+                                } else {
+                                    column2 = column2.push(checkbox);
+                                }
+
+                                counter += 1;
+                                ignore_checkbox_ids.push(id_);
+                            }
+                        } else {
+                            if started {
+                                column =
+                                    column.push(Row::new().push(column1).push(column2));
+                                pushed_in_row = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else if part_is_choices(&item) {
+                let radio_id = *self
+                    .choice_ids
+                    .get(item.name.as_ref().unwrap())
+                    .unwrap();
+
+                let choices = &item.choices.as_ref().unwrap();
+                let count_by_column = (choices.len() as f32 / 2.0).ceil() as i32;
+                let mut column1 = Column::new();
+                let mut column2 = Column::new();
+                let mut choices_chunks = choices.chunks(count_by_column as usize);
+                let chunk1 = choices_chunks.next().unwrap();
+                let chunk2 = choices_chunks.next().unwrap();
+
+                for choice in chunk1 {
+                    let value_id = self.choice_values_ids.get(choice).unwrap();
+                    column1 = column1.push(Radio::new(
+                        value_id,
+                        choice,
+                        self.choice_values_ids
+                            .get(self.choice_values.get(&radio_id).unwrap()),
+                        move |value_id| Message::ChoicePressed(radio_id, *value_id),
+                    ));
+                }
+                for choice in chunk2 {
+                    let value_id = self.choice_values_ids.get(choice).unwrap();
+                    column2 = column2.push(Radio::new(
+                        value_id,
+                        choice,
+                        self.choice_values_ids
+                            .get(self.choice_values.get(&radio_id).unwrap()),
+                        move |value_id| Message::ChoicePressed(radio_id, *value_id),
+                    ));
+                }
+
+                let row_ = Row::new().push(column1).push(column2);
+                column = column.push(row_);
+                pushed_in_row = true;
+
+            // for choice in choices.iter() {
+            //     let value_id = self.choice_values_ids.get(choice).unwrap();
+            //     content = content.push(Radio::new(
+            //         value_id,
+            //         choice,
+            //         self.choice_values_ids
+            //             .get(self.choice_values.get(&radio_id).unwrap()),
+            //         move |value_id| Message::ChoicePressed(radio_id, *value_id),
+            //     ));
+            // }
+            } else if part_is_search_by_str(&item) {
+                let id = self
+                    .search_by_str_ids
+                    .get(item.name.as_ref().unwrap())
+                    .unwrap()
+                    .clone();
+                let input_value = self.search_by_str_values.get(&id).unwrap().clone();
+
+                column = column.push(TextInput::new(
+                    id,
+                    "Saisissez le nom ici: ",
+                    &input_value,
+                    Message::SearchByStrInputPressed,
+                    if self.search_by_str_selected == id {
+                        self.blink_char
+                    } else {
+                        None
+                    },
+                    None,
+                ));
+                pushed_in_row = true;
+
+                let mut choices: Vec<String> = item.choices.as_ref().unwrap().clone();
+                let current_value = self.search_by_str_values.get(&id);
+                if current_value.is_some() {
+                    choices = choices
+                        .into_iter()
+                        .filter(|string_| {
+                            string_
+                                .to_lowercase()
+                                .matches(current_value.unwrap().to_lowercase().as_str())
+                                .collect::<String>()
+                                .len()
+                                != 0
+                        })
+                        .collect();
+                }
+                for choice in choices.iter() {
+                    let label = choice.to_string();
+                    let choice_id = self.search_by_str_button_ids.get(&label).unwrap().clone();
+                    column = column.push(
+                        StateLessButton::new(
+                            self.search_by_str_button_pressed == choice_id,
+                            &label,
+                            Message::SearchByStrButtonPressed(id, choice_id),
+                            Message::SearchByStrButtonReleased(id, choice_id),
+                        )
+                        .width(CONTENT_WIDTH)
+                        .class(state_less_button::Class::Positive),
+                    );
                     pushed_in_row = true;
                 }
             }
