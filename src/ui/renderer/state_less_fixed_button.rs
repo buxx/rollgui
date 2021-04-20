@@ -64,6 +64,10 @@ impl state_less_fixed_button::Renderer for Renderer {
             state_less_fixed_button::Class::PartialPickItem => 12,
             state_less_fixed_button::Class::PartialDropItem => 13,
             state_less_fixed_button::Class::Create => 14,
+            state_less_fixed_button::Class::Accept => 15,
+            state_less_fixed_button::Class::Delete => 16,
+            state_less_fixed_button::Class::Empty => 17,
+            state_less_fixed_button::Class::Edit => 18,
         };
 
         self.sprites.add(Sprite {

@@ -205,6 +205,10 @@ pub enum Class {
     PartialPickItem,
     PartialDropItem,
     Create,
+    Accept,
+    Delete,
+    Empty,
+    Edit,
 }
 
 /// The renderer of a [`Button`].

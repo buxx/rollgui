@@ -864,6 +864,14 @@ impl DescriptionEngine {
                                 Some(state_less_fixed_button::Class::PartialDropItem)
                             } else if item.classes.contains(&"create".to_string()) {
                                 Some(state_less_fixed_button::Class::Create)
+                            } else if item.classes.contains(&"validate".to_string()) {
+                                Some(state_less_fixed_button::Class::Accept)
+                            } else if item.classes.contains(&"delete".to_string()) {
+                                Some(state_less_fixed_button::Class::Delete)
+                            } else if item.classes.contains(&"empty".to_string()) {
+                                Some(state_less_fixed_button::Class::Empty)
+                            } else if item.classes.contains(&"edit".to_string()) {
+                                Some(state_less_fixed_button::Class::Edit)
                             } else {
                                 None
                             };
