@@ -122,6 +122,149 @@ fn update_link_button_ids_from_columns(
     }
 }
 
+fn update_indexes_from_part(
+    item: &Part,
+    link_button_ids: &mut HashMap<String, i32>,
+    text_input_ids: &mut HashMap<String, i32>,
+    text_input_names: &mut HashMap<i32, String>,
+    text_input_types: &mut HashMap<i32, String>,
+    text_input_values: &mut HashMap<i32, String>,
+    link_group_name_ids: &mut HashMap<String, i32>,
+    checkbox_values: &mut HashMap<i32, String>,
+    checkbox_ids: &mut HashMap<String, i32>,
+    checkbox_names: &mut HashMap<i32, String>,
+    choice_values: &mut HashMap<i32, String>,
+    choice_ids: &mut HashMap<String, i32>,
+    choice_names: &mut HashMap<i32, String>,
+    choice_values_ids: &mut HashMap<String, i32>,
+    choice_values_values: &mut HashMap<i32, String>,
+    search_by_str_ids: &mut HashMap<String, i32>,
+    search_by_str_values: &mut HashMap<i32, String>,
+    search_by_str_button_ids: &mut HashMap<String, i32>,
+    search_by_str_button_values: &mut HashMap<i32, String>,
+    search_by_str_names: &mut HashMap<i32, String>,
+    text_input_counter: &mut i32,
+    link_button_counter: &mut i32,
+    checkbox_counter: &mut i32,
+    choice_counter: &mut i32,
+    choice_values_counter: &mut i32,
+    search_by_str_counter: &mut i32,
+    search_by_str_button_counter: &mut i32,
+    total_items_count: &mut i32,
+    submitable: &mut bool,
+    text_input_selected: &mut i32,
+    search_by_str_selected: &mut i32,
+) {
+    *total_items_count += 1;
+    if part_is_form(item) {
+        *submitable = true;
+        for form_item in item.items.iter() {
+            update_indexes_from_part(
+                form_item,
+                link_button_ids,
+                text_input_ids,
+                text_input_names,
+                text_input_types,
+                text_input_values,
+                link_group_name_ids,
+                checkbox_values,
+                checkbox_ids,
+                checkbox_names,
+                choice_values,
+                choice_ids,
+                choice_names,
+                choice_values_ids,
+                choice_values_values,
+                search_by_str_ids,
+                search_by_str_values,
+                search_by_str_button_ids,
+                search_by_str_button_values,
+                search_by_str_names,
+                text_input_counter,
+                link_button_counter,
+                checkbox_counter,
+                choice_counter,
+                choice_values_counter,
+                search_by_str_counter,
+                search_by_str_button_counter,
+                total_items_count,
+                submitable,
+                text_input_selected,
+                search_by_str_selected,
+            );
+        }
+    } else if part_is_input(item) {
+        text_input_ids.insert(item.name.as_ref().unwrap().clone(), *text_input_counter);
+        text_input_values.insert(
+            *text_input_counter,
+            item.default_value
+                .as_ref()
+                .unwrap_or(&"".to_string())
+                .clone(),
+        );
+        text_input_names.insert(*text_input_counter, item.name.as_ref().unwrap().clone());
+        text_input_types.insert(*text_input_counter, item.type_.as_ref().unwrap().clone());
+
+        if *text_input_selected == -1 && *search_by_str_selected == -1 {
+            *text_input_selected = *text_input_counter;
+        }
+
+        *text_input_counter += 1;
+    } else if part_is_checkbox(item) {
+        checkbox_ids.insert(item.name.as_ref().unwrap().clone(), *checkbox_counter);
+        checkbox_names.insert(*checkbox_counter, item.name.as_ref().unwrap().clone());
+        if item.checked {
+            checkbox_values.insert(*checkbox_counter, "on".to_string());
+        }
+        *checkbox_counter += 1;
+    } else if part_is_choices(item) {
+        choice_ids.insert(item.name.as_ref().unwrap().clone(), *choice_counter);
+        choice_names.insert(*choice_counter, item.name.as_ref().unwrap().clone());
+        choice_values.insert(*choice_counter, item.value.as_ref().unwrap().clone());
+
+        for choice in item.choices.as_ref().unwrap().iter() {
+            choice_values_ids.insert(choice.clone(), *choice_values_counter);
+            choice_values_values.insert(*choice_values_counter, choice.clone());
+            *choice_values_counter += 1;
+        }
+
+        *choice_counter += 1;
+    } else if part_is_search_by_str(item) {
+        search_by_str_ids.insert(item.name.as_ref().unwrap().clone(), *search_by_str_counter);
+        search_by_str_values.insert(*search_by_str_counter, "".to_string());
+        search_by_str_names.insert(*search_by_str_counter, item.name.as_ref().unwrap().clone());
+
+        for choice in item.choices.as_ref().unwrap().iter() {
+            search_by_str_button_ids.insert(choice.clone(), *search_by_str_button_counter);
+            search_by_str_button_values.insert(*search_by_str_button_counter, choice.clone());
+            *search_by_str_button_counter += 1;
+        }
+
+        if *search_by_str_selected == -1 && *text_input_selected == -1 {
+            *search_by_str_selected = *search_by_str_counter;
+        }
+
+        *search_by_str_counter += 1;
+    } else if part_is_link(item) {
+        link_button_ids.insert(
+            item.label
+                .as_ref()
+                .unwrap_or(item.text.as_ref().unwrap_or(&"Continuer".to_string()))
+                .clone(),
+            *link_button_counter,
+        );
+
+        // Assume link group names are not in forms
+        if let Some(link_group_name) = item.link_group_name.as_ref() {
+            link_group_name_ids.insert(link_group_name.clone(), *link_button_counter);
+        }
+        *link_button_counter += 1;
+    } else if item.columns > 0 {
+        // FIXME BS NOW: relancer recursivite a la place
+        update_link_button_ids_from_columns(&mut *link_button_ids, &mut *link_button_counter, item);
+    }
+}
+
 impl DescriptionEngine {
     pub fn new(
         player: Option<Player>,
@@ -162,112 +305,39 @@ impl DescriptionEngine {
         let mut total_items_count = 0;
 
         for item in description.items.iter() {
-            total_items_count += 1;
-            if part_is_form(item) {
-                submitable = true;
-                for form_item in item.items.iter() {
-                    total_items_count += 1;
-                    if part_is_input(form_item) {
-                        text_input_ids
-                            .insert(form_item.name.as_ref().unwrap().clone(), text_input_counter);
-                        text_input_values.insert(
-                            text_input_counter,
-                            form_item
-                                .default_value
-                                .as_ref()
-                                .unwrap_or(&"".to_string())
-                                .clone(),
-                        );
-                        text_input_names
-                            .insert(text_input_counter, form_item.name.as_ref().unwrap().clone());
-                        text_input_types.insert(
-                            text_input_counter,
-                            form_item.type_.as_ref().unwrap().clone(),
-                        );
-
-                        if text_input_selected == -1 && search_by_str_selected == -1 {
-                            text_input_selected = text_input_counter;
-                        }
-
-                        text_input_counter += 1;
-                    } else if part_is_checkbox(form_item) {
-                        checkbox_ids
-                            .insert(form_item.name.as_ref().unwrap().clone(), checkbox_counter);
-                        checkbox_names
-                            .insert(checkbox_counter, form_item.name.as_ref().unwrap().clone());
-                        if form_item.checked {
-                            checkbox_values.insert(checkbox_counter, "on".to_string());
-                        }
-                        checkbox_counter += 1;
-                    } else if part_is_link(form_item) {
-                        let label = form_item
-                            .label
-                            .as_ref()
-                            .unwrap_or(form_item.text.as_ref().unwrap_or(&" ".to_string()))
-                            .clone();
-                        link_button_ids.insert(label, link_button_counter);
-                        link_button_counter += 1;
-                    } else if part_is_choices(form_item) {
-                        choice_ids.insert(form_item.name.as_ref().unwrap().clone(), choice_counter);
-                        choice_names
-                            .insert(choice_counter, form_item.name.as_ref().unwrap().clone());
-                        choice_values
-                            .insert(choice_counter, form_item.value.as_ref().unwrap().clone());
-
-                        for choice in form_item.choices.as_ref().unwrap().iter() {
-                            choice_values_ids.insert(choice.clone(), choice_values_counter);
-                            choice_values_values.insert(choice_values_counter, choice.clone());
-                            choice_values_counter += 1;
-                        }
-
-                        choice_counter += 1;
-                    } else if part_is_search_by_str(form_item) {
-                        search_by_str_ids.insert(
-                            form_item.name.as_ref().unwrap().clone(),
-                            search_by_str_counter,
-                        );
-                        search_by_str_values.insert(search_by_str_counter, "".to_string());
-                        search_by_str_names.insert(
-                            search_by_str_counter,
-                            form_item.name.as_ref().unwrap().clone(),
-                        );
-
-                        for choice in form_item.choices.as_ref().unwrap().iter() {
-                            search_by_str_button_ids
-                                .insert(choice.clone(), search_by_str_button_counter);
-                            search_by_str_button_values
-                                .insert(search_by_str_button_counter, choice.clone());
-                            search_by_str_button_counter += 1;
-                        }
-
-                        if search_by_str_selected == -1 && text_input_selected == -1 {
-                            search_by_str_selected = search_by_str_counter;
-                        }
-
-                        search_by_str_counter += 1;
-                    }
-                }
-            } else if part_is_link(item) {
-                link_button_ids.insert(
-                    item.label
-                        .as_ref()
-                        .unwrap_or(item.text.as_ref().unwrap_or(&"Continuer".to_string()))
-                        .clone(),
-                    link_button_counter,
-                );
-
-                // Assume link group names are not in forms
-                if let Some(link_group_name) = item.link_group_name.as_ref() {
-                    link_group_name_ids.insert(link_group_name.clone(), link_button_counter);
-                }
-                link_button_counter += 1;
-            } else if item.columns > 0 {
-                update_link_button_ids_from_columns(
-                    &mut link_button_ids,
-                    &mut link_button_counter,
-                    item,
-                );
-            }
+            update_indexes_from_part(
+                item,
+                &mut link_button_ids,
+                &mut text_input_ids,
+                &mut text_input_names,
+                &mut text_input_types,
+                &mut text_input_values,
+                &mut link_group_name_ids,
+                &mut checkbox_values,
+                &mut checkbox_ids,
+                &mut checkbox_names,
+                &mut choice_values,
+                &mut choice_ids,
+                &mut choice_names,
+                &mut choice_values_ids,
+                &mut choice_values_values,
+                &mut search_by_str_ids,
+                &mut search_by_str_values,
+                &mut search_by_str_button_ids,
+                &mut search_by_str_button_values,
+                &mut search_by_str_names,
+                &mut text_input_counter,
+                &mut link_button_counter,
+                &mut checkbox_counter,
+                &mut choice_counter,
+                &mut choice_values_counter,
+                &mut search_by_str_counter,
+                &mut search_by_str_button_counter,
+                &mut total_items_count,
+                &mut submitable,
+                &mut text_input_selected,
+                &mut search_by_str_selected,
+            );
         }
 
         for link_item in description.footer_links.iter() {
@@ -688,10 +758,10 @@ impl DescriptionEngine {
                 let form_item_id = text_input_ids.get(&form_item_name).unwrap();
                 let is_password = item.classes.contains(&"password".to_string());
                 let label = item
-                        .label
-                        .as_ref()
-                        .unwrap_or(item.text.as_ref().unwrap_or(&"".to_string()))
-                        .clone();
+                    .label
+                    .as_ref()
+                    .unwrap_or(item.text.as_ref().unwrap_or(&"".to_string()))
+                    .clone();
                 column = column.push(
                     TextInput::new(
                         *form_item_id,
@@ -711,64 +781,35 @@ impl DescriptionEngine {
             } else if part_is_checkbox(&item) {
                 let name = &item.name.as_ref().unwrap().clone();
                 let id = self.checkbox_ids.get(name).unwrap().clone();
+                let label = item
+                    .label
+                    .as_ref()
+                    .unwrap_or(item.text.as_ref().unwrap_or(&"".to_string()))
+                    .clone();
 
-                if !ignore_checkbox_ids.contains(&id) {
-                    let mut column1 = Column::new();
-                    let mut column2 = Column::new();
-
-                    let mut started = false;
-                    let mut counter = 0;
-                    for form_item_ in item.items.iter() {
-                        if part_is_checkbox(form_item_) {
-                            let name_ = form_item_.name.as_ref().unwrap().clone();
-                            let id_ = self.checkbox_ids.get(&name_).unwrap().clone();
-                            let label_ = form_item_
-                                .label
-                                .as_ref()
-                                .unwrap_or(form_item_.text.as_ref().unwrap_or(&"".to_string()))
-                                .clone();
-
-                            if id_ == id {
-                                started = true;
-                            }
-
-                            if started && !ignore_checkbox_ids.contains(&id_) {
-                                let checkbox = Checkbox::new(
-                                    self.checkbox_values.get(&id_).is_some(),
-                                    &label_,
-                                    move |c| {
-                                        if c {
-                                            Message::CheckBoxChecked(id_)
-                                        } else {
-                                            Message::CheckBoxUnchecked(id_)
-                                        }
-                                    },
-                                );
-
-                                if (counter % 2) == 0 {
-                                    column1 = column1.push(checkbox);
-                                } else {
-                                    column2 = column2.push(checkbox);
-                                }
-
-                                counter += 1;
-                                ignore_checkbox_ids.push(id_);
-                            }
+                let checkbox =
+                    Checkbox::new(self.checkbox_values.get(&id).is_some(), &label, move |c| {
+                        if c {
+                            Message::CheckBoxChecked(id)
                         } else {
-                            if started {
-                                column =
-                                    column.push(Row::new().push(column1).push(column2));
-                                pushed_in_row = true;
-                                break;
-                            }
+                            Message::CheckBoxUnchecked(id)
                         }
-                    }
-                }
+                    });
+                let text = Text::new(&label).width(window.width() as u32 / 2);
+
+                column = column.push(
+                    Column::new()
+                        .push(
+                            Row::new()
+                                .push(text)
+                                .width(window.width() as u32 / 2),
+                        )
+                        .push(Row::new().push(checkbox))
+                        .width(window.width() as u32),
+                );
+                pushed_in_row = true;
             } else if part_is_choices(&item) {
-                let radio_id = *self
-                    .choice_ids
-                    .get(item.name.as_ref().unwrap())
-                    .unwrap();
+                let radio_id = *self.choice_ids.get(item.name.as_ref().unwrap()).unwrap();
 
                 let choices = &item.choices.as_ref().unwrap();
                 let count_by_column = (choices.len() as f32 / 2.0).ceil() as i32;
