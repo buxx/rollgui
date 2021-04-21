@@ -795,18 +795,8 @@ impl DescriptionEngine {
                             Message::CheckBoxUnchecked(id)
                         }
                     });
-                let text = Text::new(&label).width(window.width() as u32 / 2);
 
-                column = column.push(
-                    Column::new()
-                        .push(
-                            Row::new()
-                                .push(text)
-                                .width(window.width() as u32 / 2),
-                        )
-                        .push(Row::new().push(checkbox))
-                        .width(window.width() as u32),
-                );
+                column = column.push(checkbox);
                 pushed_in_row = true;
             } else if part_is_choices(&item) {
                 let radio_id = *self.choice_ids.get(item.name.as_ref().unwrap()).unwrap();
