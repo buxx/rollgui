@@ -1579,13 +1579,19 @@ impl Engine for DescriptionEngine {
             );
         }
 
+        let character_infos = if let Some(character_ap) = description.character_ap {
+            format!(" (PA: {})", character_ap)
+        } else {
+            "".into()
+        };
         let info = Column::new()
             .max_width(window.width() as u32)
             .height(20)
             .push(
                 Text::new(&format!(
-                    "Tab: champ suivant, Echap: retour, ↑/↓/roulette: défilement{}",
-                    submit_info
+                    "Tab: champ suivant, Echap: retour, ↑/↓/roulette: défilement{}{}",
+                    submit_info,
+                    character_infos,
                 ))
                 .size(20)
                 .color(Color::WHITE)

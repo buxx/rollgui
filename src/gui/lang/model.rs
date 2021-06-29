@@ -68,6 +68,7 @@ pub struct Description {
     pub illustration_name: Option<String>,
     pub disable_illustration_row: bool,
     pub account_created: bool,
+    pub character_ap: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
