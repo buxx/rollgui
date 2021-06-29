@@ -981,23 +981,27 @@ impl Engine for ZoneEngine {
                 self.apply_chat_text_buffer(input.text_buffer.clone());
                 input.text_buffer = String::new();
             }
-
+            let move_modifier = if input.keys_pressed.contains(&keyboard::KeyCode::LShift) || input.keys_pressed.contains(&keyboard::KeyCode::RShift) {
+                3
+            } else {
+                1
+            };
             if input.keys_pressed.contains(&keyboard::KeyCode::Right) {
-                try_player_moves.push((1, 0));
+                try_player_moves.push((move_modifier, 0));
                 self.move_requested = None;
                 self.player_tile_id = String::from("PLAYER");
             }
             if input.keys_pressed.contains(&keyboard::KeyCode::Left) {
-                try_player_moves.push((-1, 0));
+                try_player_moves.push((-move_modifier, 0));
                 self.move_requested = None;
                 self.player_tile_id = String::from("PLAYER_LEFT");
             }
             if input.keys_pressed.contains(&keyboard::KeyCode::Up) {
-                try_player_moves.push((0, -1));
+                try_player_moves.push((0, -move_modifier));
                 self.move_requested = None;
             }
             if input.keys_pressed.contains(&keyboard::KeyCode::Down) {
-                try_player_moves.push((0, 1));
+                try_player_moves.push((0, move_modifier));
                 self.move_requested = None;
             }
         }
