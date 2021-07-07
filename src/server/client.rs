@@ -41,7 +41,7 @@ impl ClientError {
                 format!("Player not found: {}", message).to_string()
             }
             ClientError::ClientSideError { message } => {
-                format!("Client side error: {}", message).to_string()
+                format!("{}", message).to_string()
             }
             ClientError::ServerSideError { message } => {
                 format!("Server side error: {}", message).to_string()
