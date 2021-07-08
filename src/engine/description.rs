@@ -1340,10 +1340,8 @@ impl Engine for DescriptionEngine {
 
         let mut replaced_by_group_names: Vec<String> = vec![];
         let mut submit_label: Option<String> = None;
-        for (i, item) in items.into_iter().enumerate() {
-            if i < self.start_items_from as usize {
-                continue;
-            }
+        let mut i = 0;
+        for item in items.into_iter() {
             // let blink_char = self.get_blink_char();
             let (row, row_replaced_by_group_names, row_submit_label) = self.create_row_from_item(
                 item,
@@ -1352,6 +1350,14 @@ impl Engine for DescriptionEngine {
                 CONTENT_WIDTH,
             );
             replaced_by_group_names = row_replaced_by_group_names;
+
+            if row.is_some() {
+                i += 1;
+            };
+            if i < self.start_items_from as usize {
+                continue;
+            };
+
             if let Some(row) = row {
                 content = content.push(row);
             }
