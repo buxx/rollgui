@@ -1203,6 +1203,7 @@ impl Engine for DescriptionEngine {
             }
             Message::GroupLinkButtonReleased(label) => {
                 self.current_link_group_name = Some(label.clone());
+                self.start_items_from = 0;
             }
             Message::GoBackZoneButtonPressed => {
                 return Some(MainMessage::DescriptionToZone {
@@ -1271,6 +1272,7 @@ impl Engine for DescriptionEngine {
             Message::ToStartupPressed => return Some(MainMessage::ToStartup),
             Message::GoBackFromGroupButtonPressed => {
                 self.current_link_group_name = None;
+                self.start_items_from = 0;
             }
             Message::CheckBoxChecked(id) => {
                 self.checkbox_values.insert(id, "on".to_string());
