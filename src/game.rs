@@ -280,7 +280,7 @@ impl MyGame {
         let level = Level::new(&zone_raw, &tiles, world_tile_type_id).unwrap();
 
         let mut socket = ZoneSocket::new(format!(
-            "{}/zones/{}/{}/events?character_id={}",
+            "{}/ws/zones/{}/{}/events?character_id={}",
             server
                 .address
                 .with_credentials(&server.client.credentials.0, &server.client.credentials.1,),

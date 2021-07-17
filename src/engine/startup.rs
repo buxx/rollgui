@@ -50,7 +50,7 @@ impl Engine for StartupEngine {
             }
             Message::S2BuxFrServerPressed => {
                 return Some(MainMessage::StartupToZone {
-                    address: server::ServerAddress::new("rolling-server.bux.fr", 443),
+                    address: server::ServerAddress::new("rolling-server.bux.fr", 4443),
                     disable_version_check: false,
                 })
             }
