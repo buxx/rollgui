@@ -2954,7 +2954,7 @@ dependencies = [
 
 [[package]]
 name = "rollgui"
-version = "0.7.8"
+version = "0.7.9"
 dependencies = [
  "coffee",
  "futures 0.3.8",
