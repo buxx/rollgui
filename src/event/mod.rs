@@ -202,6 +202,7 @@ impl ZoneEvent {
                             col_i: build_data["col_i"].as_i64().unwrap() as i32,
                             classes,
                             traversable,
+                            is_floor: build_data["is_floor"].as_bool().unwrap(),
                         },
                     },
                 })

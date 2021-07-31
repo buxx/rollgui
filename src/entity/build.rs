@@ -9,6 +9,7 @@ pub struct Build {
     pub col_i: i32,
     pub classes: Vec<String>,
     pub traversable: HashMap<String, bool>,
+    pub is_floor: bool,
 }
 
 impl Build {

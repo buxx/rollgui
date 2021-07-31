@@ -416,7 +416,7 @@ impl ZoneEngine {
         sprites
     }
 
-    fn get_build_sprites(&mut self) -> Vec<Sprite> {
+    fn get_build_sprites(&mut self, is_floor: bool) -> Vec<Sprite> {
         let mut sprites: Vec<Sprite> = vec![];
 
         for build in self.builds.values().into_iter() {
@@ -427,6 +427,7 @@ impl ZoneEngine {
                 || real_x > self.end_screen_x
                 || real_y < 0
                 || real_y > self.end_screen_y
+                || build.is_floor != is_floor
             {
                 continue;
             }
@@ -673,7 +674,8 @@ impl Engine for ZoneEngine {
 
         sprites.extend(self.get_zone_sprites(Some(self.level.world_tile_type_id.clone())));
         sprites.extend(self.get_zone_sprites(None));
-        sprites.extend(self.get_build_sprites());
+        sprites.extend(self.get_build_sprites(true));
+        sprites.extend(self.get_build_sprites(false));
         sprites.extend(self.get_stuff_sprites());
         sprites.extend(self.get_resource_sprites());
         sprites.extend(self.get_animated_corpses());
