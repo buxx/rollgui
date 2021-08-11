@@ -61,7 +61,8 @@ pub enum ZoneEventType {
         character_count: i32,
     },
     ClickActionEvent {
-        base_url: String,
+        action_type: String,
+        action_description_id: String,
         row_i: i16,
         col_i: i16,
     },
