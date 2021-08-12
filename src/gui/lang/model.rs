@@ -73,7 +73,8 @@ pub struct Description {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RequestClicks {
-    pub base_url: String,
+    pub action_type: String,
+    pub action_description_id: String,
     pub cursor_classes: Vec<String>,
     pub many: bool,
 }

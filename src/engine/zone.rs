@@ -927,7 +927,8 @@ impl Engine for ZoneEngine {
                     self.socket.send(event::ZoneEvent {
                         event_type_name: String::from(event::CLICK_ACTION_EVENT),
                         event_type: event::ZoneEventType::ClickActionEvent {
-                            base_url: request_clicks.base_url.clone(),
+                            action_type: request_clicks.action_type.clone(),
+                            action_description_id: request_clicks.action_description_id.clone(),
                             row_i: to_row_i,
                             col_i: to_col_i,
                         },
