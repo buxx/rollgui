@@ -81,6 +81,7 @@ impl WorldEngine {
                         "SEA",
                         self.real_x(absolute_col_i),
                         self.real_y(absolute_row_i),
+                        0,
                     ));
                     continue;
                 }
@@ -92,6 +93,7 @@ impl WorldEngine {
                         "SEA",
                         self.real_x(absolute_col_i),
                         self.real_y(absolute_row_i),
+                        0,
                     ));
                     continue;
                 }
@@ -101,6 +103,7 @@ impl WorldEngine {
                     &tile_type_id,
                     self.real_x(absolute_col_i),
                     self.real_y(absolute_row_i),
+                        0,
                 ));
 
                 if world_row_i == self.player.world_position.0 as i16
@@ -111,6 +114,7 @@ impl WorldEngine {
                             "PLAYER",
                             self.real_x(absolute_col_i),
                             self.real_y(absolute_row_i),
+                        0,
                         ));
                     }
                 }

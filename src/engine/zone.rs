@@ -75,6 +75,8 @@ pub struct Chat {
 }
 
 pub struct ZoneEngine {
+    i: i32,
+    sprite_i: i32,
     tiles: Tiles,
     tile_sheet: TileSheet,
     tile_sheet_batch: Batch,
@@ -181,6 +183,8 @@ impl ZoneEngine {
         };
 
         let mut zone_engine = Self {
+            i: 0,
+            sprite_i: 0,
             tiles,
             tile_sheet: TileSheet::new(tile_sheet_image.clone(), tile_width, tile_height),
             tile_sheet_batch: Batch::new(tile_sheet_image.clone()),
@@ -313,6 +317,7 @@ impl ZoneEngine {
                     &tile_type_id,
                     (self.tile_sheet.get_tile_width() * absolute_col_i) + self.start_screen_x,
                     (self.tile_sheet.get_tile_height() * absolute_row_i) + self.start_screen_y,
+                    self.sprite_i,
                 ));
             }
         }
@@ -335,6 +340,7 @@ impl ZoneEngine {
             &self.player_tile_id,
             self.get_real_x(self.player.x),
             self.get_real_y(self.player.y),
+            self.sprite_i,
         ));
 
         for character in self.characters.values().into_iter() {
@@ -351,7 +357,7 @@ impl ZoneEngine {
 
             sprites.push(
                 self.tile_sheet
-                    .create_sprite_for("CHARACTER", real_x, real_y),
+                    .create_sprite_for("CHARACTER", real_x, real_y, self.sprite_i),
             );
         }
 
@@ -375,7 +381,7 @@ impl ZoneEngine {
 
             for class in stuff.get_classes().iter().rev() {
                 if self.tile_sheet.have_id(class) {
-                    sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y));
+                    sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y, self.sprite_i));
                     break;
                 }
             }
@@ -403,12 +409,12 @@ impl ZoneEngine {
             if self.tile_sheet.have_id(&resource.id) {
                 sprites.push(
                     self.tile_sheet
-                        .create_sprite_for(&resource.id, real_x, real_y),
+                        .create_sprite_for(&resource.id, real_x, real_y, self.sprite_i),
                 );
             } else {
                 sprites.push(
                     self.tile_sheet
-                        .create_sprite_for("RESOURCE_GENERIC", real_x, real_y),
+                        .create_sprite_for("RESOURCE_GENERIC", real_x, real_y, self.sprite_i),
                 );
             }
         }
@@ -434,7 +440,14 @@ impl ZoneEngine {
 
             for class in build.get_classes().iter().rev() {
                 if self.tile_sheet.have_id(class) {
-                    sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y));
+                    sprites.push(
+                        self.tile_sheet.create_sprite_for(
+                            class,
+                            real_x,
+                            real_y,
+                            self.sprite_i,
+                        )
+                    );
                     break;
                 }
             }
@@ -460,7 +473,7 @@ impl ZoneEngine {
 
             sprites.push(
                 self.tile_sheet
-                    .create_sprite_for(&animated_corpse.type_, real_x, real_y),
+                    .create_sprite_for(&animated_corpse.type_, real_x, real_y, self.sprite_i),
             );
         }
 
@@ -702,7 +715,7 @@ impl Engine for ZoneEngine {
                         let real_x = self.get_real_x(cursor_col_i * TILE_WIDTH);
                         let real_y = self.get_real_y(cursor_row_i * TILE_HEIGHT);
 
-                        sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y));
+                        sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y, self.sprite_i));
                         break;
                     }
                 }
@@ -715,6 +728,14 @@ impl Engine for ZoneEngine {
     }
 
     fn update(&mut self, window: &Window) -> Option<MainMessage> {
+        self.i += 1;
+        if self.i % 10 == 0 {
+            self.sprite_i += 1;
+        }
+        if self.sprite_i >= 6 {
+            self.sprite_i = 0;
+        }
+
         self.end_screen_x = window.width() as i16;
         self.end_screen_y = window.height() as i16;
         self.update_zone_display();
