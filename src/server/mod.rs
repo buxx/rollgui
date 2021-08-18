@@ -67,7 +67,7 @@ impl Server {
     pub fn new(
         client: client::Client,
         address: ServerAddress,
-        character_id: String,
+        character_id: Option<String>,
     ) -> Result<Self, Box<dyn Error>> {
         // TODO grab possible moves, etc from server
 
@@ -77,12 +77,6 @@ impl Server {
 
         let world_tiles = WorldTiles::new(legend.as_str())?;
         let world = world::World::new(world_raw.as_str(), &world_tiles)?;
-
-        let character_id = if character_id == "" {
-            None
-        } else {
-            Some(character_id)
-        };
 
         Ok(Self {
             address,

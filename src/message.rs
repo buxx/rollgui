@@ -8,7 +8,6 @@ pub enum MainMessage {
     ToWorld,
     ExitRequested,
     StartupToZone {
-        address: server::ServerAddress,
         disable_version_check: bool,
     },
     DescriptionToZone {
@@ -17,15 +16,10 @@ pub enum MainMessage {
     NewCharacterId {
         character_id: String,
     },
-    SetServer {
-        server: server::Server,
-    },
     CreateAccount {
         address: server::ServerAddress,
     },
-    AccountCreated {
-        address: server::ServerAddress,
-    },
+    AccountCreated,
     ToDescriptionWithDescription {
         description: Description,
         back_url: Option<String>,
@@ -35,6 +29,10 @@ pub enum MainMessage {
         url: String,
         back_url: Option<String>,
     },
+    EnterServer {
+        credentials: (String, String),
+        character_id: Option<String>,
+    }
 }
 
 #[derive(Debug, Clone)]

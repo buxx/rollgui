@@ -1,6 +1,6 @@
 [package]
 name = "rollgui"
-version = "0.8.3"
+version = "0.8.4"
 authors = ["Bastien Sevajol <contact@bux.fr>"]
 edition = "2018"
 
@@ -23,6 +23,8 @@ zip = "0.5.9"
 linked-hash-map = "0.5.3"
 webbrowser = "0.5.5"
 native-tls = "0.2.7"
+structopt = "0.3.21"
+dialog="0.3.0"
 
 gfx = "0.18.2"
 gfx_core = "0.9.2"

@@ -152,7 +152,6 @@ impl Engine for UpgradeEngine {
             }
             Message::ContinueButtonPressed => {
                 return Some(MainMessage::StartupToZone {
-                    address: self.client.address.clone(),
                     disable_version_check: true,
                 })
             }

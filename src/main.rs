@@ -1,7 +1,8 @@
 use coffee::graphics::WindowSettings;
-use coffee::ui::UserInterface;
 use coffee::Result;
-use ini::Ini;
+use coffee::ui::UserInterface;
+use structopt::StructOpt;
+use crate::util::get_conf;
 
 pub mod engine;
 pub mod entity;
@@ -19,9 +20,11 @@ pub mod tile;
 pub mod ui;
 pub mod util;
 pub mod world;
+pub mod args;
 
 pub fn main() -> Result<()> {
-    let conf = Ini::load_from_file("config.ini").unwrap();
+    let opt = args::Opt::from_args();
+    let conf = get_conf(&opt.config_file_path);
     match conf
         .get_from(Some("debug"), "enable_bug_report")
         .unwrap_or("false")
@@ -34,10 +37,11 @@ pub fn main() -> Result<()> {
         }
         _ => {}
     };
+    let title = conf.get_from(Some("design"), "title").unwrap_or("Rolling");
 
     <game::MyGame as UserInterface>::run(WindowSettings {
-        title: String::from("Rolling"),
-        size: (1024, 768),
+        title: String::from(title),
+        size: (1000, 700),
         resizable: true,
         fullscreen: false,
         maximized: false,

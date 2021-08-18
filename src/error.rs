@@ -30,6 +30,7 @@ impl From<ClientError> for RollingError {
             ClientError::PlayerNotFound { message } => Self { message },
             ClientError::ClientSideError { message } => Self { message },
             ClientError::ServerSideError { message } => Self { message },
+            ClientError::RequestError { message } => Self { message },
             ClientError::UnknownError { message } => Self { message },
             ClientError::Unauthorized => Self {
                 message: "Unauthorized".to_string(),

@@ -8,6 +8,8 @@ use std::io::Read;
 use std::path::Path;
 use std::time::{Duration, Instant, SystemTime};
 use std::{fs, io};
+use ini::Ini;
+use std::process::exit;
 
 pub const BLOCK_GEO: &str = "GEO";
 pub const BLOCK_LEGEND: &str = "LEGEND";
@@ -500,4 +502,15 @@ pub fn rand_string(length: usize) -> String {
         .sample_iter(&Alphanumeric)
         .take(length)
         .collect()
+}
+
+
+pub fn get_conf(file_path: &str) -> Ini {
+    match Ini::load_from_file(file_path) {
+        Ok(conf) => conf,
+        Err(err) => {
+            eprintln!("Error when loading config file {}: {}", file_path, err);
+            exit(1)
+        }
+    }
 }

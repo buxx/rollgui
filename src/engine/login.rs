@@ -7,7 +7,7 @@ use crate::ui::widget::button::Button;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::text_input::TextInput;
 use crate::ui::{Column, Element, Row};
-use coffee::graphics::{Color, Frame, Image, Window};
+use coffee::graphics::{Color, Frame, Image, Window, Rectangle, Sprite, Batch, Point};
 use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
 use coffee::Timer;
@@ -68,25 +68,23 @@ impl LoginEngine {
 
     fn submit(&mut self) -> Option<MainMessage> {
         self.error_message = None;
+        let credentials = (
+            self.login_input_text.trim().to_string(),
+            self.password_input_text.trim().to_string(),
+        );
         match self.client.get_current_character_id((
             self.login_input_text.clone(),
             self.password_input_text.clone(),
         )) {
             Ok(current_character_id) => {
-                let credentials = (
-                    self.login_input_text.trim().to_string(),
-                    self.password_input_text.trim().to_string(),
-                );
-                return Some(MainMessage::SetServer {
-                    server: server::Server::new(
-                        server::client::Client::new(
-                            self.client.address.clone(),
-                            credentials.clone(),
-                        ),
-                        self.address.clone(),
-                        current_character_id,
-                    )
-                    .unwrap(),
+                let current_character_id_ = if current_character_id == "" {
+                    None
+                } else {
+                    Some(current_character_id)
+                };
+                return Some(MainMessage::EnterServer {
+                    credentials,
+                    character_id: current_character_id_,
                 });
             }
             Err(server::client::ClientError::Unauthorized) => {
@@ -102,8 +100,28 @@ impl LoginEngine {
 }
 
 impl Engine for LoginEngine {
-    fn draw(&mut self, frame: &mut Frame, _timer: &Timer, _illustration: Option<Image>) {
+    fn draw(&mut self, frame: &mut Frame, _timer: &Timer, illustration: Option<Image>) {
         frame.clear(Color::BLACK);
+
+        if let Some(illustration) = illustration {
+            let illustration_width = illustration.width();
+            let illustration_height = illustration.height();
+            let mut batch = Batch::new(illustration);
+            batch.extend(vec![Sprite {
+                source: Rectangle {
+                    x: 0,
+                    y: 0,
+                    width: illustration_width,
+                    height: illustration_height,
+                },
+                position: Point::new(0.0, 0.0),
+                scale: (
+                    frame.width() / illustration_width as f32,
+                    frame.height() / illustration_height as f32,
+                ),
+            }]);
+            batch.draw(&mut frame.as_target());
+        };
     }
 
     fn update(&mut self, _window: &Window) -> Option<MainMessage> {
@@ -189,7 +207,7 @@ impl Engine for LoginEngine {
                     address: self.address.clone(),
                 })
             }
-            Message::CancelButtonPressed => return Some(MainMessage::ToStartup),
+            Message::ExitMenuButtonPressed => return Some(MainMessage::ExitRequested),
             _ => {}
         }
 
@@ -205,9 +223,9 @@ impl Engine for LoginEngine {
             .justify_content(Justify::Center)
             .spacing(20)
             .push(
-                Text::new("Veuillez vous identifier")
-                    .size(50)
-                    .height(60)
+                Text::new("")
+                    .size(30)
+                    .height(30)
                     .width(600),
             );
 
@@ -272,8 +290,8 @@ impl Engine for LoginEngine {
                     .width(300),
             )
             .push(
-                Button::new(&mut self.cancel_button, "Retour")
-                    .on_press(Message::CancelButtonPressed)
+                Button::new(&mut self.cancel_button, "Quitter")
+                    .on_press(Message::ExitMenuButtonPressed)
                     .class(button::Class::Secondary)
                     .width(200),
             );

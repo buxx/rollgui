@@ -1067,9 +1067,7 @@ impl Engine for DescriptionEngine {
                         });
                     }
                     if description.account_created {
-                        return Some(MainMessage::AccountCreated {
-                            address: self.client.address.clone(),
-                        });
+                        return Some(MainMessage::AccountCreated);
                     }
                     return Some(MainMessage::ToDescriptionWithDescription {
                         description,

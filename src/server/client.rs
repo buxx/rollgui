@@ -29,6 +29,7 @@ pub enum ClientError {
     ClientSideError { message: String },
     ServerSideError { message: String },
     UnknownError { message: String },
+    RequestError { message: String },
 }
 
 impl Error for ClientError {}
@@ -49,8 +50,17 @@ impl ClientError {
             ClientError::UnknownError { message } => {
                 format!("Unknown error: {}", message).to_string()
             }
+            ClientError::RequestError { message } => {
+                format!("Request error: {}", message).to_string()
+            }
             ClientError::Unauthorized => "Unauthorized".to_string(),
         };
+    }
+}
+
+impl From<reqwest::Error> for ClientError {
+    fn from(error: reqwest::Error) -> Self {
+        ClientError::RequestError{ message: format!("{}", error) }
     }
 }
 
@@ -225,8 +235,7 @@ impl Client {
                 .post(url.as_str())
                 .json(&data)
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
 
         let character: ApiCharacter = response.json::<ApiCharacter>().unwrap();
@@ -257,8 +266,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
 
         Ok(response.json::<Value>().unwrap())
@@ -276,8 +284,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
 
         Ok(response.json::<Value>().unwrap())
@@ -299,8 +306,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
 
         Ok(response.json::<Vec<Character>>().unwrap())
@@ -322,8 +328,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
 
         Ok(response.json::<Vec<Stuff>>().unwrap())
@@ -345,8 +350,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
 
         Ok(response.json::<Vec<Resource>>().unwrap())
@@ -368,8 +372,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
 
         Ok(response.json::<Vec<Build>>().unwrap())
@@ -382,8 +385,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
 
         Ok(response.text().unwrap().to_string())
@@ -411,8 +413,7 @@ impl Client {
         let response: Response = self.check_response(
             request
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
         let mut description = response.json::<Description>().unwrap();
         description.origin_url = Some(url);
@@ -460,8 +461,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
 
         Ok(response.json::<ListOfItemModel>().unwrap().items)
@@ -500,8 +500,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         );
         if let Err(ClientError::NotFound { message: _ }) = result {
             return Ok(false);
@@ -520,8 +519,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
         // FIXME BS: user dir or (MUST BE IN STATIC)
         let file_path = format!("static/cache/{}{}", image_id, image_extension);
@@ -557,8 +555,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
 
         let value = response.json::<Value>().unwrap();
@@ -581,8 +578,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
         let mut buf: Vec<u8> = vec![];
         response.copy_to(&mut buf).unwrap();
@@ -606,8 +602,7 @@ impl Client {
             self.client
                 .get(url.as_str())
                 .basic_auth(self.credentials.0.clone(), Some(self.credentials.1.clone()))
-                .send()
-                .unwrap(),
+                .send()?,
         )?;
         let mut buf: Vec<u8> = vec![];
         response.copy_to(&mut buf).unwrap();

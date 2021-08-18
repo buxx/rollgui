@@ -47,10 +47,26 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
         shutil.rmtree(f"{TMP_DIR}/rolling/{file_name}", ignore_errors=True)
         os.makedirs(f"{TMP_DIR}/rolling/{file_name}")
         os.makedirs(f"{TMP_DIR}/rolling/{file_name}/resources")
-        shutil.copy(f"target/{target}/{folder_str}/rollgui{exe_extension}", f"{TMP_DIR}/rolling/{file_name}")
+        shutil.copy(f"target/{target}/{folder_str}/rollgui{exe_extension}", f"{TMP_DIR}/rolling/{file_name}/RiseOfClans{exe_extension}")
         shutil.copy(f"resources/tilesheet.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
         shutil.copy(f"resources/ui.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
-        shutil.copy(f"config.ini", f"{TMP_DIR}/rolling/{file_name}/config.ini")
+        shutil.copy(f"resources/intro.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
+        shutil.copy(f"resources/introb.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
+        with open(f"{TMP_DIR}/rolling/{file_name}/config.ini", "r+") as config_file:
+            config_file.write("""[debug]
+enable_bug_report = true
+
+[server]
+name = Rise of Clans
+server_hostname = rolling-server.bux.fr
+server_port = 4443
+unsecure = false
+
+[design]
+title = RoC
+home_image = resources/intro.png
+home_image_background = resources/introb.png
+""")
         zip_command = f"cd {TMP_DIR}/rolling && zip -r {file_name}.zip {file_name}"
         if "windows" in target:
             shutil.copy(f"rollgui.bat", f"{TMP_DIR}/rolling/{file_name}/")
@@ -109,11 +125,11 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
             subprocess.check_output(
                 f"scp -P 3122 "
                 f"{file_to_upload_path} "
-                f"s2.bux.fr:/srv/www/bux.fr/rolling/release/{file_name}_{version}.zip",
+                f"bux@s2.bux.fr:/srv/www/bux.fr/rolling/release/{file_name}_{version}.zip",
                 shell=True,
             )
             subprocess.check_output(
-                f"ssh -p 3122 s2.bux.fr 'echo \"{version}\" "
+                f"ssh -p 3122 bux@s2.bux.fr 'echo \"{version}\" "
                 f">> /srv/www/bux.fr/rolling/release/index'",
                 shell=True,
             )
