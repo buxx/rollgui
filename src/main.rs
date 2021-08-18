@@ -1,7 +1,9 @@
 use coffee::graphics::WindowSettings;
 use coffee::ui::UserInterface;
 use coffee::Result;
-use ini::Ini;
+use ini::{Ini, Error};
+use structopt::StructOpt;
+use std::process::exit;
 
 pub mod engine;
 pub mod entity;
@@ -20,8 +22,24 @@ pub mod ui;
 pub mod util;
 pub mod world;
 
+
+#[derive(StructOpt, Debug)]
+#[structopt(name = "basic")]
+struct Opt {
+    #[structopt(name = "config_file_path", default_value = "config.ini")]
+    config_file_path: String,
+}
+
 pub fn main() -> Result<()> {
-    let conf = Ini::load_from_file("config.ini").unwrap();
+    let opt = Opt::from_args();
+    let config_file_path: String = opt.config_file_path;
+    let conf = match Ini::load_from_file(&config_file_path) {
+        Ok(conf) => conf,
+        Err(err) => {
+            eprintln!("Error when loading config file {}: {}", config_file_path, err);
+            exit(1)
+        }
+    };
     match conf
         .get_from(Some("debug"), "enable_bug_report")
         .unwrap_or("false")

@@ -14,3 +14,5 @@
 #**/*.rs.bk
 
 static/cache
+config_local.ini
+config_s2.ini
