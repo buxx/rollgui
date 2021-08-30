@@ -1033,6 +1033,10 @@ impl Engine for DescriptionEngine {
     }
 
     fn update(&mut self, _window: &Window) -> Option<MainMessage> {
+        if self.description.back_to_zone {
+            return Some(MainMessage::DescriptionToZone { request_clicks: None })
+        }
+
         if let Some(redirect) = self.description.redirect.as_ref() {
             return Some(MainMessage::ToDescriptionWithUrl {
                 url: redirect.to_string(),
