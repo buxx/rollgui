@@ -52,7 +52,7 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
         shutil.copy(f"resources/ui.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
         shutil.copy(f"resources/intro.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
         shutil.copy(f"resources/introb.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
-        with open(f"{TMP_DIR}/rolling/{file_name}/config.ini", "r+") as config_file:
+        with open(f"{TMP_DIR}/rolling/{file_name}/config.ini", "w+") as config_file:
             config_file.write("""[debug]
 enable_bug_report = true
 
