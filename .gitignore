@@ -17,3 +17,7 @@ static/cache
 config_local.ini
 config_s2.ini
 *~
+.cache
+.idea
+.history
+client.db
