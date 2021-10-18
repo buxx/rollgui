@@ -355,10 +355,12 @@ impl ZoneEngine {
                 continue;
             }
 
-            sprites.push(
-                self.tile_sheet
-                    .create_sprite_for("CHARACTER", real_x, real_y, self.sprite_i),
-            );
+            sprites.push(self.tile_sheet.create_sprite_for(
+                "CHARACTER",
+                real_x,
+                real_y,
+                self.sprite_i,
+            ));
         }
 
         sprites
@@ -381,7 +383,12 @@ impl ZoneEngine {
 
             for class in stuff.get_classes().iter().rev() {
                 if self.tile_sheet.have_id(class) {
-                    sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y, self.sprite_i));
+                    sprites.push(self.tile_sheet.create_sprite_for(
+                        class,
+                        real_x,
+                        real_y,
+                        self.sprite_i,
+                    ));
                     break;
                 }
             }
@@ -407,15 +414,19 @@ impl ZoneEngine {
 
             // TODO BS 20200722: use class system like for build and stuff
             if self.tile_sheet.have_id(&resource.id) {
-                sprites.push(
-                    self.tile_sheet
-                        .create_sprite_for(&resource.id, real_x, real_y, self.sprite_i),
-                );
+                sprites.push(self.tile_sheet.create_sprite_for(
+                    &resource.id,
+                    real_x,
+                    real_y,
+                    self.sprite_i,
+                ));
             } else {
-                sprites.push(
-                    self.tile_sheet
-                        .create_sprite_for("RESOURCE_GENERIC", real_x, real_y, self.sprite_i),
-                );
+                sprites.push(self.tile_sheet.create_sprite_for(
+                    "RESOURCE_GENERIC",
+                    real_x,
+                    real_y,
+                    self.sprite_i,
+                ));
             }
         }
 
@@ -440,14 +451,12 @@ impl ZoneEngine {
 
             for class in build.get_classes().iter().rev() {
                 if self.tile_sheet.have_id(class) {
-                    sprites.push(
-                        self.tile_sheet.create_sprite_for(
-                            class,
-                            real_x,
-                            real_y,
-                            self.sprite_i,
-                        )
-                    );
+                    sprites.push(self.tile_sheet.create_sprite_for(
+                        class,
+                        real_x,
+                        real_y,
+                        self.sprite_i,
+                    ));
                     break;
                 }
             }
@@ -471,10 +480,12 @@ impl ZoneEngine {
                 continue;
             }
 
-            sprites.push(
-                self.tile_sheet
-                    .create_sprite_for(&animated_corpse.type_, real_x, real_y, self.sprite_i),
-            );
+            sprites.push(self.tile_sheet.create_sprite_for(
+                &animated_corpse.type_,
+                real_x,
+                real_y,
+                self.sprite_i,
+            ));
         }
 
         sprites
@@ -715,7 +726,12 @@ impl Engine for ZoneEngine {
                         let real_x = self.get_real_x(cursor_col_i * TILE_WIDTH);
                         let real_y = self.get_real_y(cursor_row_i * TILE_HEIGHT);
 
-                        sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y, self.sprite_i));
+                        sprites.push(self.tile_sheet.create_sprite_for(
+                            class,
+                            real_x,
+                            real_y,
+                            self.sprite_i,
+                        ));
                         break;
                     }
                 }
@@ -806,6 +822,7 @@ impl Engine for ZoneEngine {
                     resource_count,
                     build_count,
                     character_count,
+                    quick_actions,
                 } => {
                     self.around_items_count = stuff_count + resource_count;
                     self.around_builds_count = build_count;
@@ -1005,7 +1022,9 @@ impl Engine for ZoneEngine {
                 self.apply_chat_text_buffer(input.text_buffer.clone());
                 input.text_buffer = String::new();
             }
-            let move_modifier = if input.keys_pressed.contains(&keyboard::KeyCode::LShift) || input.keys_pressed.contains(&keyboard::KeyCode::RShift) {
+            let move_modifier = if input.keys_pressed.contains(&keyboard::KeyCode::LShift)
+                || input.keys_pressed.contains(&keyboard::KeyCode::RShift)
+            {
                 3
             } else {
                 1

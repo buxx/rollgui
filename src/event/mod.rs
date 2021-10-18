@@ -4,6 +4,7 @@ use crate::server::client::{ItemModel, ListOfItemModel};
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde::{Deserialize as SerdeDeserialize, Serialize as SerdeSerialize};
 use serde_derive::{Deserialize as DeserializeDerive, Serialize as SerializeDerive};
+use serde_json;
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -59,6 +60,7 @@ pub enum ZoneEventType {
         resource_count: i32,
         build_count: i32,
         character_count: i32,
+        quick_actions: Vec<CharacterActionLink>,
     },
     ClickActionEvent {
         action_type: String,
@@ -102,6 +104,14 @@ pub struct NewChatMessage {
     pub conversation_title: Option<String>,
     pub message: String,
     pub character_id: String,
+}
+
+#[derive(SerdeSerialize, SerdeDeserialize, Debug)]
+pub struct CharacterActionLink {
+    pub name: String,
+    pub link: String,
+    pub classes1: Vec<String>,
+    pub classes2: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -152,6 +162,8 @@ impl ZoneEvent {
                 let resource_count: i32 = data["resource_count"].as_i64().unwrap() as i32;
                 let build_count: i32 = data["build_count"].as_i64().unwrap() as i32;
                 let character_count: i32 = data["character_count"].as_i64().unwrap() as i32;
+                let quick_actions: Vec<CharacterActionLink> =
+                    serde_json::from_value(data["quick_actions"].clone()).unwrap();
 
                 Ok(ZoneEvent {
                     event_type_name: String::from(THERE_IS_AROUND),
@@ -160,6 +172,7 @@ impl ZoneEvent {
                         resource_count,
                         build_count,
                         character_count,
+                        quick_actions,
                     },
                 })
             }
