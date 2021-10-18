@@ -1,3 +1,4 @@
+use crate::args;
 use crate::engine::description::DescriptionEngine;
 use crate::engine::exit::ExitEngine;
 use crate::engine::login::LoginEngine;
@@ -20,28 +21,27 @@ use crate::tile::zone::Tiles as ZoneTiles;
 use crate::ui::renderer::Renderer;
 use crate::ui::widget::text::Text;
 use crate::ui::{Column, Element};
-use crate::{event, server, util};
-use crate::args;
 use crate::util::get_conf;
+use crate::{event, server, util};
 
-use structopt::StructOpt;
 use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
 use coffee::load::{loading_screen, Task};
 use coffee::ui::{Align, Justify, UserInterface};
 use coffee::{graphics, Game, Timer};
+use dialog::DialogBox;
+use ini::Ini;
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
 use std::error::Error;
-use std::time::SystemTime;
-use dialog::DialogBox;
 use std::process::exit;
-use ini::Ini;
+use std::time::SystemTime;
+use structopt::StructOpt;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 // TODO: dynamic from server (and tilesheet)
-pub const TILE_WIDTH: i16 = 16;
-pub const TILE_HEIGHT: i16 = 16;
+pub const TILE_WIDTH: i16 = 32;
+pub const TILE_HEIGHT: i16 = 32;
 
 pub const TARGET_FRAME_DURATION_MS: u64 = 16; // target is ~60fps
 
@@ -86,7 +86,11 @@ impl MyGame {
     fn set_server_last_username(&mut self) {
         self.db
             .set(
-                format!("server_{}_{}", self.server.address.host, self.server.address.port).as_str(),
+                format!(
+                    "server_{}_{}",
+                    self.server.address.host, self.server.address.port
+                )
+                .as_str(),
                 &self.server.client.credentials.0,
             )
             .unwrap();
@@ -211,26 +215,27 @@ impl MyGame {
         return Ok(None);
     }
 
-    fn create_upgrade_engine(
-        &mut self,
-        version: (u8, u8, u8),
-        mandatory: bool,
-    ) -> Box<dyn Engine> {
+    fn create_upgrade_engine(&mut self, version: (u8, u8, u8), mandatory: bool) -> Box<dyn Engine> {
         println!("setup_upgrade_engine");
-        Box::new(UpgradeEngine::new(version, mandatory, self.server.address.clone()))
+        Box::new(UpgradeEngine::new(
+            version,
+            mandatory,
+            self.server.address.clone(),
+        ))
     }
 
     fn setup_home_image_background(&mut self) {
-        self.pending_home_image = match self.conf.get_from(Some("design"), "home_image_background") {
+        self.pending_home_image = match self.conf.get_from(Some("design"), "home_image_background")
+        {
             None => None,
-            Some(home_image_background) => Some(String::from(home_image_background))
+            Some(home_image_background) => Some(String::from(home_image_background)),
         }
     }
 
     fn setup_home_image(&mut self) {
         self.pending_home_image = match self.conf.get_from(Some("design"), "home_image") {
             None => None,
-            Some(home_image_background) => Some(String::from(home_image_background))
+            Some(home_image_background) => Some(String::from(home_image_background)),
         }
     }
 
@@ -239,10 +244,7 @@ impl MyGame {
         self.home_image = None;
     }
 
-    fn create_startup_engine(
-        &mut self,
-        disable_version_check: bool,
-    ) -> Box<dyn Engine> {
+    fn create_startup_engine(&mut self, disable_version_check: bool) -> Box<dyn Engine> {
         println!("create startup engine");
 
         if !disable_version_check {
@@ -253,7 +255,7 @@ impl MyGame {
                 println!("Version is not compatible");
                 let last_compatible_version = util::get_last_compatible_version(server_version);
                 self.setup_home_image_background();
-                return self.create_upgrade_engine(last_compatible_version, true)
+                return self.create_upgrade_engine(last_compatible_version, true);
             } else {
                 println!("Version is compatible");
                 let last_compatible_version = util::get_last_compatible_version(server_version);
@@ -263,7 +265,7 @@ impl MyGame {
                 );
                 if last_compatible_version != client_version {
                     self.setup_home_image_background();
-                    return self.create_upgrade_engine(last_compatible_version, false)
+                    return self.create_upgrade_engine(last_compatible_version, false);
                 }
             }
         }
@@ -296,9 +298,8 @@ impl MyGame {
         // FIXME BS: manage error
         let zone_raw = zone_data["raw_source"].as_str().unwrap();
         let zone_raw = util::extract_block_from_source(util::BLOCK_GEO, zone_raw).unwrap();
-        let world_tile_type_id = self.server.world.rows
-            [player.world_position.0 as usize]
-            .cols[player.world_position.1 as usize]
+        let world_tile_type_id = self.server.world.rows[player.world_position.0 as usize].cols
+            [player.world_position.1 as usize]
             .clone();
         let level = Level::new(&zone_raw, &tiles, world_tile_type_id).unwrap();
 
@@ -433,20 +434,17 @@ impl Game for MyGame {
         let conf = get_conf(&opt.config_file_path);
         let pending_home_image: Option<String> = match conf.get_from(Some("design"), "home_image") {
             None => None,
-            Some(file_path) => {
-                Some(String::from(file_path))
-            }
+            Some(file_path) => Some(String::from(file_path)),
         };
         let server_hostname = conf.get_from(Some("server"), "server_hostname").unwrap();
-        let server_port = conf.get_from(Some("server"), "server_port").unwrap().parse::<u16>().unwrap();
-        let server_unsecure = match conf
-            .get_from(Some("server"), "unsecure")
-            .unwrap_or("false")
-        {
-            "true" | "True" | "1" => {
-                true
-            }
-            _ => false
+        let server_port = conf
+            .get_from(Some("server"), "server_port")
+            .unwrap()
+            .parse::<u16>()
+            .unwrap();
+        let server_unsecure = match conf.get_from(Some("server"), "unsecure").unwrap_or("false") {
+            "true" | "True" | "1" => true,
+            _ => false,
         };
         let server_address = if server_unsecure {
             server::ServerAddress::unsecure(server_hostname, server_port)
@@ -454,24 +452,22 @@ impl Game for MyGame {
             server::ServerAddress::new(server_hostname, server_port)
         };
         let server = match server::Server::new(
-            server::client::Client::new(
-                server_address.clone(),
-                ("".to_string(), "".to_string())
-            ),
+            server::client::Client::new(server_address.clone(), ("".to_string(), "".to_string())),
             server_address,
             None,
         ) {
             Ok(server) => server,
             Err(err) => {
                 eprintln!("Connexion error : {}", err);
-                dialog::Message::new("Erreur de connexion").title("Erreur")
-                 .show()
-                 .expect("Could not display dialog box");
+                dialog::Message::new("Erreur de connexion")
+                    .title("Erreur")
+                    .show()
+                    .expect("Could not display dialog box");
                 exit(1)
             }
         };
 
-        graphics::Image::load("resources/tilesheet.png").map(|image| MyGame {
+        graphics::Image::load("resources/graphics.png").map(|image| MyGame {
             conf,
             engine: None,
             tile_sheet_image: image,
@@ -492,7 +488,7 @@ impl Game for MyGame {
 
     fn interact(&mut self, input: &mut MyGameInput, window: &mut Window) {
         if self.engine.is_none() {
-            return
+            return;
         }
 
         if let Some(pending_illustration) = self.pending_illustration.clone() {
@@ -555,7 +551,9 @@ impl Game for MyGame {
             self.loading_displayed = false;
 
             match main_message {
-                MainMessage::StartupToZone { disable_version_check} => {
+                MainMessage::StartupToZone {
+                    disable_version_check,
+                } => {
                     println!("Set startup engine");
                     self.setup_home_image();
                     self.engine = Some(self.create_startup_engine(disable_version_check));
@@ -584,7 +582,7 @@ impl Game for MyGame {
                 MainMessage::CreateAccount { address } => {
                     self.setup_create_account(address);
                 }
-                MainMessage::AccountCreated  => {
+                MainMessage::AccountCreated => {
                     self.setup_home_image();
                     self.engine = Some(self.create_startup_engine(true));
                 }
@@ -592,7 +590,10 @@ impl Game for MyGame {
                     self.server.character_id = Some(character_id.clone());
                     self.setup_startup_to_zone_engine(None);
                 }
-                MainMessage::EnterServer { credentials, character_id } => {
+                MainMessage::EnterServer {
+                    credentials,
+                    character_id,
+                } => {
                     println!("Enter server");
                     self.server.client.credentials = credentials;
                     self.server.character_id = character_id;
@@ -606,11 +607,7 @@ impl Game for MyGame {
                 }
                 MainMessage::ToDescriptionWithUrl { url, back_url } => {
                     // FIXME: manage errors
-                    let description = self
-                        .server
-                        .client
-                        .describe(&url, None, None)
-                        .unwrap();
+                    let description = self.server.client.describe(&url, None, None).unwrap();
                     let player = if let Some(player) = self.player.as_ref() {
                         Some(player.clone())
                     } else {
@@ -659,7 +656,7 @@ impl Game for MyGame {
 
     fn draw(&mut self, frame: &mut Frame, timer: &Timer) {
         if self.engine.is_none() {
-            return
+            return;
         }
 
         // Slow down computing to preserve cpu
@@ -670,9 +667,15 @@ impl Game for MyGame {
             frame.clear(Color::BLACK);
         } else {
             if self.illustration_bg.is_some() {
-                self.engine.as_mut().unwrap().draw(frame, timer, self.illustration_bg.clone())
+                self.engine
+                    .as_mut()
+                    .unwrap()
+                    .draw(frame, timer, self.illustration_bg.clone())
             } else if self.home_image.is_some() {
-                self.engine.as_mut().unwrap().draw(frame, timer, self.home_image.clone())
+                self.engine
+                    .as_mut()
+                    .unwrap()
+                    .draw(frame, timer, self.home_image.clone())
             } else {
                 self.engine.as_mut().unwrap().draw(frame, timer, None)
             }
@@ -690,7 +693,7 @@ impl UserInterface for MyGame {
 
     fn react(&mut self, event: Message, window: &mut Window) {
         if self.engine.is_none() {
-            return
+            return;
         }
 
         match self.engine.as_mut().unwrap().react(event, window) {
@@ -700,7 +703,10 @@ impl UserInterface for MyGame {
     }
 
     fn layout(&mut self, window: &Window) -> Element {
-        if self.engine.is_none() || self.pending_action.is_some() || self.pending_illustration.is_some() {
+        if self.engine.is_none()
+            || self.pending_action.is_some()
+            || self.pending_illustration.is_some()
+        {
             if self.pending_action.is_some() {
                 self.loading_displayed = true;
             }
@@ -719,7 +725,10 @@ impl UserInterface for MyGame {
                 )
                 .into()
         } else {
-            self.engine.as_mut().unwrap().layout(window, self.illustration.clone())
+            self.engine
+                .as_mut()
+                .unwrap()
+                .layout(window, self.illustration.clone())
         }
     }
 }

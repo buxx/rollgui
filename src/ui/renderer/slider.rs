@@ -7,7 +7,7 @@ use std::ops::RangeInclusive;
 
 const RAIL: Rectangle<u16> = Rectangle {
     x: 98,
-    y: 56,
+    y: 1056,
     width: 1,
     height: 4,
 };

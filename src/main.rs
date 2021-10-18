@@ -1,9 +1,10 @@
-use coffee::graphics::WindowSettings;
-use coffee::Result;
-use coffee::ui::UserInterface;
-use structopt::StructOpt;
 use crate::util::get_conf;
+use coffee::graphics::WindowSettings;
+use coffee::ui::UserInterface;
+use coffee::Result;
+use structopt::StructOpt;
 
+pub mod args;
 pub mod engine;
 pub mod entity;
 pub mod error;
@@ -20,7 +21,6 @@ pub mod tile;
 pub mod ui;
 pub mod util;
 pub mod world;
-pub mod args;
 
 pub fn main() -> Result<()> {
     let opt = args::Opt::from_args();

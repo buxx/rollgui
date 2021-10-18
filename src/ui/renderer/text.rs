@@ -11,28 +11,28 @@ use std::cell::RefCell;
 use std::f32;
 
 const H1_X: u16 = 0;
-const H1_Y: u16 = 1460;
+const H1_Y: u16 = 2460;
 const H1_WIDTH: u16 = 600;
 const H1_HEIGHT: u16 = 54;
 
 const H2_X: u16 = 0;
-const H2_Y: u16 = 1514;
+const H2_Y: u16 = 2514;
 const H2_WIDTH: u16 = 600;
 const H2_HEIGHT: u16 = 37;
 
 const PARAGRAPH_X: u16 = 0;
-const PARAGRAPH_Y: u16 = 1551;
+const PARAGRAPH_Y: u16 = 2551;
 const PARAGRAPH_WIDTH: u16 = 768;
 const PARAGRAPH_HEIGHT: u16 = 37;
 const PARAGRAPH_Y_BORDER: u16 = 8;
 const PARAGRAPH_PADDING: u16 = 7;
 
 const GRAY1_X: u16 = 180;
-const GRAY1_Y: u16 = 0;
+const GRAY1_Y: u16 = 1000;
 const GRAY2_X: u16 = 180;
-const GRAY2_Y: u16 = 1;
+const GRAY2_Y: u16 = 1001;
 const GRAY3_X: u16 = 180;
-const GRAY3_Y: u16 = 2;
+const GRAY3_Y: u16 = 1002;
 
 impl text::Renderer for Renderer {
     fn node(&self, style: Style, content: &str, size: f32) -> Node {

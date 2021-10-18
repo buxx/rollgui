@@ -22,3 +22,4 @@ cache
 .idea
 .history
 client.db
+.vscode

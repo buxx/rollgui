@@ -5,7 +5,7 @@ use coffee::ui::core::MouseCursor;
 
 const SPRITE: Rectangle<u16> = Rectangle {
     x: 98,
-    y: 0,
+    y: 1000,
     width: 28,
     height: 28,
 };

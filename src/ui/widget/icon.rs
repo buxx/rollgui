@@ -32,126 +32,126 @@ pub struct Icon {
 
 pub const EMPTY: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 80,
+    y: 1080,
     width: 20,
     height: 20,
 };
 
 pub const HEART: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 100,
+    y: 1100,
     width: 20,
     height: 20,
 };
 
 pub const WATER: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 120,
+    y: 1120,
     width: 20,
     height: 20,
 };
 
 pub const HAM: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 140,
+    y: 1140,
     width: 20,
     height: 20,
 };
 
 pub const ANY_WATER: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 160,
+    y: 1160,
     width: 20,
     height: 20,
 };
 
 pub const ANY_HAM: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 180,
+    y: 1180,
     width: 20,
     height: 20,
 };
 
 pub const SHIELD: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 200,
+    y: 1200,
     width: 20,
     height: 20,
 };
 
 pub const FOLLOWER: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 220,
+    y: 1220,
     width: 20,
     height: 20,
 };
 
 pub const FOLLOWED: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 240,
+    y: 1240,
     width: 20,
     height: 20,
 };
 
 pub const OK: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 260,
+    y: 1260,
     width: 20,
     height: 20,
 };
 
 pub const KO: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 280,
+    y: 1280,
     width: 20,
     height: 20,
 };
 
 pub const TIME: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 300,
+    y: 1300,
     width: 20,
     height: 20,
 };
 
 pub const HEALTH1: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 320,
+    y: 1320,
     width: 20,
     height: 20,
 };
 
 pub const HEALTH2: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 340,
+    y: 1340,
     width: 20,
     height: 20,
 };
 
 pub const HEALTH3: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 360,
+    y: 1360,
     width: 20,
     height: 20,
 };
 
 pub const HEALTH4: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 380,
+    y: 1380,
     width: 20,
     height: 20,
 };
 
 pub const WARNING: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 400,
+    y: 1400,
     width: 20,
     height: 20,
 };
 
 pub const TIREDNESS: Rectangle<u16> = Rectangle {
     x: 200,
-    y: 420,
+    y: 1420,
     width: 20,
     height: 20,
 };

@@ -7,6 +7,7 @@ mod link;
 mod panel;
 mod progress_bar;
 mod radio;
+mod sheet_button;
 mod slider;
 mod state_less_button;
 mod state_less_fixed_button;
@@ -133,7 +134,7 @@ impl Default for Configuration {
             sprites: Task::using_gpu(|gpu| {
                 Image::from_image(
                     gpu,
-                    &::image::load_from_memory(include_bytes!("../../resources/ui.png"))?,
+                    &::image::load_from_memory(include_bytes!("../../resources/graphics.png"))?,
                 )
             }),
             font: Font::load_from_bytes(include_bytes!(

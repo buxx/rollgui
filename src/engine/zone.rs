@@ -5,12 +5,12 @@ use crate::entity::corpse::AnimatedCorpse;
 use crate::entity::player::Player;
 use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
-use crate::event::{TopBarMessageType, ZoneEventType};
+use crate::event::{CharacterActionLink, TopBarMessageType, ZoneEventType};
 use crate::game::{TILE_HEIGHT, TILE_WIDTH};
 use crate::gui::lang::model::RequestClicks;
 use crate::input::MyGameInput;
 use crate::level::Level;
-use crate::message::{MainMessage, Message};
+use crate::message::{self, MainMessage, Message};
 use crate::server::client::ItemModel;
 use crate::server::Server;
 use crate::sheet::TileSheet;
@@ -20,6 +20,7 @@ use crate::ui::widget::fixed_button;
 use crate::ui::widget::icon;
 use crate::ui::widget::link::Link;
 use crate::ui::widget::progress_bar;
+use crate::ui::widget::sheet_button::SheetButton;
 use crate::ui::widget::text;
 use crate::ui::widget::text_input::TextInput;
 use crate::ui::widget::thin_button;
@@ -50,6 +51,7 @@ const TOP_BAR_BUTTON_WIDTH: u32 = 100;
 const MARGIN_RIGHT_CHAT: u32 = 25;
 const CHAT_LINE_HEIGHT: u32 = 20;
 const BORDERS_TO_SEE_PLAYER_LEN: i16 = 15;
+const QUICK_ACTION_ROW_HEIGHT: u32 = 50;
 
 fn contains_string(classes: &Vec<String>, search: &str) -> bool {
     for class in classes.iter() {
@@ -112,6 +114,8 @@ pub struct ZoneEngine {
     around_builds_count: i32,
     around_characters_count: i32,
     around_wait: Option<Instant>,
+    around_quick_actions: Vec<CharacterActionLink>,
+    current_quick_action_link_pressed: Option<String>,
     blinker: util::Blinker<char>,
     characters: HashMap<String, Character>,
     stuffs: HashMap<String, Stuff>,
@@ -220,6 +224,8 @@ impl ZoneEngine {
             around_builds_count: 0,
             around_characters_count: 0,
             around_wait: None,
+            around_quick_actions: vec![],
+            current_quick_action_link_pressed: None,
             blinker: util::Blinker {
                 items: HashMap::new(),
             },
@@ -355,10 +361,12 @@ impl ZoneEngine {
                 continue;
             }
 
-            sprites.push(
-                self.tile_sheet
-                    .create_sprite_for("CHARACTER", real_x, real_y, self.sprite_i),
-            );
+            sprites.push(self.tile_sheet.create_sprite_for(
+                "CHARACTER",
+                real_x,
+                real_y,
+                self.sprite_i,
+            ));
         }
 
         sprites
@@ -381,7 +389,12 @@ impl ZoneEngine {
 
             for class in stuff.get_classes().iter().rev() {
                 if self.tile_sheet.have_id(class) {
-                    sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y, self.sprite_i));
+                    sprites.push(self.tile_sheet.create_sprite_for(
+                        class,
+                        real_x,
+                        real_y,
+                        self.sprite_i,
+                    ));
                     break;
                 }
             }
@@ -407,15 +420,19 @@ impl ZoneEngine {
 
             // TODO BS 20200722: use class system like for build and stuff
             if self.tile_sheet.have_id(&resource.id) {
-                sprites.push(
-                    self.tile_sheet
-                        .create_sprite_for(&resource.id, real_x, real_y, self.sprite_i),
-                );
+                sprites.push(self.tile_sheet.create_sprite_for(
+                    &resource.id,
+                    real_x,
+                    real_y,
+                    self.sprite_i,
+                ));
             } else {
-                sprites.push(
-                    self.tile_sheet
-                        .create_sprite_for("RESOURCE_GENERIC", real_x, real_y, self.sprite_i),
-                );
+                sprites.push(self.tile_sheet.create_sprite_for(
+                    "RESOURCE_GENERIC",
+                    real_x,
+                    real_y,
+                    self.sprite_i,
+                ));
             }
         }
 
@@ -440,14 +457,12 @@ impl ZoneEngine {
 
             for class in build.get_classes().iter().rev() {
                 if self.tile_sheet.have_id(class) {
-                    sprites.push(
-                        self.tile_sheet.create_sprite_for(
-                            class,
-                            real_x,
-                            real_y,
-                            self.sprite_i,
-                        )
-                    );
+                    sprites.push(self.tile_sheet.create_sprite_for(
+                        class,
+                        real_x,
+                        real_y,
+                        self.sprite_i,
+                    ));
                     break;
                 }
             }
@@ -471,10 +486,12 @@ impl ZoneEngine {
                 continue;
             }
 
-            sprites.push(
-                self.tile_sheet
-                    .create_sprite_for(&animated_corpse.type_, real_x, real_y, self.sprite_i),
-            );
+            sprites.push(self.tile_sheet.create_sprite_for(
+                &animated_corpse.type_,
+                real_x,
+                real_y,
+                self.sprite_i,
+            ));
         }
 
         sprites
@@ -519,6 +536,36 @@ impl ZoneEngine {
         }
 
         None
+    }
+
+    fn receive_new_top_bar_message(
+        &mut self,
+        message: String,
+        type_: TopBarMessageType,
+        destroy_previous: bool,
+    ) {
+        let text_color = match type_ {
+            TopBarMessageType::NORMAL => Color::WHITE,
+            TopBarMessageType::ERROR => Color::RED,
+        };
+        let previous_top_bar = if let Some(replace_top_bar_by) = self.replace_top_bar_by.as_ref() {
+            Some(replace_top_bar_by.clone())
+        } else if let Some(top_bar) = self.top_bar.as_ref() {
+            Some(top_bar.clone())
+        } else {
+            None
+        };
+
+        self.top_bar = Some(TopBar {
+            text: message,
+            text_color,
+            display_buttons: false,
+            on_click: None,
+        });
+        self.replace_top_bar_start = Some(SystemTime::now());
+        if !destroy_previous {
+            self.replace_top_bar_by = previous_top_bar;
+        }
     }
 
     fn there_is_build_not_browseable(&self, row_i: i16, col_i: i16) -> bool {
@@ -695,7 +742,7 @@ impl Engine for ZoneEngine {
         sprites.extend(self.get_characters_sprites());
         sprites.push(Sprite {
             source: Rectangle {
-                x: 904,
+                x: 1100,
                 y: 0,
                 width: 120,
                 height: 225,
@@ -715,7 +762,12 @@ impl Engine for ZoneEngine {
                         let real_x = self.get_real_x(cursor_col_i * TILE_WIDTH);
                         let real_y = self.get_real_y(cursor_row_i * TILE_HEIGHT);
 
-                        sprites.push(self.tile_sheet.create_sprite_for(class, real_x, real_y, self.sprite_i));
+                        sprites.push(self.tile_sheet.create_sprite_for(
+                            class,
+                            real_x,
+                            real_y,
+                            self.sprite_i,
+                        ));
                         break;
                     }
                 }
@@ -806,10 +858,12 @@ impl Engine for ZoneEngine {
                     resource_count,
                     build_count,
                     character_count,
+                    quick_actions,
                 } => {
                     self.around_items_count = stuff_count + resource_count;
                     self.around_builds_count = build_count;
                     self.around_characters_count = character_count;
+                    self.around_quick_actions = quick_actions;
                 }
                 ZoneEventType::NewResumeText { resume } => {
                     self.resume_text = resume;
@@ -818,6 +872,14 @@ impl Engine for ZoneEngine {
                 ZoneEventType::NewBuild { build } => {
                     self.builds.insert(build.id, build);
                     self.update_builds_data();
+                }
+                ZoneEventType::ZoneTileReplace {
+                    row_i,
+                    col_i,
+                    new_tile_id,
+                } => {
+                    println!("Replace tile at {}:{} with {}", row_i, col_i, &new_tile_id);
+                    self.level.rows[row_i as usize].cols[col_i as usize] = new_tile_id;
                 }
                 ZoneEventType::AnimatedCorpseMove {
                     to_row_i,
@@ -902,27 +964,7 @@ impl Engine for ZoneEngine {
                     }
                 }
                 ZoneEventType::TopBarMessage { message, type_ } => {
-                    let text_color = match type_ {
-                        TopBarMessageType::NORMAL => Color::WHITE,
-                        TopBarMessageType::ERROR => Color::RED,
-                    };
-                    let previous_top_bar =
-                        if let Some(replace_top_bar_by) = self.replace_top_bar_by.as_ref() {
-                            Some(replace_top_bar_by.clone())
-                        } else if let Some(top_bar) = self.top_bar.as_ref() {
-                            Some(top_bar.clone())
-                        } else {
-                            None
-                        };
-
-                    self.top_bar = Some(TopBar {
-                        text: message,
-                        text_color,
-                        display_buttons: false,
-                        on_click: None,
-                    });
-                    self.replace_top_bar_start = Some(SystemTime::now());
-                    self.replace_top_bar_by = previous_top_bar;
+                    self.receive_new_top_bar_message(message, type_, false);
                 }
                 _ => println!("unknown event type {:?}", &event.event_type),
             }
@@ -931,7 +973,7 @@ impl Engine for ZoneEngine {
         None
     }
 
-    fn interact(&mut self, input: &mut MyGameInput, _window: &mut Window) -> Option<MainMessage> {
+    fn interact(&mut self, input: &mut MyGameInput, window: &mut Window) -> Option<MainMessage> {
         let mut try_player_moves: Vec<(i16, i16)> = vec![];
         self.cursor_position = input.cursor_position.clone();
 
@@ -942,7 +984,10 @@ impl Engine for ZoneEngine {
             input.mouse_buttons_pressed.clear();
 
             // Is that a move/requested click ? Must not be in menu
-            if click_x > START_SCREEN_X && click_y > START_SCREEN_Y {
+            if click_x > START_SCREEN_X
+                && click_y > START_SCREEN_Y
+                && click_y < (window.height() - QUICK_ACTION_ROW_HEIGHT as f32) as i16
+            {
                 if let Some(request_clicks) = &self.request_clicks {
                     // REQUESTED CLICK
                     self.socket.send(event::ZoneEvent {
@@ -1005,7 +1050,9 @@ impl Engine for ZoneEngine {
                 self.apply_chat_text_buffer(input.text_buffer.clone());
                 input.text_buffer = String::new();
             }
-            let move_modifier = if input.keys_pressed.contains(&keyboard::KeyCode::LShift) || input.keys_pressed.contains(&keyboard::KeyCode::RShift) {
+            let move_modifier = if input.keys_pressed.contains(&keyboard::KeyCode::LShift)
+                || input.keys_pressed.contains(&keyboard::KeyCode::RShift)
+            {
                 3
             } else {
                 1
@@ -1123,6 +1170,7 @@ impl Engine for ZoneEngine {
                     self.around_items_count = 0;
                     self.around_builds_count = 0;
                     self.around_characters_count = 0;
+                    self.around_quick_actions = vec![];
                 }
             } else {
                 if let Some(around_wait) = self.around_wait.as_ref() {
@@ -1322,6 +1370,37 @@ impl Engine for ZoneEngine {
                     },
                 });
             }
+            Message::QuickActionPressed(link) => {
+                self.current_quick_action_link_pressed = Some(link);
+            }
+            Message::QuickActionReleased(link) => {
+                self.current_quick_action_link_pressed = None;
+                // FIXME to async !!!
+                match self.server.client.describe(&link, None, None) {
+                    Ok(description) => {
+                        let type_ = if description.type_ == "ERROR" {
+                            TopBarMessageType::ERROR
+                        } else {
+                            TopBarMessageType::NORMAL
+                        };
+                        self.receive_new_top_bar_message(
+                            description
+                                .quick_action_response
+                                .unwrap_or("Erreur : Aucun message obtenu".to_string()),
+                            type_,
+                            true,
+                        );
+                    }
+                    Err(error) => {
+                        eprintln!("Error happens when make quick action : {}", error);
+                        self.receive_new_top_bar_message(
+                            "Error happens when make quick action".to_string(),
+                            TopBarMessageType::ERROR,
+                            false,
+                        );
+                    }
+                };
+            }
             _ => {}
         }
         None
@@ -1369,7 +1448,7 @@ impl Engine for ZoneEngine {
 
         let left_menu = Column::new()
             .width(LEFT_MENU_WIDTH as u32)
-            .height(window.height() as u32)
+            .height(window.height() as u32 - QUICK_ACTION_ROW_HEIGHT)
             // .align_items(Align::Center)
             // .justify_content(Justify::Center)
             .padding(0)
@@ -1461,7 +1540,7 @@ impl Engine for ZoneEngine {
 
         let mut right_menu = Column::new()
             .width(RIGHT_MENU_WIDTH as u32)
-            .height(window.height() as u32)
+            .height(window.height() as u32 - QUICK_ACTION_ROW_HEIGHT)
             .push(
                 Row::new().push(
                     text::Text::new(&self.player.name)
@@ -1597,6 +1676,25 @@ impl Engine for ZoneEngine {
             )
         }
 
+        let mut quick_actions_row = Row::new()
+            .align_items(Align::Center)
+            .width(window.width() as u32);
+        for quick_action in &self.around_quick_actions {
+            let pressed = if let Some(pressed_link) = &self.current_quick_action_link_pressed {
+                quick_action.link == *pressed_link
+            } else {
+                false
+            };
+            quick_actions_row = quick_actions_row.push(SheetButton::new(
+                pressed,
+                &self.tile_sheet,
+                &quick_action.classes1,
+                &quick_action.classes2,
+                message::Message::QuickActionPressed(quick_action.link.clone()),
+                Message::QuickActionReleased(quick_action.link.clone()),
+            ))
+        }
+
         let mut center_column = Column::new()
             .width(
                 window.width() as u32
@@ -1604,7 +1702,7 @@ impl Engine for ZoneEngine {
                     - RIGHT_MENU_WIDTH as u32
                     - MARGIN_RIGHT_CHAT,
             )
-            .height(window.height() as u32);
+            .height(window.height() as u32 - QUICK_ACTION_ROW_HEIGHT);
 
         if let Some(top_bar) = self.top_bar.as_ref() {
             let mut top_bar_row = Row::new().height(fixed_button::NODE_HEIGHT);
@@ -1691,12 +1789,20 @@ impl Engine for ZoneEngine {
             ));
         }
 
-        let layout = Row::new()
-            .push(left_menu)
-            .push(center_column)
-            .push(Column::new().width(MARGIN_RIGHT_CHAT))
-            .push(right_menu)
-            .align_items(Align::Stretch);
+        let layout = Row::new().push(
+            Column::new()
+                .push(
+                    Row::new()
+                        .push(left_menu)
+                        .push(center_column)
+                        .push(Column::new().width(MARGIN_RIGHT_CHAT))
+                        .push(right_menu)
+                        .align_items(Align::Stretch)
+                        .height(window.height() as u32 - QUICK_ACTION_ROW_HEIGHT),
+                )
+                // Bottom
+                .push(quick_actions_row),
+        );
 
         layout.into()
     }

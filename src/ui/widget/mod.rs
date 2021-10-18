@@ -5,6 +5,7 @@ pub mod icon;
 pub mod link;
 pub mod progress_bar;
 pub mod radio;
+pub mod sheet_button;
 pub mod state_less_button;
 pub mod state_less_fixed_button;
 pub mod text;

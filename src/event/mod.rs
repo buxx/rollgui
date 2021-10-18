@@ -1,9 +1,11 @@
 use crate::entity::build::Build;
 use crate::error::RollingError;
 use crate::server::client::{ItemModel, ListOfItemModel};
+use crate::tile::TileId;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde::{Deserialize as SerdeDeserialize, Serialize as SerdeSerialize};
 use serde_derive::{Deserialize as DeserializeDerive, Serialize as SerializeDerive};
+use serde_json;
 use serde_json::Value;
 use std::collections::HashMap;
 
@@ -21,6 +23,7 @@ pub const REQUEST_CHAT: &str = "REQUEST_CHAT";
 pub const NEW_CHAT_MESSAGE: &str = "NEW_CHAT_MESSAGE";
 pub const ANIMATED_CORPSE_MOVE: &str = "ANIMATED_CORPSE_MOVE";
 pub const TOP_BAR_MESSAGE: &str = "TOP_BAR_MESSAGE";
+pub const ZONE_TILE_REPLACE: &str = "ZONE_TILE_REPLACE";
 
 #[derive(SerializeDerive, DeserializeDerive, Debug)]
 #[serde(untagged)]
@@ -59,6 +62,7 @@ pub enum ZoneEventType {
         resource_count: i32,
         build_count: i32,
         character_count: i32,
+        quick_actions: Vec<CharacterActionLink>,
     },
     ClickActionEvent {
         action_type: String,
@@ -94,6 +98,11 @@ pub enum ZoneEventType {
         message: String,
         type_: TopBarMessageType,
     },
+    ZoneTileReplace {
+        row_i: i16,
+        col_i: i16,
+        new_tile_id: TileId,
+    },
 }
 
 #[derive(SerdeSerialize, SerdeDeserialize, Debug)]
@@ -102,6 +111,14 @@ pub struct NewChatMessage {
     pub conversation_title: Option<String>,
     pub message: String,
     pub character_id: String,
+}
+
+#[derive(SerdeSerialize, SerdeDeserialize, Debug)]
+pub struct CharacterActionLink {
+    pub name: String,
+    pub link: String,
+    pub classes1: Vec<String>,
+    pub classes2: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -152,6 +169,8 @@ impl ZoneEvent {
                 let resource_count: i32 = data["resource_count"].as_i64().unwrap() as i32;
                 let build_count: i32 = data["build_count"].as_i64().unwrap() as i32;
                 let character_count: i32 = data["character_count"].as_i64().unwrap() as i32;
+                let quick_actions: Vec<CharacterActionLink> =
+                    serde_json::from_value(data["quick_actions"].clone()).unwrap();
 
                 Ok(ZoneEvent {
                     event_type_name: String::from(THERE_IS_AROUND),
@@ -160,6 +179,7 @@ impl ZoneEvent {
                         resource_count,
                         build_count,
                         character_count,
+                        quick_actions,
                     },
                 })
             }
@@ -205,6 +225,20 @@ impl ZoneEvent {
                             traversable,
                             is_floor: build_data["is_floor"].as_bool().unwrap(),
                         },
+                    },
+                })
+            }
+            &ZONE_TILE_REPLACE => {
+                let new_tile_id = data["new_tile_id"].as_str().unwrap();
+                let zone_row_i = data["zone_row_i"].as_i64().unwrap() as i16;
+                let zone_col_i = data["zone_col_i"].as_i64().unwrap() as i16;
+
+                Ok(ZoneEvent {
+                    event_type_name: String::from(ZONE_TILE_REPLACE),
+                    event_type: ZoneEventType::ZoneTileReplace {
+                        row_i: zone_row_i,
+                        col_i: zone_col_i,
+                        new_tile_id: new_tile_id.to_string(),
                     },
                 })
             }
