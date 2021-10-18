@@ -7,7 +7,7 @@ use coffee::ui::core::MouseCursor;
 
 const LEFT: Rectangle<u16> = Rectangle {
     x: 0,
-    y: 272,
+    y: 1272,
     width: 37,
     height: 49,
 };

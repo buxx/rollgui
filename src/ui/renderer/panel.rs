@@ -7,7 +7,7 @@ const PANEL_HEIGHT: u16 = 34;
 
 const TOP_LEFT: Rectangle<u16> = Rectangle {
     x: 0,
-    y: 0,
+    y: 1000,
     width: 8,
     height: 8,
 };

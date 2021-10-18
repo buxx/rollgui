@@ -28,11 +28,11 @@ const PARAGRAPH_Y_BORDER: u16 = 8;
 const PARAGRAPH_PADDING: u16 = 7;
 
 const GRAY1_X: u16 = 180;
-const GRAY1_Y: u16 = 0;
+const GRAY1_Y: u16 = 1000;
 const GRAY2_X: u16 = 180;
-const GRAY2_Y: u16 = 1;
+const GRAY2_Y: u16 = 1001;
 const GRAY3_X: u16 = 180;
-const GRAY3_Y: u16 = 2;
+const GRAY3_Y: u16 = 1002;
 
 impl text::Renderer for Renderer {
     fn node(&self, style: Style, content: &str, size: f32) -> Node {

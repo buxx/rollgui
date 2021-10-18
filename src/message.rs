@@ -32,7 +32,7 @@ pub enum MainMessage {
     EnterServer {
         credentials: (String, String),
         character_id: Option<String>,
-    }
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -93,4 +93,5 @@ pub enum Message {
     DismissRequestClicks,
     DismissChat,
     RequestChat(Option<i32>),
+    QuickActionPressed(String),
 }

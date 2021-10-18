@@ -48,8 +48,7 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
         os.makedirs(f"{TMP_DIR}/rolling/{file_name}")
         os.makedirs(f"{TMP_DIR}/rolling/{file_name}/resources")
         shutil.copy(f"target/{target}/{folder_str}/rollgui{exe_extension}", f"{TMP_DIR}/rolling/{file_name}/RiseOfClans{exe_extension}")
-        shutil.copy(f"resources/tilesheet.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
-        shutil.copy(f"resources/ui.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
+        shutil.copy(f"resources/graphics.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
         shutil.copy(f"resources/intro.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
         shutil.copy(f"resources/introb.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
         with open(f"{TMP_DIR}/rolling/{file_name}/config.ini", "w+") as config_file:

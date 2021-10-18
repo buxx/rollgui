@@ -5,7 +5,7 @@ use coffee::graphics::{Point, Rectangle, Sprite};
 
 const SIMPLE_THIN_LEFT_X: i32 = 196;
 const SIMPLE_THIN_LEFT_WIDTH: i32 = 2;
-const SIMPLE_THIN_Y: i32 = 0;
+const SIMPLE_THIN_Y: i32 = 1000;
 const SIMPLE_THIN_HEIGHT: i32 = 6;
 
 const SIMPLE_THIN_CENTER_X: i32 = 198;

@@ -471,7 +471,7 @@ impl Game for MyGame {
             }
         };
 
-        graphics::Image::load("resources/tilesheet.png").map(|image| MyGame {
+        graphics::Image::load("resources/graphics.png").map(|image| MyGame {
             conf,
             engine: None,
             tile_sheet_image: image,

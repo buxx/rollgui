@@ -7,11 +7,11 @@ use coffee::graphics::{
 use coffee::ui::core::MouseCursor;
 
 const GRAY1_X: u16 = 180;
-const GRAY1_Y: u16 = 0;
+const GRAY1_Y: u16 = 1000;
 const GRAY2_X: u16 = 180;
-const GRAY2_Y: u16 = 1;
+const GRAY2_Y: u16 = 1001;
 const GRAY3_X: u16 = 180;
-const GRAY3_Y: u16 = 2;
+const GRAY3_Y: u16 = 1002;
 
 impl link::Renderer for Renderer {
     fn draw(

@@ -5,12 +5,12 @@ use crate::entity::corpse::AnimatedCorpse;
 use crate::entity::player::Player;
 use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
-use crate::event::{TopBarMessageType, ZoneEventType};
+use crate::event::{CharacterActionLink, TopBarMessageType, ZoneEventType};
 use crate::game::{TILE_HEIGHT, TILE_WIDTH};
 use crate::gui::lang::model::RequestClicks;
 use crate::input::MyGameInput;
 use crate::level::Level;
-use crate::message::{MainMessage, Message};
+use crate::message::{self, MainMessage, Message};
 use crate::server::client::ItemModel;
 use crate::server::Server;
 use crate::sheet::TileSheet;
@@ -20,6 +20,7 @@ use crate::ui::widget::fixed_button;
 use crate::ui::widget::icon;
 use crate::ui::widget::link::Link;
 use crate::ui::widget::progress_bar;
+use crate::ui::widget::state_less_fixed_button::Button as FixedButton;
 use crate::ui::widget::text;
 use crate::ui::widget::text_input::TextInput;
 use crate::ui::widget::thin_button;
@@ -50,6 +51,7 @@ const TOP_BAR_BUTTON_WIDTH: u32 = 100;
 const MARGIN_RIGHT_CHAT: u32 = 25;
 const CHAT_LINE_HEIGHT: u32 = 20;
 const BORDERS_TO_SEE_PLAYER_LEN: i16 = 15;
+const QUICK_ACTION_ROW_HEIGHT: u32 = 50;
 
 fn contains_string(classes: &Vec<String>, search: &str) -> bool {
     for class in classes.iter() {
@@ -112,6 +114,7 @@ pub struct ZoneEngine {
     around_builds_count: i32,
     around_characters_count: i32,
     around_wait: Option<Instant>,
+    around_quick_actions: Vec<CharacterActionLink>,
     blinker: util::Blinker<char>,
     characters: HashMap<String, Character>,
     stuffs: HashMap<String, Stuff>,
@@ -220,6 +223,7 @@ impl ZoneEngine {
             around_builds_count: 0,
             around_characters_count: 0,
             around_wait: None,
+            around_quick_actions: vec![],
             blinker: util::Blinker {
                 items: HashMap::new(),
             },
@@ -827,6 +831,7 @@ impl Engine for ZoneEngine {
                     self.around_items_count = stuff_count + resource_count;
                     self.around_builds_count = build_count;
                     self.around_characters_count = character_count;
+                    self.around_quick_actions = quick_actions;
                 }
                 ZoneEventType::NewResumeText { resume } => {
                     self.resume_text = resume;
@@ -1142,6 +1147,7 @@ impl Engine for ZoneEngine {
                     self.around_items_count = 0;
                     self.around_builds_count = 0;
                     self.around_characters_count = 0;
+                    self.around_quick_actions = vec![];
                 }
             } else {
                 if let Some(around_wait) = self.around_wait.as_ref() {
@@ -1388,7 +1394,7 @@ impl Engine for ZoneEngine {
 
         let left_menu = Column::new()
             .width(LEFT_MENU_WIDTH as u32)
-            .height(window.height() as u32)
+            .height(window.height() as u32 - QUICK_ACTION_ROW_HEIGHT)
             // .align_items(Align::Center)
             // .justify_content(Justify::Center)
             .padding(0)
@@ -1480,7 +1486,7 @@ impl Engine for ZoneEngine {
 
         let mut right_menu = Column::new()
             .width(RIGHT_MENU_WIDTH as u32)
-            .height(window.height() as u32)
+            .height(window.height() as u32 - QUICK_ACTION_ROW_HEIGHT)
             .push(
                 Row::new().push(
                     text::Text::new(&self.player.name)
@@ -1616,6 +1622,16 @@ impl Engine for ZoneEngine {
             )
         }
 
+        let mut quick_actions_row = Row::new().align_items(Align::Center);
+        for quick_action in &self.around_quick_actions {
+            quick_actions_row = quick_actions_row.push(FixedButton::new(
+                false,
+                &quick_action.link,
+                message::Message::QuickActionPressed(quick_action.link.clone()),
+                Message::LinkButtonReleased(quick_action.link.clone()),
+            ))
+        }
+
         let mut center_column = Column::new()
             .width(
                 window.width() as u32
@@ -1623,7 +1639,7 @@ impl Engine for ZoneEngine {
                     - RIGHT_MENU_WIDTH as u32
                     - MARGIN_RIGHT_CHAT,
             )
-            .height(window.height() as u32);
+            .height(window.height() as u32 - QUICK_ACTION_ROW_HEIGHT);
 
         if let Some(top_bar) = self.top_bar.as_ref() {
             let mut top_bar_row = Row::new().height(fixed_button::NODE_HEIGHT);
@@ -1710,12 +1726,20 @@ impl Engine for ZoneEngine {
             ));
         }
 
-        let layout = Row::new()
-            .push(left_menu)
-            .push(center_column)
-            .push(Column::new().width(MARGIN_RIGHT_CHAT))
-            .push(right_menu)
-            .align_items(Align::Stretch);
+        let layout = Row::new().push(
+            Column::new()
+                .push(
+                    Row::new()
+                        .push(left_menu)
+                        .push(center_column)
+                        .push(Column::new().width(MARGIN_RIGHT_CHAT))
+                        .push(right_menu)
+                        .align_items(Align::Stretch)
+                        .height(window.height() as u32 - QUICK_ACTION_ROW_HEIGHT),
+                )
+                // Bottom
+                .push(quick_actions_row),
+        );
 
         layout.into()
     }
