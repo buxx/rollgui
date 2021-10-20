@@ -43,6 +43,7 @@ pub struct Part {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Description {
+    pub type_: String,
     pub origin_url: Option<String>,
     pub title: Option<String>,
     pub items: Vec<Part>,
@@ -69,6 +70,7 @@ pub struct Description {
     pub disable_illustration_row: bool,
     pub account_created: bool,
     pub character_ap: Option<String>,
+    pub quick_action_response: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

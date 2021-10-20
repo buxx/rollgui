@@ -94,4 +94,5 @@ pub enum Message {
     DismissChat,
     RequestChat(Option<i32>),
     QuickActionPressed(String),
+    QuickActionReleased(String),
 }

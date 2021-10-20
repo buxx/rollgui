@@ -7,6 +7,7 @@ mod link;
 mod panel;
 mod progress_bar;
 mod radio;
+mod sheet_button;
 mod slider;
 mod state_less_button;
 mod state_less_fixed_button;

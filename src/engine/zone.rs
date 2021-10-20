@@ -20,7 +20,7 @@ use crate::ui::widget::fixed_button;
 use crate::ui::widget::icon;
 use crate::ui::widget::link::Link;
 use crate::ui::widget::progress_bar;
-use crate::ui::widget::state_less_fixed_button::Button as FixedButton;
+use crate::ui::widget::sheet_button::SheetButton;
 use crate::ui::widget::text;
 use crate::ui::widget::text_input::TextInput;
 use crate::ui::widget::thin_button;
@@ -115,6 +115,7 @@ pub struct ZoneEngine {
     around_characters_count: i32,
     around_wait: Option<Instant>,
     around_quick_actions: Vec<CharacterActionLink>,
+    current_quick_action_link_pressed: Option<String>,
     blinker: util::Blinker<char>,
     characters: HashMap<String, Character>,
     stuffs: HashMap<String, Stuff>,
@@ -224,6 +225,7 @@ impl ZoneEngine {
             around_characters_count: 0,
             around_wait: None,
             around_quick_actions: vec![],
+            current_quick_action_link_pressed: None,
             blinker: util::Blinker {
                 items: HashMap::new(),
             },
@@ -534,6 +536,36 @@ impl ZoneEngine {
         }
 
         None
+    }
+
+    fn receive_new_top_bar_message(
+        &mut self,
+        message: String,
+        type_: TopBarMessageType,
+        destroy_previous: bool,
+    ) {
+        let text_color = match type_ {
+            TopBarMessageType::NORMAL => Color::WHITE,
+            TopBarMessageType::ERROR => Color::RED,
+        };
+        let previous_top_bar = if let Some(replace_top_bar_by) = self.replace_top_bar_by.as_ref() {
+            Some(replace_top_bar_by.clone())
+        } else if let Some(top_bar) = self.top_bar.as_ref() {
+            Some(top_bar.clone())
+        } else {
+            None
+        };
+
+        self.top_bar = Some(TopBar {
+            text: message,
+            text_color,
+            display_buttons: false,
+            on_click: None,
+        });
+        self.replace_top_bar_start = Some(SystemTime::now());
+        if !destroy_previous {
+            self.replace_top_bar_by = previous_top_bar;
+        }
     }
 
     fn there_is_build_not_browseable(&self, row_i: i16, col_i: i16) -> bool {
@@ -924,27 +956,7 @@ impl Engine for ZoneEngine {
                     }
                 }
                 ZoneEventType::TopBarMessage { message, type_ } => {
-                    let text_color = match type_ {
-                        TopBarMessageType::NORMAL => Color::WHITE,
-                        TopBarMessageType::ERROR => Color::RED,
-                    };
-                    let previous_top_bar =
-                        if let Some(replace_top_bar_by) = self.replace_top_bar_by.as_ref() {
-                            Some(replace_top_bar_by.clone())
-                        } else if let Some(top_bar) = self.top_bar.as_ref() {
-                            Some(top_bar.clone())
-                        } else {
-                            None
-                        };
-
-                    self.top_bar = Some(TopBar {
-                        text: message,
-                        text_color,
-                        display_buttons: false,
-                        on_click: None,
-                    });
-                    self.replace_top_bar_start = Some(SystemTime::now());
-                    self.replace_top_bar_by = previous_top_bar;
+                    self.receive_new_top_bar_message(message, type_, false);
                 }
                 _ => println!("unknown event type {:?}", &event.event_type),
             }
@@ -1347,6 +1359,37 @@ impl Engine for ZoneEngine {
                     },
                 });
             }
+            Message::QuickActionPressed(link) => {
+                self.current_quick_action_link_pressed = Some(link);
+            }
+            Message::QuickActionReleased(link) => {
+                self.current_quick_action_link_pressed = None;
+                // FIXME to async !!!
+                match self.server.client.describe(&link, None, None) {
+                    Ok(description) => {
+                        let type_ = if description.type_ == "ERROR" {
+                            TopBarMessageType::ERROR
+                        } else {
+                            TopBarMessageType::NORMAL
+                        };
+                        self.receive_new_top_bar_message(
+                            description
+                                .quick_action_response
+                                .unwrap_or("Erreur : Aucun message obtenu".to_string()),
+                            type_,
+                            true,
+                        );
+                    }
+                    Err(error) => {
+                        eprintln!("Error happens when make quick action : {}", error);
+                        self.receive_new_top_bar_message(
+                            "Error happens when make quick action".to_string(),
+                            TopBarMessageType::ERROR,
+                            false,
+                        );
+                    }
+                };
+            }
             _ => {}
         }
         None
@@ -1622,13 +1665,22 @@ impl Engine for ZoneEngine {
             )
         }
 
-        let mut quick_actions_row = Row::new().align_items(Align::Center);
+        let mut quick_actions_row = Row::new()
+            .align_items(Align::Center)
+            .width(window.width() as u32);
         for quick_action in &self.around_quick_actions {
-            quick_actions_row = quick_actions_row.push(FixedButton::new(
-                false,
-                &quick_action.link,
+            let pressed = if let Some(pressed_link) = &self.current_quick_action_link_pressed {
+                quick_action.link == *pressed_link
+            } else {
+                false
+            };
+            quick_actions_row = quick_actions_row.push(SheetButton::new(
+                pressed,
+                &self.tile_sheet,
+                &quick_action.classes1,
+                &quick_action.classes2,
                 message::Message::QuickActionPressed(quick_action.link.clone()),
-                Message::LinkButtonReleased(quick_action.link.clone()),
+                Message::QuickActionReleased(quick_action.link.clone()),
             ))
         }
 
