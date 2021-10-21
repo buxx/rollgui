@@ -1,6 +1,7 @@
 use crate::entity::build::Build;
 use crate::error::RollingError;
 use crate::server::client::{ItemModel, ListOfItemModel};
+use crate::tile::TileId;
 use serde::ser::{Serialize, SerializeStruct, Serializer};
 use serde::{Deserialize as SerdeDeserialize, Serialize as SerdeSerialize};
 use serde_derive::{Deserialize as DeserializeDerive, Serialize as SerializeDerive};
@@ -22,6 +23,7 @@ pub const REQUEST_CHAT: &str = "REQUEST_CHAT";
 pub const NEW_CHAT_MESSAGE: &str = "NEW_CHAT_MESSAGE";
 pub const ANIMATED_CORPSE_MOVE: &str = "ANIMATED_CORPSE_MOVE";
 pub const TOP_BAR_MESSAGE: &str = "TOP_BAR_MESSAGE";
+pub const ZONE_TILE_REPLACE: &str = "ZONE_TILE_REPLACE";
 
 #[derive(SerializeDerive, DeserializeDerive, Debug)]
 #[serde(untagged)]
@@ -95,6 +97,11 @@ pub enum ZoneEventType {
     TopBarMessage {
         message: String,
         type_: TopBarMessageType,
+    },
+    ZoneTileReplace {
+        row_i: i16,
+        col_i: i16,
+        new_tile_id: TileId,
     },
 }
 
@@ -218,6 +225,20 @@ impl ZoneEvent {
                             traversable,
                             is_floor: build_data["is_floor"].as_bool().unwrap(),
                         },
+                    },
+                })
+            }
+            &ZONE_TILE_REPLACE => {
+                let new_tile_id = data["new_tile_id"].as_str().unwrap();
+                let zone_row_i = data["zone_row_i"].as_i64().unwrap() as i16;
+                let zone_col_i = data["zone_col_i"].as_i64().unwrap() as i16;
+
+                Ok(ZoneEvent {
+                    event_type_name: String::from(ZONE_TILE_REPLACE),
+                    event_type: ZoneEventType::ZoneTileReplace {
+                        row_i: zone_row_i,
+                        col_i: zone_col_i,
+                        new_tile_id: new_tile_id.to_string(),
                     },
                 })
             }

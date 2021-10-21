@@ -873,6 +873,14 @@ impl Engine for ZoneEngine {
                     self.builds.insert(build.id, build);
                     self.update_builds_data();
                 }
+                ZoneEventType::ZoneTileReplace {
+                    row_i,
+                    col_i,
+                    new_tile_id,
+                } => {
+                    println!("Replace tile at {}:{} with {}", row_i, col_i, &new_tile_id);
+                    self.level.rows[row_i as usize].cols[col_i as usize] = new_tile_id;
+                }
                 ZoneEventType::AnimatedCorpseMove {
                     to_row_i,
                     to_col_i,
