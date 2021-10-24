@@ -1375,7 +1375,7 @@ impl Engine for ZoneEngine {
             }
             Message::QuickActionReleased(link) => {
                 self.current_quick_action_link_pressed = None;
-                // FIXME to async !!!
+                // FIXME BS NOW to async !!!
                 match self.server.client.describe(&link, None, None) {
                     Ok(description) => {
                         let type_ = if description.type_ == "ERROR" {

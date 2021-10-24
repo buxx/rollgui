@@ -41,9 +41,7 @@ impl ClientError {
             ClientError::PlayerNotFound { message } => {
                 format!("Player not found: {}", message).to_string()
             }
-            ClientError::ClientSideError { message } => {
-                format!("{}", message).to_string()
-            }
+            ClientError::ClientSideError { message } => format!("{}", message).to_string(),
             ClientError::ServerSideError { message } => {
                 format!("Server side error: {}", message).to_string()
             }
@@ -60,7 +58,9 @@ impl ClientError {
 
 impl From<reqwest::Error> for ClientError {
     fn from(error: reqwest::Error) -> Self {
-        ClientError::RequestError{ message: format!("{}", error) }
+        ClientError::RequestError {
+            message: format!("{}", error),
+        }
     }
 }
 
@@ -137,10 +137,18 @@ impl Client {
         }
 
         if !response.status().is_success() {
-            let error: ErrorResponse = response.json().unwrap();
-            return Err(ClientError::ServerSideError {
-                message: error.message,
-            });
+            match response.json::<ErrorResponse>() {
+                Ok(error) => {
+                    return Err(ClientError::ServerSideError {
+                        message: error.message,
+                    });
+                }
+                Err(error) => {
+                    return Err(ClientError::ServerSideError {
+                        message: format!("Unexpected server response : {}", error),
+                    });
+                }
+            };
         }
 
         Ok(response)
