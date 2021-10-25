@@ -7,11 +7,11 @@ use crate::entity::resource::Resource;
 use crate::entity::stuff::Stuff;
 use crate::event::{CharacterActionLink, TopBarMessageType, ZoneEventType};
 use crate::game::{TILE_HEIGHT, TILE_WIDTH};
-use crate::gui::lang::model::RequestClicks;
+use crate::gui::lang::model::{Description, RequestClicks};
 use crate::input::MyGameInput;
 use crate::level::Level;
 use crate::message::{self, MainMessage, Message};
-use crate::server::client::ItemModel;
+use crate::server::client::{ClientError, ItemModel};
 use crate::server::Server;
 use crate::sheet::TileSheet;
 use crate::socket::ZoneSocket;
@@ -37,8 +37,10 @@ use coffee::input::keyboard;
 use coffee::input::mouse;
 use coffee::ui::Align;
 use coffee::{graphics, Timer};
+use crossbeam_channel::unbounded;
 use pathfinding::prelude::{absdiff, astar};
 use std::collections::HashMap;
+use std::thread;
 use std::time::{Duration, Instant, SystemTime};
 
 const START_SCREEN_X: i16 = 0;
@@ -140,6 +142,8 @@ pub struct ZoneEngine {
     unread_conversation_id: Vec<Option<i32>>,
     replace_top_bar_start: Option<SystemTime>,
     replace_top_bar_by: Option<TopBar>,
+    send_quick_actions_transmitter: crossbeam_channel::Sender<String>,
+    response_quick_actions_receiver: crossbeam_channel::Receiver<Result<Description, ClientError>>,
 }
 
 impl ZoneEngine {
@@ -185,6 +189,28 @@ impl ZoneEngine {
                 (None, None)
             }
         };
+
+        let (send_quick_actions_transmitter, send_quick_actions_receiver) = unbounded::<String>();
+        let (response_quick_actions_transmitter, response_quick_actions_receiver) = unbounded();
+        let quick_action_server = server.clone();
+        thread::spawn(move || loop {
+            match send_quick_actions_receiver.recv() {
+                Ok(link) => {
+                    match response_quick_actions_transmitter
+                        .send(quick_action_server.client.describe(&link, None, None))
+                    {
+                        Ok(_) => {}
+                        Err(error) => {
+                            eprintln!("Error when send quick action response : {}", error)
+                        }
+                    };
+                }
+                Err(_error) => {
+                    // Commented to prevent multiple prints when closing
+                    // eprintln!("Error when reading from quick actions channel : {}", error)
+                }
+            };
+        });
 
         let mut zone_engine = Self {
             i: 0,
@@ -252,6 +278,8 @@ impl ZoneEngine {
             unread_conversation_id: vec![],
             replace_top_bar_start,
             replace_top_bar_by: None,
+            send_quick_actions_transmitter,
+            response_quick_actions_receiver,
         };
         zone_engine.update_link_button_data();
         zone_engine.update_builds_data();
@@ -281,6 +309,47 @@ impl ZoneEngine {
                 link_button_counter += 1;
             }
         }
+    }
+
+    fn proceed_quick_action_responses(&self) -> Vec<(String, TopBarMessageType)> {
+        let mut messages: Vec<(String, TopBarMessageType)> = vec![];
+        loop {
+            match self.response_quick_actions_receiver.try_recv() {
+                Ok(result) => {
+                    match result {
+                        Ok(description) => {
+                            let type_ = if description.type_ == "ERROR" {
+                                TopBarMessageType::ERROR
+                            } else {
+                                TopBarMessageType::NORMAL
+                            };
+                            messages.push((
+                                description
+                                    .quick_action_response
+                                    .unwrap_or("Erreur : Aucun message obtenu".to_string()),
+                                type_,
+                            ));
+                        }
+                        Err(error) => {
+                            eprintln!("Error happens when make quick action : {}", error);
+                            messages.push((
+                                "Error happens when make quick action".to_string(),
+                                TopBarMessageType::ERROR,
+                            ));
+                        }
+                    };
+                }
+                Err(error) => match error {
+                    crossbeam_channel::TryRecvError::Empty => break,
+                    crossbeam_channel::TryRecvError::Disconnected => {
+                        eprintln!("Error when reading quick action responses");
+                        break;
+                    }
+                },
+            }
+        }
+
+        messages
     }
 
     fn get_zone_sprites(&mut self, replace_by_back: Option<String>) -> Vec<Sprite> {
@@ -970,6 +1039,12 @@ impl Engine for ZoneEngine {
             }
         }
 
+        let messages = self.proceed_quick_action_responses();
+
+        for (msg, type_) in messages {
+            self.receive_new_top_bar_message(msg, type_, true);
+        }
+
         None
     }
 
@@ -1375,31 +1450,12 @@ impl Engine for ZoneEngine {
             }
             Message::QuickActionReleased(link) => {
                 self.current_quick_action_link_pressed = None;
-                // FIXME BS NOW to async !!!
-                match self.server.client.describe(&link, None, None) {
-                    Ok(description) => {
-                        let type_ = if description.type_ == "ERROR" {
-                            TopBarMessageType::ERROR
-                        } else {
-                            TopBarMessageType::NORMAL
-                        };
-                        self.receive_new_top_bar_message(
-                            description
-                                .quick_action_response
-                                .unwrap_or("Erreur : Aucun message obtenu".to_string()),
-                            type_,
-                            true,
-                        );
-                    }
+                match self.send_quick_actions_transmitter.send(link) {
+                    Ok(_) => {}
                     Err(error) => {
-                        eprintln!("Error happens when make quick action : {}", error);
-                        self.receive_new_top_bar_message(
-                            "Error happens when make quick action".to_string(),
-                            TopBarMessageType::ERROR,
-                            false,
-                        );
+                        eprintln!("Error when send link to quick actions channel: {}", error)
                     }
-                };
+                }
             }
             _ => {}
         }

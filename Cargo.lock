@@ -3088,6 +3088,7 @@ name = "rollgui"
 version = "0.9.0"
 dependencies = [
  "coffee",
+ "crossbeam-channel",
  "dialog",
  "futures 0.3.8",
  "gfx",
