@@ -85,7 +85,7 @@ pub struct ZoneEngine {
     tile_sheet: TileSheet,
     tile_sheet_batch: Batch,
     avatars_to_load: Vec<String>,
-    avatars: HashMap<String, graphics::Image>,
+    avatars: HashMap<String, Batch>,
     start_screen_x: i16,
     start_screen_y: i16,
     end_screen_x: i16,
@@ -852,6 +852,30 @@ impl Engine for ZoneEngine {
         self.tile_sheet_batch.extend(sprites);
         self.tile_sheet_batch.draw(&mut frame.as_target());
 
+        for (_, character) in &self.characters {
+            if character.avatar_is_validated && character.avatar_uuid.is_some() {
+                let real_x = self.get_real_x(character.position().1 as i16 * TILE_WIDTH);
+                let real_y = self.get_real_y(character.position().0 as i16 * TILE_HEIGHT);
+
+                if let Some(avatar_uuid) = &character.avatar_uuid {
+                    if let Some(avatar_batch) = self.avatars.get_mut(avatar_uuid) {
+                        avatar_batch.clear();
+                        avatar_batch.add(Sprite {
+                            source: Rectangle {
+                                // FIXME BS NOW
+                                x: 0,
+                                y: 0,
+                                width: 64,
+                                height: 64,
+                            },
+                            position: Point::new(real_x as f32, real_y as f32),
+                            scale: (1.0, 1.0),
+                        });
+                        avatar_batch.draw(&mut frame.as_target());
+                    }
+                }
+            }
+        }
         // FIXME BS NOW : un batch par avatar et display a cote perso quand souris dessus
     }
 
@@ -1283,7 +1307,8 @@ impl Engine for ZoneEngine {
                 format!("cache/character_avatar__zone_thumb__{}.png", avatar_to_load),
             ) {
                 Ok(image) => {
-                    self.avatars.insert(avatar_to_load.clone(), image);
+                    let batch = Batch::new(image);
+                    self.avatars.insert(avatar_to_load.clone(), batch);
                 }
                 Err(error) => {
                     eprintln!("Error when loading avatar {}: {}", avatar_to_load, error);
