@@ -5,6 +5,8 @@ pub struct Character {
     pub id: String,
     pub zone_row_i: i32,
     pub zone_col_i: i32,
+    pub avatar_uuid: Option<String>,
+    pub avatar_is_validated: bool,
 }
 
 impl Character {

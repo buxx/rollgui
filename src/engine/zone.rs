@@ -84,6 +84,8 @@ pub struct ZoneEngine {
     tiles: Tiles,
     tile_sheet: TileSheet,
     tile_sheet_batch: Batch,
+    avatars_to_load: Vec<String>,
+    avatars: HashMap<String, graphics::Image>,
     start_screen_x: i16,
     start_screen_y: i16,
     end_screen_x: i16,
@@ -150,6 +152,7 @@ impl ZoneEngine {
     pub fn new(
         tiles: Tiles,
         tile_sheet_image: graphics::Image,
+        avatars: Vec<String>,
         tile_width: i16,
         tile_height: i16,
         player: Player,
@@ -218,6 +221,8 @@ impl ZoneEngine {
             tiles,
             tile_sheet: TileSheet::new(tile_sheet_image.clone(), tile_width, tile_height),
             tile_sheet_batch: Batch::new(tile_sheet_image.clone()),
+            avatars_to_load: avatars,
+            avatars: HashMap::new(),
             start_screen_x: START_SCREEN_X,
             start_screen_y: START_SCREEN_Y,
             end_screen_x: 0,
@@ -846,6 +851,8 @@ impl Engine for ZoneEngine {
         self.tile_sheet_batch.clear();
         self.tile_sheet_batch.extend(sprites);
         self.tile_sheet_batch.draw(&mut frame.as_target());
+
+        // FIXME BS NOW : un batch par avatar et display a cote perso quand souris dessus
     }
 
     fn update(&mut self, window: &Window) -> Option<MainMessage> {
@@ -902,6 +909,9 @@ impl Engine for ZoneEngine {
                             id: character_id.clone(),
                             zone_row_i,
                             zone_col_i,
+                            // FIXME BS NOW : avatar_uuid & avatar_is_validated,
+                            avatar_uuid: None,
+                            avatar_is_validated: false,
                         },
                     );
                 }
@@ -1265,6 +1275,20 @@ impl Engine for ZoneEngine {
             if !player_have_move.0 {
                 self.move_requested = None;
             }
+        }
+
+        while let Some(avatar_to_load) = self.avatars_to_load.pop() {
+            match graphics::Image::new(
+                window.gpu(),
+                format!("cache/character_avatar__zone_thumb__{}.png", avatar_to_load),
+            ) {
+                Ok(image) => {
+                    self.avatars.insert(avatar_to_load.clone(), image);
+                }
+                Err(error) => {
+                    eprintln!("Error when loading avatar {}: {}", avatar_to_load, error);
+                }
+            };
         }
 
         None

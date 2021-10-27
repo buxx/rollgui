@@ -384,9 +384,29 @@ impl MyGame {
             animated_corpses.insert(animated_corpse.id, animated_corpse);
         }
 
+        let mut avatars: Vec<String> = vec![];
+        for (_, character) in &characters {
+            if character.avatar_is_validated {
+                if let Some(avatar_uuid) = &character.avatar_uuid {
+                    match server.client.cache_media(&format!(
+                        "character_avatar__zone_thumb__{}.png",
+                        avatar_uuid
+                    )) {
+                        Ok(_) => {
+                            avatars.push(avatar_uuid.clone());
+                        }
+                        Err(error) => {
+                            eprintln!("Error when get avatar {} : {}", avatar_uuid, error)
+                        }
+                    };
+                }
+            }
+        }
+
         self.engine = Some(Box::new(ZoneEngine::new(
             tiles,
             tile_sheet_image,
+            avatars,
             tile_width,
             tile_height,
             player.clone(),
