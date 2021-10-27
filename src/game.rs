@@ -340,9 +340,7 @@ impl MyGame {
             .unwrap();
         let mut characters: HashMap<String, Character> = HashMap::new();
         for character in all_characters.into_iter() {
-            if player.id != character.id {
-                characters.insert(character.id.clone(), character);
-            }
+            characters.insert(character.id.clone(), character);
         }
 
         // STUFFS

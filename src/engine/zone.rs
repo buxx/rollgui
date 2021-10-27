@@ -85,7 +85,8 @@ pub struct ZoneEngine {
     tile_sheet: TileSheet,
     tile_sheet_batch: Batch,
     avatars_to_load: Vec<String>,
-    avatars: HashMap<String, Batch>,
+    avatars: HashMap<String, (Batch, u16, u16)>,
+    hover_character_id: Option<String>,
     start_screen_x: i16,
     start_screen_y: i16,
     end_screen_x: i16,
@@ -223,6 +224,7 @@ impl ZoneEngine {
             tile_sheet_batch: Batch::new(tile_sheet_image.clone()),
             avatars_to_load: avatars,
             avatars: HashMap::new(),
+            hover_character_id: None,
             start_screen_x: START_SCREEN_X,
             start_screen_y: START_SCREEN_Y,
             end_screen_x: 0,
@@ -424,6 +426,10 @@ impl ZoneEngine {
         ));
 
         for character in self.characters.values().into_iter() {
+            if character.id == self.player.id {
+                continue;
+            }
+
             let real_x = self.get_real_x(character.position().1 as i16 * TILE_WIDTH);
             let real_y = self.get_real_y(character.position().0 as i16 * TILE_HEIGHT);
             if real_x < 0
@@ -852,31 +858,36 @@ impl Engine for ZoneEngine {
         self.tile_sheet_batch.extend(sprites);
         self.tile_sheet_batch.draw(&mut frame.as_target());
 
-        for (_, character) in &self.characters {
-            if character.avatar_is_validated && character.avatar_uuid.is_some() {
-                let real_x = self.get_real_x(character.position().1 as i16 * TILE_WIDTH);
-                let real_y = self.get_real_y(character.position().0 as i16 * TILE_HEIGHT);
+        if let Some(hover_character_id) = &self.hover_character_id {
+            if let Some(character) = self.characters.get(hover_character_id) {
+                if character.avatar_is_validated && character.avatar_uuid.is_some() {
+                    let real_x = self.get_real_x(character.position().1 as i16 * TILE_WIDTH);
+                    let real_y = self.get_real_y(character.position().0 as i16 * TILE_HEIGHT);
 
-                if let Some(avatar_uuid) = &character.avatar_uuid {
-                    if let Some(avatar_batch) = self.avatars.get_mut(avatar_uuid) {
-                        avatar_batch.clear();
-                        avatar_batch.add(Sprite {
-                            source: Rectangle {
-                                // FIXME BS NOW
-                                x: 0,
-                                y: 0,
-                                width: 64,
-                                height: 64,
-                            },
-                            position: Point::new(real_x as f32, real_y as f32),
-                            scale: (1.0, 1.0),
-                        });
-                        avatar_batch.draw(&mut frame.as_target());
+                    if let Some(avatar_uuid) = &character.avatar_uuid {
+                        if let Some((avatar_batch, width, height)) =
+                            self.avatars.get_mut(avatar_uuid)
+                        {
+                            avatar_batch.clear();
+                            avatar_batch.add(Sprite {
+                                source: Rectangle {
+                                    x: 0,
+                                    y: 0,
+                                    width: *width,
+                                    height: *height,
+                                },
+                                position: Point::new(
+                                    real_x as f32 - (TILE_WIDTH as f32 / 2.0),
+                                    real_y as f32 - (TILE_HEIGHT as f32 + 16.0),
+                                ),
+                                scale: (1.0, 1.0),
+                            });
+                            avatar_batch.draw(&mut frame.as_target());
+                        }
                     }
                 }
             }
         }
-        // FIXME BS NOW : un batch par avatar et display a cote perso quand souris dessus
     }
 
     fn update(&mut self, window: &Window) -> Option<MainMessage> {
@@ -1307,13 +1318,35 @@ impl Engine for ZoneEngine {
                 format!("cache/character_avatar__zone_thumb__{}.png", avatar_to_load),
             ) {
                 Ok(image) => {
+                    let width = image.width();
+                    let height = image.height();
                     let batch = Batch::new(image);
-                    self.avatars.insert(avatar_to_load.clone(), batch);
+                    self.avatars
+                        .insert(avatar_to_load.clone(), (batch, width, height));
                 }
                 Err(error) => {
                     eprintln!("Error when loading avatar {}: {}", avatar_to_load, error);
                 }
             };
+        }
+
+        let mut found = false;
+        for (character_id, character) in &self.characters {
+            let real_x = self.get_real_x(character.position().1 as i16 * TILE_WIDTH) as f32;
+            let real_y = self.get_real_y(character.position().0 as i16 * TILE_HEIGHT) as f32;
+
+            if input.cursor_position.x > real_x
+                && input.cursor_position.x <= (real_x + TILE_WIDTH as f32)
+                && input.cursor_position.y > real_y
+                && input.cursor_position.y <= (real_y + TILE_HEIGHT as f32)
+            {
+                found = true;
+                self.hover_character_id = Some(character_id.clone());
+            }
+        }
+
+        if !found {
+            self.hover_character_id = None;
         }
 
         None
