@@ -860,31 +860,36 @@ impl Engine for ZoneEngine {
 
         if let Some(hover_character_id) = &self.hover_character_id {
             if let Some(character) = self.characters.get(hover_character_id) {
-                if character.avatar_is_validated && character.avatar_uuid.is_some() {
-                    let real_x = self.get_real_x(character.position().1 as i16 * TILE_WIDTH);
-                    let real_y = self.get_real_y(character.position().0 as i16 * TILE_HEIGHT);
-
-                    if let Some(avatar_uuid) = &character.avatar_uuid {
-                        if let Some((avatar_batch, width, height)) =
-                            self.avatars.get_mut(avatar_uuid)
-                        {
-                            avatar_batch.clear();
-                            avatar_batch.add(Sprite {
-                                source: Rectangle {
-                                    x: 0,
-                                    y: 0,
-                                    width: *width,
-                                    height: *height,
-                                },
-                                position: Point::new(
-                                    real_x as f32 - (TILE_WIDTH as f32 / 2.0),
-                                    real_y as f32 - (TILE_HEIGHT as f32 + 16.0),
-                                ),
-                                scale: (1.0, 1.0),
-                            });
-                            avatar_batch.draw(&mut frame.as_target());
+                let avatar_uuid =
+                    if character.avatar_is_validated && character.avatar_uuid.is_some() {
+                        if let Some(avatar_uuid) = &character.avatar_uuid {
+                            avatar_uuid.to_string()
+                        } else {
+                            "0000".to_string()
                         }
-                    }
+                    } else {
+                        "0000".to_string()
+                    };
+
+                let real_x = self.get_real_x(character.position().1 as i16 * TILE_WIDTH);
+                let real_y = self.get_real_y(character.position().0 as i16 * TILE_HEIGHT);
+
+                if let Some((avatar_batch, width, height)) = self.avatars.get_mut(&avatar_uuid) {
+                    avatar_batch.clear();
+                    avatar_batch.add(Sprite {
+                        source: Rectangle {
+                            x: 0,
+                            y: 0,
+                            width: *width,
+                            height: *height,
+                        },
+                        position: Point::new(
+                            real_x as f32 - (TILE_WIDTH as f32 / 2.0),
+                            real_y as f32 - (TILE_HEIGHT as f32 + 16.0),
+                        ),
+                        scale: (1.0, 1.0),
+                    });
+                    avatar_batch.draw(&mut frame.as_target());
                 }
             }
         }
