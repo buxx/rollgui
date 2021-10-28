@@ -56,13 +56,13 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
 enable_bug_report = true
 
 [server]
-name = Rise of Clans
+name = Héritage
 server_hostname = rolling-server.bux.fr
 server_port = 4443
 unsecure = false
 
 [design]
-title = RoC
+title = H
 home_image = resources/intro.png
 home_image_background = resources/introb.png
 """)
