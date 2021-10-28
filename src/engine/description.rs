@@ -537,8 +537,6 @@ impl DescriptionEngine {
         let text_input_ids = self.text_input_ids.clone();
         let text_input_values = self.text_input_values.clone();
         let text_input_selected = self.text_input_selected.clone();
-        let mut ignore_checkbox_ids: Vec<i32> = vec![];
-        let mut total_item_i = 0;
         let mut replaced_by_group_names: Vec<String> = replaced_by_group_names.clone();
 
         if item.columns != 0 {
@@ -1034,7 +1032,9 @@ impl Engine for DescriptionEngine {
 
     fn update(&mut self, _window: &Window) -> Option<MainMessage> {
         if self.description.back_to_zone {
-            return Some(MainMessage::DescriptionToZone { request_clicks: None })
+            return Some(MainMessage::DescriptionToZone {
+                request_clicks: None,
+            });
         }
 
         if let Some(redirect) = self.description.redirect.as_ref() {
@@ -1600,8 +1600,7 @@ impl Engine for DescriptionEngine {
             .push(
                 Text::new(&format!(
                     "Tab: champ suivant, Echap: retour, ↑/↓/roulette: défilement{}{}",
-                    submit_info,
-                    character_infos,
+                    submit_info, character_infos,
                 ))
                 .size(20)
                 .color(Color::WHITE)

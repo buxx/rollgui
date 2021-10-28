@@ -22,6 +22,8 @@ pub struct Player {
     pub unvote_affinity_relation: bool,
     pub unread_transactions: bool,
     pub pending_actions: i16,
+    pub avatar_uuid: Option<String>,
+    pub avatar_is_validated: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -43,6 +45,8 @@ pub struct ApiCharacter {
     pub unvote_affinity_relation: bool,
     pub unread_transactions: bool,
     pub pending_actions: i16,
+    pub avatar_uuid: Option<String>,
+    pub avatar_is_validated: bool,
 }
 
 impl Player {
@@ -62,6 +66,8 @@ impl Player {
         unvote_affinity_relation: bool,
         unread_transactions: bool,
         pending_actions: i16,
+        avatar_uuid: Option<String>,
+        avatar_is_validated: bool,
     ) -> Self {
         Self {
             id: id.to_string(),
@@ -83,6 +89,8 @@ impl Player {
             unvote_affinity_relation,
             unread_transactions,
             pending_actions,
+            avatar_uuid,
+            avatar_is_validated,
         }
     }
 

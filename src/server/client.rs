@@ -214,6 +214,8 @@ impl Client {
             character.unvote_affinity_relation,
             character.unread_transactions,
             character.pending_actions,
+            character.avatar_uuid,
+            character.avatar_is_validated,
         ))
     }
 
@@ -264,6 +266,8 @@ impl Client {
             character.unvote_affinity_relation,
             character.unread_transactions,
             character.pending_actions,
+            character.avatar_uuid,
+            character.avatar_is_validated,
         ))
     }
 

@@ -828,7 +828,7 @@ impl Engine for ZoneEngine {
                 height: 225,
             },
             position: Point::new(frame.width() - RIGHT_MENU_WIDTH as f32 - 5.0, 0.0),
-            scale: (1.0, 1.0),
+            scale: (1.0, 1.35),
         });
 
         if let Some(request_clicks) = &self.request_clicks {
@@ -892,6 +892,30 @@ impl Engine for ZoneEngine {
                     avatar_batch.draw(&mut frame.as_target());
                 }
             }
+        }
+
+        let player_avatar_uuid = if self.player.avatar_is_validated {
+            if let Some(avatar_uuid) = &self.player.avatar_uuid {
+                avatar_uuid.clone()
+            } else {
+                "0000".to_string()
+            }
+        } else {
+            "0000".to_string()
+        };
+        if let Some((avatar_batch, width, height)) = self.avatars.get_mut(&player_avatar_uuid) {
+            avatar_batch.clear();
+            avatar_batch.add(Sprite {
+                source: Rectangle {
+                    x: 0,
+                    y: 0,
+                    width: *width,
+                    height: *height,
+                },
+                position: Point::new(frame.width() as f32 - 32.0 - *width as f32, 5.0),
+                scale: (1.0, 1.0),
+            });
+            avatar_batch.draw(&mut frame.as_target());
         }
     }
 
@@ -1684,6 +1708,7 @@ impl Engine for ZoneEngine {
         let mut right_menu = Column::new()
             .width(RIGHT_MENU_WIDTH as u32)
             .height(window.height() as u32 - QUICK_ACTION_ROW_HEIGHT)
+            .push(Row::new().height(76))
             .push(
                 Row::new().push(
                     text::Text::new(&self.player.name)

@@ -44,6 +44,6 @@ pub fn main() -> Result<()> {
         size: (1000, 700),
         resizable: true,
         fullscreen: false,
-        maximized: false,
+        maximized: true,
     })
 }
