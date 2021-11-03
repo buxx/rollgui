@@ -170,7 +170,7 @@ impl Engine for UpgradeEngine {
         };
 
         let mut column = Column::new()
-            .max_width(768)
+            .width(window.width() as u32)
             .height(window.height() as u32)
             .align_items(Align::Center)
             .justify_content(Justify::Center)

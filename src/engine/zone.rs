@@ -209,9 +209,9 @@ impl ZoneEngine {
                         }
                     };
                 }
-                Err(_error) => {
-                    // Commented to prevent multiple prints when closing
-                    // eprintln!("Error when reading from quick actions channel : {}", error)
+                Err(_) => {
+                    println!("Close quick action receiver thread");
+                    break;
                 }
             };
         });

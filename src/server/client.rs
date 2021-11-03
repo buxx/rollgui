@@ -579,6 +579,12 @@ impl Client {
         Ok(animated_corpses)
     }
 
+    pub fn get_loading_media_names(&self) -> Result<Vec<String>, ClientError> {
+        let url = format!("{}/system/loadings", self.get_base_path(),);
+        let response: Response = self.check_response(self.client.get(url.as_str()).send()?)?;
+        Ok(response.json::<Vec<String>>().unwrap())
+    }
+
     pub fn cache_media(&self, media_name: &str) -> Result<(), ClientError> {
         if Path::new(&format!("cache/{}", media_name)).exists() {
             println!("Media {} already in cache", media_name);

@@ -1,15 +1,15 @@
 use crate::error::RollingError;
 use crate::level::Level;
+use ini::Ini;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use std::collections::HashMap;
 use std::error::Error;
 use std::io::Read;
 use std::path::Path;
+use std::process::exit;
 use std::time::{Duration, Instant, SystemTime};
 use std::{fs, io};
-use ini::Ini;
-use std::process::exit;
 
 pub const BLOCK_GEO: &str = "GEO";
 pub const BLOCK_LEGEND: &str = "LEGEND";
@@ -492,6 +492,7 @@ pub fn get_tile_position_for_xy(tile_width: i16, tile_height: i16, x: i16, y: i1
 pub fn sleep_if_required(target_frame_ms: u64, last_tick: &SystemTime) {
     let last_tick_duration = last_tick.elapsed().unwrap_or(Duration::from_millis(0));
     let target_duration = Duration::from_millis(target_frame_ms);
+
     if last_tick_duration < target_duration {
         std::thread::sleep(target_duration - last_tick_duration);
     }
@@ -503,7 +504,6 @@ pub fn rand_string(length: usize) -> String {
         .take(length)
         .collect()
 }
-
 
 pub fn get_conf(file_path: &str) -> Ini {
     match Ini::load_from_file(file_path) {

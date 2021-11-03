@@ -23,10 +23,12 @@ use crate::ui::widget::text::Text;
 use crate::ui::{Column, Element};
 use crate::util::get_conf;
 use crate::{event, server, util};
+use glob::glob;
+use rand::seq::SliceRandom;
 
 use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
 use coffee::load::{loading_screen, Task};
-use coffee::ui::{Align, Justify, UserInterface};
+use coffee::ui::{Align, Image, Justify, UserInterface};
 use coffee::{graphics, Game, Timer};
 use dialog::DialogBox;
 use ini::Ini;
@@ -34,6 +36,7 @@ use pickledb::{PickleDb, PickleDbDumpPolicy};
 use std::collections::HashMap;
 use std::error::Error;
 use std::process::exit;
+use std::thread;
 use std::time::SystemTime;
 use structopt::StructOpt;
 
@@ -61,6 +64,8 @@ pub struct MyGame {
     illustration_bg: Option<graphics::Image>,
     pending_home_image: Option<String>,
     home_image: Option<graphics::Image>,
+    loading_image_to_set: bool,
+    loading_image: Option<graphics::Image>,
 }
 
 fn get_db(db_file_path: &str) -> PickleDb {
@@ -492,6 +497,21 @@ impl Game for MyGame {
             }
         };
 
+        // Start background task of loading screen downloads
+        let server_ = server.clone();
+        thread::spawn(move || {
+            match server_.client.get_loading_media_names() {
+                Ok(loading_media_names) => {
+                    for loading_media_name in loading_media_names {
+                        server_.client.cache_media(&loading_media_name).unwrap();
+                    }
+                }
+                Err(error) => {
+                    eprintln!("Error when get loading media names : {}", error);
+                }
+            };
+        });
+
         graphics::Image::load("resources/graphics.png").map(|image| MyGame {
             conf,
             engine: None,
@@ -508,6 +528,8 @@ impl Game for MyGame {
             illustration_bg: None,
             pending_home_image,
             home_image: None,
+            loading_image_to_set: false,
+            loading_image: None,
         })
     }
 
@@ -558,6 +580,34 @@ impl Game for MyGame {
             };
         }
 
+        // Search for loading screen
+        if self.loading_image_to_set {
+            self.loading_image_to_set = false;
+            let mut loadings: Vec<String> = vec![];
+            for path in glob("cache/loading__*.png").expect("Failed to read glob pattern") {
+                match path {
+                    Ok(path) => match path.to_str() {
+                        Some(path_) => loadings.push(path_.to_string()),
+                        None => {}
+                    },
+                    Err(e) => {
+                        eprintln!("Failed to read path: {}", e);
+                    }
+                }
+            }
+            if let Some(loading_path) = loadings.choose(&mut rand::thread_rng()) {
+                match graphics::Image::new(window.gpu(), loading_path) {
+                    Ok(image) => self.loading_image = Some(image),
+                    Err(error) => {
+                        eprintln!(
+                            "Error when loading loading image {}: {}",
+                            loading_path, error
+                        )
+                    }
+                };
+            }
+        }
+
         match self.engine.as_mut().unwrap().interact(input, window) {
             Some(main_message) => self.proceed_main_message(main_message),
             None => {}
@@ -582,6 +632,7 @@ impl Game for MyGame {
                     println!("Set startup engine");
                     self.setup_home_image();
                     self.engine = Some(self.create_startup_engine(disable_version_check));
+                    self.loading_image_to_set = true;
                 }
                 MainMessage::ToDescriptionWithDescription {
                     description,
@@ -603,6 +654,7 @@ impl Game for MyGame {
                     self.pending_illustration = description.illustration_name;
                     self.illustration = None;
                     self.illustration_bg = None;
+                    self.loading_image_to_set = true;
                 }
                 MainMessage::CreateAccount { address } => {
                     self.setup_create_account(address);
@@ -649,9 +701,11 @@ impl Game for MyGame {
                     self.pending_illustration = description.illustration_name;
                     self.illustration = None;
                     self.illustration_bg = None;
+                    self.loading_image_to_set = true;
                 }
                 MainMessage::DescriptionToZone { request_clicks } => {
                     self.setup_startup_to_zone_engine(request_clicks);
+                    self.loading_image_to_set = true;
                 }
                 MainMessage::ToStartup => {
                     self.setup_home_image();
@@ -669,6 +723,7 @@ impl Game for MyGame {
                         self.tile_sheet_image.clone(),
                         self.player.as_ref().unwrap().clone(),
                     )));
+                    self.loading_image_to_set = true;
                 }
             }
         }
@@ -735,20 +790,27 @@ impl UserInterface for MyGame {
             if self.pending_action.is_some() {
                 self.loading_displayed = true;
             }
-            Column::new()
+            let mut column = Column::new()
                 .width(window.width() as u32)
                 .height(window.height() as u32)
                 .align_items(Align::Center)
                 .justify_content(Justify::Center)
-                .spacing(20)
-                .push(
-                    Text::new("Chargement ...")
-                        .size(50)
-                        .height(60)
-                        .horizontal_alignment(HorizontalAlignment::Center)
-                        .vertical_alignment(VerticalAlignment::Center),
-                )
-                .into()
+                .spacing(20);
+
+            if let Some(loading_image) = &self.loading_image {
+                column =
+                    column.push(Image::new(loading_image).height((window.height() * 0.8) as u32));
+            }
+
+            column = column.push(
+                Text::new("Chargement ...")
+                    .size(50)
+                    .height(60)
+                    .horizontal_alignment(HorizontalAlignment::Center)
+                    .vertical_alignment(VerticalAlignment::Center),
+            );
+
+            column.into()
         } else {
             self.engine
                 .as_mut()
