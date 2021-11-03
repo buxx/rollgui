@@ -7,7 +7,7 @@ use crate::ui::widget::button::Button;
 use crate::ui::widget::text::Text;
 use crate::ui::widget::text_input::TextInput;
 use crate::ui::{Column, Element, Row};
-use coffee::graphics::{Color, Frame, Image, Window, Rectangle, Sprite, Batch, Point};
+use coffee::graphics::{Batch, Color, Frame, Image, Point, Rectangle, Sprite, Window};
 use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
 use coffee::Timer;
@@ -222,12 +222,7 @@ impl Engine for LoginEngine {
             .align_items(Align::Center)
             .justify_content(Justify::Center)
             .spacing(20)
-            .push(
-                Text::new("")
-                    .size(30)
-                    .height(30)
-                    .width(600),
-            );
+            .push(Text::new("").size(30).height(30).width(600));
 
         if let Some(error_message) = self.error_message.as_ref() {
             column = column.push(Text::new(error_message).color(Color::RED))

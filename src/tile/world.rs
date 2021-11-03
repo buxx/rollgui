@@ -1,7 +1,7 @@
 use crate::error::RollingError;
-use crate::tile::{TileId};
-use std::collections::HashMap;
 use crate::sheet::SheetPosition;
+use crate::tile::TileId;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct Tiles {
@@ -14,8 +14,14 @@ pub struct Tiles {
 const APPEARANCES: [(&str, [SheetPosition; 6]); 6] = [
     ("JUNGLE", [(0, 7), (0, 7), (0, 7), (0, 7), (0, 7), (0, 7)]),
     ("PLAIN", [(0, 1), (0, 1), (0, 1), (0, 1), (0, 1), (0, 1)]),
-    ("HILL", [(0, 11), (0, 11), (0, 11), (0, 11), (0, 11), (0, 11)]),
-    ("MOUNTAIN", [(0, 22), (0, 22), (0, 22), (0, 22), (0, 22), (0, 22)]),
+    (
+        "HILL",
+        [(0, 11), (0, 11), (0, 11), (0, 11), (0, 11), (0, 11)],
+    ),
+    (
+        "MOUNTAIN",
+        [(0, 22), (0, 22), (0, 22), (0, 22), (0, 22), (0, 22)],
+    ),
     ("SEA", [(0, 8), (0, 8), (0, 8), (0, 8), (0, 8), (0, 8)]),
     ("BEACH", [(0, 2), (0, 2), (0, 2), (0, 2), (0, 2), (0, 2)]),
 ];
