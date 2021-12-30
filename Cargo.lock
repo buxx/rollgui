@@ -462,7 +462,8 @@ dependencies = [
 [[package]]
 name = "coffee"
 version = "0.4.1"
-source = "git+https://github.com/buxx/coffee#c8c289ce9e77108d0ac6bf07f86d44097615ce0f"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "623c08ab96becc7f068903d7b18250e61ebfd1cf3a4b04ef8b25446e4c55d464"
 dependencies = [
  "gfx",
  "gfx_core",
