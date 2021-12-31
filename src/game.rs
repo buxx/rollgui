@@ -16,6 +16,7 @@ use crate::gui::lang::model::RequestClicks;
 use crate::input::MyGameInput;
 use crate::level::Level;
 use crate::message::{MainMessage, Message};
+use crate::sheet::TileSheet;
 use crate::socket::ZoneSocket;
 use crate::tile::zone::Tiles as ZoneTiles;
 use crate::ui::renderer::Renderer;
@@ -133,6 +134,7 @@ impl MyGame {
                     server.client.clone(),
                     None,
                     true,
+                    TileSheet::new(self.tile_sheet_image.clone(), TILE_WIDTH, TILE_HEIGHT),
                 )));
                 self.pending_illustration = description.illustration_name;
                 self.illustration = None;
@@ -152,6 +154,7 @@ impl MyGame {
             server.client.clone(),
             None,
             true,
+            TileSheet::new(self.tile_sheet_image.clone(), TILE_WIDTH, TILE_HEIGHT),
         )));
         self.pending_illustration = description.illustration_name;
         self.illustration = None;
@@ -169,6 +172,7 @@ impl MyGame {
             client.clone(),
             None,
             true,
+            TileSheet::new(self.tile_sheet_image.clone(), TILE_WIDTH, TILE_HEIGHT),
         )));
         self.pending_illustration = description.illustration_name;
         self.illustration = None;
@@ -189,6 +193,7 @@ impl MyGame {
             server.client.clone(),
             None,
             true,
+            TileSheet::new(self.tile_sheet_image.clone(), TILE_WIDTH, TILE_HEIGHT),
         )));
         self.pending_illustration = description.illustration_name;
         self.illustration = None;
@@ -650,6 +655,7 @@ impl Game for MyGame {
                         client,
                         back_url.clone(),
                         false,
+                        TileSheet::new(self.tile_sheet_image.clone(), TILE_WIDTH, TILE_HEIGHT),
                     )));
                     self.pending_illustration = description.illustration_name;
                     self.illustration = None;
@@ -697,6 +703,7 @@ impl Game for MyGame {
                         self.server.client.clone(),
                         back_url.clone(),
                         false,
+                        TileSheet::new(self.tile_sheet_image.clone(), TILE_WIDTH, TILE_HEIGHT),
                     )));
                     self.pending_illustration = description.illustration_name;
                     self.illustration = None;

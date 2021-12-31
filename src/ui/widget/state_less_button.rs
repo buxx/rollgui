@@ -5,7 +5,7 @@
 //! [`Button`]: struct.Button.html
 //! [`Class`]: enum.Class.html
 
-use coffee::graphics::{Point, Rectangle};
+use coffee::graphics::{Point, Rectangle, Sprite};
 use coffee::input::{mouse, ButtonState};
 use coffee::ui::core::{Align, Event, Hasher, Layout, MouseCursor, Node, Style, Widget};
 
@@ -44,6 +44,7 @@ pub struct StateLessButton {
     on_press: message::Message,
     on_release: message::Message,
     style: Style,
+    icon: Option<Sprite>,
 }
 
 impl std::fmt::Debug for StateLessButton {
@@ -80,6 +81,7 @@ impl StateLessButton {
             on_press,
             on_release,
             style: Style::default().min_width(100),
+            icon: None,
         }
     }
 
@@ -117,6 +119,11 @@ impl StateLessButton {
     /// [`Class`]: enum.Class.html
     pub fn class(mut self, class: Class) -> Self {
         self.class = class;
+        self
+    }
+
+    pub fn icon(mut self, icon: Option<Sprite>) -> Self {
+        self.icon = icon;
         self
     }
 }
@@ -170,6 +177,7 @@ impl Widget<message::Message, renderer::Renderer> for StateLessButton {
             self.pressed,
             &self.label,
             self.class,
+            self.icon.clone(),
         )
     }
 
@@ -228,6 +236,7 @@ pub trait Renderer {
         pressed: bool,
         label: &str,
         class: Class,
+        icon: Option<Sprite>,
     ) -> MouseCursor;
 }
 

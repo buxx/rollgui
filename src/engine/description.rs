@@ -4,6 +4,7 @@ use crate::gui::lang::model::{Description, Part};
 use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
 use crate::server::client;
+use crate::sheet::TileSheet;
 use crate::ui::widget::checkbox::Checkbox;
 use crate::ui::widget::link::Link;
 use crate::ui::widget::radio::Radio;
@@ -85,6 +86,17 @@ pub struct DescriptionEngine {
     submitable: bool,
     total_items_count: i32,
     scroll_by_arrow_ticker: util::Ticker,
+    tile_sheet: TileSheet,
+}
+
+fn sprite_for_class(tile_sheet: &TileSheet, classes: &Vec<String>) -> Option<Sprite> {
+    for class in classes.iter().rev() {
+        if tile_sheet.have_id(class) {
+            return Some(tile_sheet.create_sprite_for(class, 0, 0, 0));
+        }
+    }
+
+    None
 }
 
 fn update_link_button_ids_from_columns(
@@ -272,6 +284,7 @@ impl DescriptionEngine {
         client: client::Client,
         back_url: Option<String>,
         force_back_startup: bool,
+        tile_sheet: TileSheet,
     ) -> Self {
         let mut link_button_ids = HashMap::new();
         let mut text_input_ids = HashMap::new();
@@ -397,6 +410,7 @@ impl DescriptionEngine {
             submitable,
             total_items_count,
             scroll_by_arrow_ticker: util::Ticker::new(20),
+            tile_sheet,
         }
     }
 
@@ -647,16 +661,20 @@ impl DescriptionEngine {
                                     .horizontal_alignment(HorizontalAlignment::Left),
                                 );
                             } else {
-                                column = column.push(
-                                    StateLessButton::new(
-                                        self.link_group_button_pressed == group_button_id,
-                                        &link_group_name,
-                                        Message::GroupLinkButtonPressed(group_button_id),
-                                        Message::GroupLinkButtonReleased(link_group_name.clone()),
-                                    )
-                                    .width(CONTENT_WIDTH)
-                                    .class(state_less_button::Class::Primary),
-                                );
+                                let mut button = StateLessButton::new(
+                                    self.link_group_button_pressed == group_button_id,
+                                    &link_group_name,
+                                    Message::GroupLinkButtonPressed(group_button_id),
+                                    Message::GroupLinkButtonReleased(link_group_name.clone()),
+                                )
+                                .width(CONTENT_WIDTH)
+                                .class(state_less_button::Class::Primary);
+                                if let Some(icon) =
+                                    sprite_for_class(&self.tile_sheet, &item.classes)
+                                {
+                                    button = button.icon(Some(icon))
+                                }
+                                column = column.push(button);
                             }
 
                             pushed_in_row = true;
@@ -734,18 +752,20 @@ impl DescriptionEngine {
                                 .class(fixed_button_class),
                             );
                         } else {
-                            column = column.push(
-                                StateLessButton::new(
-                                    self.link_button_pressed == id,
-                                    &display_label,
-                                    on_press,
-                                    Message::LinkButtonReleased(
-                                        item.form_action.as_ref().unwrap().clone(),
-                                    ),
-                                )
-                                .fill_width()
-                                .class(state_less_button::Class::Primary),
-                            );
+                            let mut button = StateLessButton::new(
+                                self.link_button_pressed == id,
+                                &display_label,
+                                on_press,
+                                Message::LinkButtonReleased(
+                                    item.form_action.as_ref().unwrap().clone(),
+                                ),
+                            )
+                            .fill_width()
+                            .class(state_less_button::Class::Primary);
+                            if let Some(icon) = sprite_for_class(&self.tile_sheet, &item.classes) {
+                                button = button.icon(Some(icon))
+                            }
+                            column = column.push(button);
                         }
                     }
 
