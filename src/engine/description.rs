@@ -674,6 +674,11 @@ impl DescriptionEngine {
                                 {
                                     button = button.icon(Some(icon))
                                 }
+                                if let Some(icon) =
+                                    sprite_for_class(&self.tile_sheet, &item.classes2)
+                                {
+                                    button = button.icon2(Some(icon))
+                                }
                                 column = column.push(button);
                             }
 
@@ -764,6 +769,9 @@ impl DescriptionEngine {
                             .class(state_less_button::Class::Primary);
                             if let Some(icon) = sprite_for_class(&self.tile_sheet, &item.classes) {
                                 button = button.icon(Some(icon))
+                            }
+                            if let Some(icon) = sprite_for_class(&self.tile_sheet, &item.classes2) {
+                                button = button.icon2(Some(icon))
                             }
                             column = column.push(button);
                         }

@@ -45,6 +45,7 @@ pub struct StateLessButton {
     on_release: message::Message,
     style: Style,
     icon: Option<Sprite>,
+    icon2: Option<Sprite>,
 }
 
 impl std::fmt::Debug for StateLessButton {
@@ -82,6 +83,7 @@ impl StateLessButton {
             on_release,
             style: Style::default().min_width(100),
             icon: None,
+            icon2: None,
         }
     }
 
@@ -124,6 +126,11 @@ impl StateLessButton {
 
     pub fn icon(mut self, icon: Option<Sprite>) -> Self {
         self.icon = icon;
+        self
+    }
+
+    pub fn icon2(mut self, icon: Option<Sprite>) -> Self {
+        self.icon2 = icon;
         self
     }
 }
@@ -178,6 +185,7 @@ impl Widget<message::Message, renderer::Renderer> for StateLessButton {
             &self.label,
             self.class,
             self.icon.clone(),
+            self.icon2.clone(),
         )
     }
 
@@ -237,6 +245,7 @@ pub trait Renderer {
         label: &str,
         class: Class,
         icon: Option<Sprite>,
+        icon2: Option<Sprite>,
     ) -> MouseCursor;
 }
 

@@ -34,7 +34,8 @@ impl state_less_button::Renderer for Renderer {
         pressed: bool,
         label: &str,
         class: state_less_button::Class,
-        mut icon: Option<Sprite>,
+        icon: Option<Sprite>,
+        icon2: Option<Sprite>,
     ) -> MouseCursor {
         let mouse_over = bounds.contains(cursor_position);
 
@@ -87,6 +88,14 @@ impl state_less_button::Renderer for Renderer {
 
         if let Some(mut icon) = icon {
             icon.position = Point::new(bounds.x + LEFT.width as f32, bounds.y + 5.0);
+            self.sprites.add(icon);
+        }
+
+        if let Some(mut icon) = icon2 {
+            icon.position = Point::new(
+                bounds.x + LEFT.width as f32 + icon.source.width as f32,
+                bounds.y + 5.0,
+            );
             self.sprites.add(icon);
         }
 
