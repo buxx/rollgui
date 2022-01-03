@@ -1,6 +1,6 @@
 use crate::engine::Engine;
 use crate::entity::build::Build;
-use crate::entity::character::Character;
+use crate::entity::character::{self, Character};
 use crate::entity::corpse::AnimatedCorpse;
 use crate::entity::player::Player;
 use crate::entity::resource::Resource;
@@ -30,8 +30,8 @@ use crate::ui::Element;
 use crate::ui::Row;
 use crate::{event, util};
 use coffee::graphics::{
-    Batch, Color, Frame, HorizontalAlignment, Image, Point, Rectangle, Sprite, VerticalAlignment,
-    Window,
+    Batch, Color, CursorIcon, Frame, HorizontalAlignment, Image, Point, Rectangle, Sprite,
+    VerticalAlignment, Window,
 };
 use coffee::input::keyboard;
 use coffee::input::mouse;
@@ -87,6 +87,7 @@ pub struct ZoneEngine {
     avatars_to_load: Vec<String>,
     avatars: HashMap<String, (Batch, u16, u16)>,
     hover_character_id: Option<String>,
+    hover_build_id: Option<i32>,
     start_screen_x: i16,
     start_screen_y: i16,
     end_screen_x: i16,
@@ -225,6 +226,7 @@ impl ZoneEngine {
             avatars_to_load: avatars,
             avatars: HashMap::new(),
             hover_character_id: None,
+            hover_build_id: None,
             start_screen_x: START_SCREEN_X,
             start_screen_y: START_SCREEN_Y,
             end_screen_x: 0,
@@ -1127,6 +1129,33 @@ impl Engine for ZoneEngine {
         self.cursor_position = input.cursor_position.clone();
 
         if input.mouse_buttons_pressed.contains(&mouse::Button::Left) {
+            // CLICK ON CHARACTER
+            if let Some(character_id) = &self.hover_character_id {
+                if character_id == &self.player.id {
+                    return Some(MainMessage::ToDescriptionWithUrl {
+                        url: format!("/_describe/character/{}/card", self.player.id).to_string(),
+                        back_url: None,
+                    });
+                } else {
+                    return Some(MainMessage::ToDescriptionWithUrl {
+                        url: format!(
+                            "/_describe/character/{}/look-character/{}",
+                            self.player.id, character_id
+                        )
+                        .to_string(),
+                        back_url: None,
+                    });
+                }
+            }
+
+            // CLICK ON BUILD
+            if let Some(build_id) = &self.hover_build_id {
+                return Some(MainMessage::ToDescriptionWithUrl {
+                    url: format!("/character/{}/build/{}", self.player.id, build_id).to_string(),
+                    back_url: None,
+                });
+            }
+
             let click_x = input.cursor_position.x.round() as i16;
             let click_y = input.cursor_position.y.round() as i16;
             let (to_row_i, to_col_i) = self.xy_to_zone_coords(click_x, click_y);
@@ -1359,7 +1388,7 @@ impl Engine for ZoneEngine {
             };
         }
 
-        let mut found = false;
+        let mut hover_character = false;
         for (character_id, character) in &self.characters {
             let real_x = self.get_real_x(character.position().1 as i16 * TILE_WIDTH) as f32;
             let real_y = self.get_real_y(character.position().0 as i16 * TILE_HEIGHT) as f32;
@@ -1369,13 +1398,34 @@ impl Engine for ZoneEngine {
                 && input.cursor_position.y > real_y
                 && input.cursor_position.y <= (real_y + TILE_HEIGHT as f32)
             {
-                found = true;
+                hover_character = true;
                 self.hover_character_id = Some(character_id.clone());
             }
         }
 
-        if !found {
+        if !hover_character {
             self.hover_character_id = None;
+        }
+
+        let mut hover_build = false;
+        if !hover_character {
+            for (build_id, build) in &self.builds {
+                let real_x = self.get_real_x(build.position().1 as i16 * TILE_WIDTH) as f32;
+                let real_y = self.get_real_y(build.position().0 as i16 * TILE_HEIGHT) as f32;
+
+                if input.cursor_position.x > real_x
+                    && input.cursor_position.x <= (real_x + TILE_WIDTH as f32)
+                    && input.cursor_position.y > real_y
+                    && input.cursor_position.y <= (real_y + TILE_HEIGHT as f32)
+                {
+                    hover_build = true;
+                    self.hover_build_id = Some(build_id.clone());
+                }
+            }
+        }
+
+        if !hover_build {
+            self.hover_build_id = None;
         }
 
         None
@@ -1978,5 +2028,17 @@ impl Engine for ZoneEngine {
     fn teardown(&mut self) {
         // TODO: manage case where fail to close
         self.socket.close().unwrap();
+    }
+
+    fn cursor_icon(&self) -> CursorIcon {
+        if self.hover_character_id.is_some() {
+            return CursorIcon::Hand;
+        }
+
+        if self.hover_build_id.is_some() {
+            return CursorIcon::Hand;
+        }
+
+        CursorIcon::Default
     }
 }

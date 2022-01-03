@@ -27,7 +27,7 @@ use crate::{event, server, util};
 use glob::glob;
 use rand::seq::SliceRandom;
 
-use coffee::graphics::{Color, Frame, HorizontalAlignment, VerticalAlignment, Window};
+use coffee::graphics::{Color, CursorIcon, Frame, HorizontalAlignment, VerticalAlignment, Window};
 use coffee::load::{loading_screen, Task};
 use coffee::ui::{Align, Image, Justify, UserInterface};
 use coffee::{graphics, Game, Timer};
@@ -771,6 +771,14 @@ impl Game for MyGame {
 
     fn is_finished(&self) -> bool {
         self.exit_requested
+    }
+
+    fn cursor_icon(&self) -> CursorIcon {
+        if let Some(engine) = self.engine.as_ref() {
+            engine.cursor_icon()
+        } else {
+            CursorIcon::Default
+        }
     }
 }
 

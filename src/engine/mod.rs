@@ -1,7 +1,7 @@
 use crate::input::MyGameInput;
 use crate::message::{MainMessage, Message};
 use crate::ui::Element;
-use coffee::graphics::{Frame, Image, Window};
+use coffee::graphics::{CursorIcon, Frame, Image, Window};
 use coffee::Timer;
 
 pub mod description;
@@ -18,4 +18,7 @@ pub trait Engine {
     fn react(&mut self, event: Message, window: &mut Window) -> Option<MainMessage>;
     fn layout(&mut self, window: &Window, illustration: Option<Image>) -> Element;
     fn teardown(&mut self);
+    fn cursor_icon(&self) -> CursorIcon {
+        CursorIcon::Default
+    }
 }
