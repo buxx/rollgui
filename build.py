@@ -5,13 +5,12 @@ import shutil
 import subprocess
 import typing
 import tempfile
+import uuid
 from json import JSONDecodeError
 
 import requests
 
-TRACIM_API_URL = (
-    "https://tracim.bux.fr/api/workspaces/{workspace_id}/files/{content_id}/raw/{filename}"
-)
+TRACIM_API_URL = "https://tracim.bux.fr/api/workspaces/{workspace_id}/files/{content_id}/raw/{filename}"
 TRACIM_LOGIN = "sevajol.bastien@gmail.com"
 
 CONFIG = {
@@ -20,12 +19,20 @@ CONFIG = {
     "x86_64-pc-windows-gnu": ("Rolling_Windows_x86-64", "5", "200"),
     "i686-pc-windows-msvc": ("Rolling_windows_i686", "5", "218"),
 }
-TMP_DIR = tempfile.gettempdir()
 
 
-def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None, debug: bool = False, upload_tracim: bool = False, upload_release: bool = False, cross: bool = False) -> None:
+def main(
+    targets: typing.List[str],
+    tracim_api_key: typing.Optional[str] = None,
+    debug: bool = False,
+    upload_tracim: bool = False,
+    upload_release: bool = False,
+    cross: bool = False,
+) -> None:
     for target in targets:
         print(target)
+        uuid_ = uuid.uuid4().hex
+        TMP_DIR = tempfile.gettempdir() + "/rolling_" + uuid_
         assert target in CONFIG
         if upload_tracim:
             assert tracim_api_key
@@ -47,12 +54,20 @@ def main(targets: typing.List[str], tracim_api_key: typing.Optional[str] = None,
         shutil.rmtree(f"{TMP_DIR}/rolling/{file_name}", ignore_errors=True)
         os.makedirs(f"{TMP_DIR}/rolling/{file_name}")
         os.makedirs(f"{TMP_DIR}/rolling/{file_name}/resources")
-        shutil.copy(f"target/{target}/{folder_str}/rollgui{exe_extension}", f"{TMP_DIR}/rolling/{file_name}/RiseOfClans{exe_extension}")
-        shutil.copy(f"resources/graphics.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
+        shutil.copy(
+            f"target/{target}/{folder_str}/rollgui{exe_extension}",
+            f"{TMP_DIR}/rolling/{file_name}/Heritage{exe_extension}",
+        )
+        shutil.copy(
+            f"resources/graphics.png", f"{TMP_DIR}/rolling/{file_name}/resources/"
+        )
         shutil.copy(f"resources/intro.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
-        shutil.copy(f"resources/introb.png", f"{TMP_DIR}/rolling/{file_name}/resources/")
+        shutil.copy(
+            f"resources/introb.png", f"{TMP_DIR}/rolling/{file_name}/resources/"
+        )
         with open(f"{TMP_DIR}/rolling/{file_name}/config.ini", "w+") as config_file:
-            config_file.write("""[debug]
+            config_file.write(
+                """[debug]
 enable_bug_report = true
 
 [server]
@@ -65,7 +80,8 @@ unsecure = false
 title = H
 home_image = resources/intro.png
 home_image_background = resources/introb.png
-""")
+"""
+            )
         zip_command = f"cd {TMP_DIR}/rolling && zip -r {file_name}.zip {file_name}"
         if "windows" in target:
             shutil.copy(f"rollgui.bat", f"{TMP_DIR}/rolling/{file_name}/")
@@ -128,14 +144,14 @@ home_image_background = resources/introb.png
                 shell=True,
             )
             subprocess.check_output(
-                f"ssh -p 3122 bux@s2.bux.fr 'echo \"{version}\" "
+                f'ssh -p 3122 bux@s2.bux.fr \'echo "{version}" '
                 f">> /srv/www/bux.fr/rolling/release/index'",
                 shell=True,
             )
             print("OK")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("target", nargs="+")
     parser.add_argument("--tracim-api-key", default=None)
@@ -144,4 +160,11 @@ if __name__ == '__main__':
     parser.add_argument("--upload-release", action="store_true", default=False)
     parser.add_argument("--cross", action="store_true", default=False)
     args = parser.parse_args()
-    main(args.target, args.tracim_api_key, debug=args.debug, upload_tracim=args.upload_tracim, upload_release=args.upload_release, cross=args.cross)
+    main(
+        args.target,
+        args.tracim_api_key,
+        debug=args.debug,
+        upload_tracim=args.upload_tracim,
+        upload_release=args.upload_release,
+        cross=args.cross,
+    )
