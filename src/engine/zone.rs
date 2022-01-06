@@ -1111,6 +1111,50 @@ impl Engine for ZoneEngine {
                 ZoneEventType::TopBarMessage { message, type_ } => {
                     self.receive_new_top_bar_message(message, type_, false);
                 }
+                ZoneEventType::ZoneGroundResourceRemoved {
+                    row_i,
+                    col_i,
+                    resource_id,
+                } => self.resources.retain(|resource| {
+                    let delete = {
+                        resource.zone_row_i == row_i
+                            && resource.zone_col_i == col_i
+                            && resource.id == resource_id
+                    };
+                    !delete
+                }),
+                ZoneEventType::ZoneGroundStuffRemoved { stuff_id } => {
+                    self.stuffs.retain(|_, stuff| stuff.id != stuff_id);
+                }
+                ZoneEventType::ZoneGroundResourceAdded {
+                    row_i,
+                    col_i,
+                    resource_id,
+                } => {
+                    self.resources.push(Resource {
+                        id: resource_id,
+                        zone_row_i: row_i,
+                        zone_col_i: col_i,
+                    });
+                }
+                ZoneEventType::ZoneGroundStuffAdded {
+                    id_,
+                    stuff_id,
+                    zone_row_i,
+                    zone_col_i,
+                    classes,
+                } => {
+                    self.stuffs.insert(
+                        id_.to_string(),
+                        Stuff {
+                            id: id_,
+                            stuff_id,
+                            zone_row_i,
+                            zone_col_i,
+                            classes,
+                        },
+                    );
+                }
                 _ => println!("unknown event type {:?}", &event.event_type),
             }
         }

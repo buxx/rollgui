@@ -24,6 +24,10 @@ pub const NEW_CHAT_MESSAGE: &str = "NEW_CHAT_MESSAGE";
 pub const ANIMATED_CORPSE_MOVE: &str = "ANIMATED_CORPSE_MOVE";
 pub const TOP_BAR_MESSAGE: &str = "TOP_BAR_MESSAGE";
 pub const ZONE_TILE_REPLACE: &str = "ZONE_TILE_REPLACE";
+pub const ZONE_GROUND_RESOURCE_REMOVE: &str = "ZONE_GROUND_RESOURCE_REMOVE";
+pub const ZONE_GROUND_STUFF_REMOVE: &str = "ZONE_GROUND_STUFF_REMOVE";
+pub const ZONE_GROUND_RESOURCE_APPEAR: &str = "ZONE_GROUND_RESOURCE_APPEAR";
+pub const ZONE_GROUND_STUFF_APPEAR: &str = "ZONE_GROUND_STUFF_APPEAR";
 
 #[derive(SerializeDerive, DeserializeDerive, Debug)]
 #[serde(untagged)]
@@ -102,6 +106,26 @@ pub enum ZoneEventType {
         row_i: i16,
         col_i: i16,
         new_tile_id: TileId,
+    },
+    ZoneGroundResourceRemoved {
+        row_i: i32,
+        col_i: i32,
+        resource_id: String,
+    },
+    ZoneGroundStuffRemoved {
+        stuff_id: i32,
+    },
+    ZoneGroundResourceAdded {
+        row_i: i32,
+        col_i: i32,
+        resource_id: String,
+    },
+    ZoneGroundStuffAdded {
+        id_: i32,
+        stuff_id: String,
+        zone_row_i: i32,
+        zone_col_i: i32,
+        classes: Vec<String>,
     },
 }
 
@@ -271,6 +295,43 @@ impl ZoneEvent {
                         "ERROR" => TopBarMessageType::ERROR,
                         _ => TopBarMessageType::NORMAL,
                     },
+                },
+            }),
+            &ZONE_GROUND_RESOURCE_REMOVE => Ok(ZoneEvent {
+                event_type_name: String::from(ZONE_GROUND_RESOURCE_REMOVE),
+                event_type: ZoneEventType::ZoneGroundResourceRemoved {
+                    row_i: data["zone_row_i"].as_i64().unwrap() as i32,
+                    col_i: data["zone_col_i"].as_i64().unwrap() as i32,
+                    resource_id: data["resource_id"].as_str().unwrap().to_string(),
+                },
+            }),
+            &ZONE_GROUND_STUFF_REMOVE => Ok(ZoneEvent {
+                event_type_name: String::from(ZONE_GROUND_STUFF_REMOVE),
+                event_type: ZoneEventType::ZoneGroundStuffRemoved {
+                    stuff_id: data["stuff_id"].as_i64().unwrap() as i32,
+                },
+            }),
+            &ZONE_GROUND_RESOURCE_APPEAR => Ok(ZoneEvent {
+                event_type_name: String::from(ZONE_GROUND_RESOURCE_APPEAR),
+                event_type: ZoneEventType::ZoneGroundResourceAdded {
+                    row_i: data["zone_row_i"].as_i64().unwrap() as i32,
+                    col_i: data["zone_col_i"].as_i64().unwrap() as i32,
+                    resource_id: data["resource_id"].as_str().unwrap().to_string(),
+                },
+            }),
+            &ZONE_GROUND_STUFF_APPEAR => Ok(ZoneEvent {
+                event_type_name: String::from(ZONE_GROUND_STUFF_APPEAR),
+                event_type: ZoneEventType::ZoneGroundStuffAdded {
+                    id_: data["id"].as_i64().unwrap() as i32,
+                    stuff_id: data["stuff_id"].as_str().unwrap().to_string(),
+                    zone_row_i: data["zone_row_i"].as_i64().unwrap() as i32,
+                    zone_col_i: data["zone_col_i"].as_i64().unwrap() as i32,
+                    classes: data["classes"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .map(|x| x.as_str().unwrap().to_string())
+                        .collect(),
                 },
             }),
             _ => Err(RollingError {
