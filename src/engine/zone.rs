@@ -1,6 +1,6 @@
 use crate::engine::Engine;
 use crate::entity::build::Build;
-use crate::entity::character::{self, Character};
+use crate::entity::character::Character;
 use crate::entity::corpse::AnimatedCorpse;
 use crate::entity::player::Player;
 use crate::entity::resource::Resource;
@@ -44,7 +44,8 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime};
 
 const START_SCREEN_X: i16 = 0;
-const LEFT_MENU_WIDTH: i16 = 200;
+const LEFT_MENU_WIDTH: i16 = 190;
+const LEFT_MENU_HEIGHT: i16 = 435;
 const RIGHT_MENU_WIDTH: i16 = 120;
 const START_SCREEN_Y: i16 = 0;
 const TEXT_INPUT_CHAT_ID: i32 = 0;
@@ -1173,33 +1174,6 @@ impl Engine for ZoneEngine {
         self.cursor_position = input.cursor_position.clone();
 
         if input.mouse_buttons_pressed.contains(&mouse::Button::Left) {
-            // CLICK ON CHARACTER
-            if let Some(character_id) = &self.hover_character_id {
-                if character_id == &self.player.id {
-                    return Some(MainMessage::ToDescriptionWithUrl {
-                        url: format!("/_describe/character/{}/card", self.player.id).to_string(),
-                        back_url: None,
-                    });
-                } else {
-                    return Some(MainMessage::ToDescriptionWithUrl {
-                        url: format!(
-                            "/_describe/character/{}/look-character/{}",
-                            self.player.id, character_id
-                        )
-                        .to_string(),
-                        back_url: None,
-                    });
-                }
-            }
-
-            // CLICK ON BUILD
-            if let Some(build_id) = &self.hover_build_id {
-                return Some(MainMessage::ToDescriptionWithUrl {
-                    url: format!("/character/{}/build/{}", self.player.id, build_id).to_string(),
-                    back_url: None,
-                });
-            }
-
             let click_x = input.cursor_position.x.round() as i16;
             let click_y = input.cursor_position.y.round() as i16;
             let (to_row_i, to_col_i) = self.xy_to_zone_coords(click_x, click_y);
@@ -1209,6 +1183,7 @@ impl Engine for ZoneEngine {
             if click_x > START_SCREEN_X
                 && click_y > START_SCREEN_Y
                 && click_y < (window.height() - QUICK_ACTION_ROW_HEIGHT as f32) as i16
+                && !(click_x < LEFT_MENU_WIDTH && click_y < LEFT_MENU_HEIGHT)
             {
                 if let Some(request_clicks) = &self.request_clicks {
                     // REQUESTED CLICK
@@ -1226,6 +1201,35 @@ impl Engine for ZoneEngine {
                         self.request_clicks = None;
                     }
                 } else {
+                    // CLICK ON CHARACTER
+                    if let Some(character_id) = &self.hover_character_id {
+                        if character_id == &self.player.id {
+                            return Some(MainMessage::ToDescriptionWithUrl {
+                                url: format!("/_describe/character/{}/card", self.player.id)
+                                    .to_string(),
+                                back_url: None,
+                            });
+                        } else {
+                            return Some(MainMessage::ToDescriptionWithUrl {
+                                url: format!(
+                                    "/_describe/character/{}/look-character/{}",
+                                    self.player.id, character_id
+                                )
+                                .to_string(),
+                                back_url: None,
+                            });
+                        }
+                    }
+
+                    // CLICK ON BUILD
+                    if let Some(build_id) = &self.hover_build_id {
+                        return Some(MainMessage::ToDescriptionWithUrl {
+                            url: format!("/character/{}/build/{}", self.player.id, build_id)
+                                .to_string(),
+                            back_url: None,
+                        });
+                    }
+
                     // MOVE
                     let player_position =
                         (self.player.position.0 as i16, self.player.position.1 as i16);
