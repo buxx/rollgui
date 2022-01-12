@@ -1,4 +1,4 @@
-Heritage.exe
+__BIN_NAME__.exe
 @echo off
 echo Press enter to exit
 set /p input=

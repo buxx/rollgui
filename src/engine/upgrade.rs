@@ -11,14 +11,16 @@ use coffee::graphics::{Color, Frame, Image, Window};
 use coffee::input::keyboard;
 use coffee::ui::{Align, Justify};
 use coffee::Timer;
+use ini::Ini;
 use std::io::Write;
 use std::path::Path;
 use std::{env, fs};
 
 pub struct UpgradeEngine {
+    conf: Ini,
     version: (u8, u8, u8),
     mandatory: bool,
-    client: server::client::Client,
+    _client: server::client::Client,
     folder: String,
     already_on_disk: bool,
     display_downloading: bool,
@@ -31,7 +33,12 @@ pub struct UpgradeEngine {
 }
 
 impl UpgradeEngine {
-    pub fn new(version: (u8, u8, u8), mandatory: bool, address: server::ServerAddress) -> Self {
+    pub fn new(
+        version: (u8, u8, u8),
+        mandatory: bool,
+        address: server::ServerAddress,
+        conf: Ini,
+    ) -> Self {
         // Determine where is the reference folder (executable can be in x.y.z folder)
         let executable_name = if cfg!(windows) {
             "rollgui.exe"
@@ -58,9 +65,10 @@ impl UpgradeEngine {
         println!("version folder exist ? {:?}", already_on_disk);
 
         Self {
+            conf,
             version,
             mandatory,
-            client: server::client::Client::new(address, ("".to_string(), "".to_string())),
+            _client: server::client::Client::new(address, ("".to_string(), "".to_string())),
             already_on_disk,
             folder: String::from(folder.to_str().unwrap()),
             display_downloading: false,
@@ -100,8 +108,9 @@ impl Engine for UpgradeEngine {
             };
 
             let folder = Path::new(&self.folder);
+            let releases_url = self.conf.get_from(Some("server"), "releases_url").unwrap();
             let client = reqwest::blocking::Client::new();
-            let url = &format!("http://rolling.bux.fr/release/{}", remote_file_name);
+            let url = &format!("{}/{}", releases_url, remote_file_name);
             let download_into = folder.join(&remote_file_name);
             println!(
                 "download {} into {} ...",

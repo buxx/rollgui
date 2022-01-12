@@ -244,6 +244,7 @@ impl ZoneSocket {
     }
 
     pub fn close(&mut self) -> Result<(), Error> {
+        println!("DEBUG :: CLOSE WS");
         self.closing = true;
         self.send(event::ZoneEvent {
             event_type: event::ZoneEventType::ClientWantClose,
@@ -254,8 +255,9 @@ impl ZoneSocket {
         let start = SystemTime::now();
         let timeout = Duration::from_secs(5);
         loop {
-            let ws_sender_closed = *self.ws_sender_closed.lock().unwrap();
-            let ws_reader_closed = *self.ws_reader_closed.lock().unwrap();
+            println!("DEBUG :: CHECKE ENDED ...");
+            let ws_sender_closed = *self.ws_sender_closed.try_lock().unwrap();
+            let ws_reader_closed = *self.ws_reader_closed.try_lock().unwrap();
 
             if ws_sender_closed && ws_reader_closed {
                 break;
@@ -271,6 +273,7 @@ impl ZoneSocket {
             thread::sleep(Duration::from_millis(100));
         }
 
+        println!("DEBUG :: BOTH WS CLOSED");
         Ok(())
     }
 }

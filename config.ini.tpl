@@ -6,6 +6,7 @@ name = Rise of Clans
 server_hostname = 127.0.0.1
 server_port = 5000
 unsecure = true
+releases_url = http://rolling.bux.fr/release
 
 [design]
 title = RoC

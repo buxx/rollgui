@@ -443,11 +443,14 @@ pub fn unzip_to(zip_file: fs::File, to_folder: &Path) {
     }
 }
 
-pub fn get_last_compatible_version(server_version: (u8, u8, u8)) -> (u8, u8, u8) {
+pub fn get_last_compatible_version(
+    server_version: (u8, u8, u8),
+    releases_url: &str,
+) -> (u8, u8, u8) {
     let (server_major, server_minor, _) = server_version;
     let client = reqwest::blocking::Client::new();
     let index_response = client
-        .get("http://rolling.bux.fr/release/index")
+        .get(&format!("{}/index", releases_url))
         .send()
         .unwrap();
     let indexes: String = index_response.text().unwrap();

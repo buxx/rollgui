@@ -231,6 +231,7 @@ impl MyGame {
             version,
             mandatory,
             self.server.address.clone(),
+            self.conf.clone(),
         ))
     }
 
@@ -263,12 +264,18 @@ impl MyGame {
             println!("Check is compatible");
             if !util::is_compatible_versions(server_version, client_version) {
                 println!("Version is not compatible");
-                let last_compatible_version = util::get_last_compatible_version(server_version);
+                let last_compatible_version = util::get_last_compatible_version(
+                    server_version,
+                    self.conf.get_from(Some("server"), "releases_url").unwrap(),
+                );
                 self.setup_home_image_background();
                 return self.create_upgrade_engine(last_compatible_version, true);
             } else {
                 println!("Version is compatible");
-                let last_compatible_version = util::get_last_compatible_version(server_version);
+                let last_compatible_version = util::get_last_compatible_version(
+                    server_version,
+                    self.conf.get_from(Some("server"), "releases_url").unwrap(),
+                );
                 println!(
                     "Is there newer version ? ({:?} != {:?})",
                     last_compatible_version, client_version
