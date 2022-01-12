@@ -89,7 +89,7 @@ CONFIGS = {
             file_name="RollingCreatif_Linux_x86-64",
             bin_name="RollingCreatif",
             tracim_workspace_id=5,
-            tracim_content_id=0000000000000000000000000,
+            tracim_content_id=3035,
             config_file_content=creatif_config_file_content,
             resources=creatif_resources,
             release_folder=creatif_release_folder,
@@ -120,7 +120,7 @@ CONFIGS = {
             file_name="RollingCreatif_Windows_x86-64",
             bin_name="RollingCreatif",
             tracim_workspace_id=5,
-            tracim_content_id=0000000000000000000000000,
+            tracim_content_id=3034,
             config_file_content=creatif_config_file_content,
             resources=creatif_resources,
             release_folder=creatif_release_folder,
@@ -194,7 +194,7 @@ def main(
                 ) as target_bat_file:
                     with open(f"rollgui.bat") as origin_bat_file:
                         bat_content = origin_bat_file.read()
-                    bat_content.replace("__BIN_NAME__", config.bin_name)
+                    bat_content = bat_content.replace("__BIN_NAME__", config.bin_name)
                     target_bat_file.write(bat_content)
                 if not cross:
                     zip_command = f"cd {TMP_DIR}\\rolling && tar.exe -a -c -f {config.file_name}.zip {config.file_name}"
