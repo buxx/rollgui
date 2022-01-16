@@ -88,25 +88,11 @@ impl Engine for UpgradeEngine {
     }
 
     fn update(&mut self, _window: &Window) -> Option<MainMessage> {
+        let file_name = self.conf.get_from(Some("upgrade"), "file_name").unwrap();
         if self.make_download {
             let (major, minor, correction) = self.version;
-            let remote_file_name = if cfg!(windows) {
-                format!(
-                    "Rolling_Windows_x86-64_{}.{}.{}.zip",
-                    major, minor, correction
-                )
-            } else {
-                format!(
-                    "Rolling_Linux_x86-64_{}.{}.{}.zip",
-                    major, minor, correction
-                )
-            };
-            let extracted_folder_name = if cfg!(windows) {
-                "Rolling_Windows_x86-64"
-            } else {
-                "Rolling_Linux_x86-64"
-            };
-
+            let remote_file_name = format!("{}_{}.{}.{}.zip", file_name, major, minor, correction);
+            let extracted_folder_name = file_name.clone();
             let folder = Path::new(&self.folder);
             let releases_url = self.conf.get_from(Some("server"), "releases_url").unwrap();
             let client = reqwest::blocking::Client::new();

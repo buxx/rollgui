@@ -12,3 +12,6 @@ releases_url = http://rolling.bux.fr/release
 title = RoC
 home_image = resources/intro.png
 home_image_background = resources/introb.png
+
+[upgrade]
+file_name = "Heritage_Linux_x86-64"

@@ -40,6 +40,9 @@ releases_url = http://rolling.bux.fr/release
 title = Héritage
 home_image = resources/intro.png
 home_image_background = resources/introb.png
+
+[upgrade]
+file_name = "__FILE_NAME__"
 """
 
 heritage_resources = [
@@ -64,6 +67,9 @@ releases_url = http://rolling-creatif.bux.fr/release
 title = Héritage
 home_image = resources/intro_creatif.png
 home_image_background = resources/introb.png
+
+[upgrade]
+file_name = "__FILE_NAME__"
 """
 
 creatif_resources = [
@@ -186,7 +192,10 @@ def main(
             with open(
                 f"{TMP_DIR}/rolling/{config.file_name}/config.ini", "w+"
             ) as config_file:
-                config_file.write(config.config_file_content)
+                config_file_content = config.config_file_content.replace(
+                    "__FILE_NAME__", config.file_name
+                )
+                config_file.write(config_file_content)
             zip_command = f"cd {TMP_DIR}/rolling && zip -r {config.file_name}.zip {config.file_name}"
             if "windows" in target:
                 with open(
