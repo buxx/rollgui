@@ -1,10 +1,8 @@
 # rollgui
 
-A graphic user interface for [rolling game](https://redbricks.games/home/rolling-117).
+A graphic user interface for [rolling game](https://github.com/buxx/rolling).
 
 ⚠️ New GUI reposiory here : [github.com/buxx/rollgui2](https://github.com/buxx/rollgui2)
-
-![Rollgui screenshot](https://redbricks.games/uploads/117/game/Coffee_231_illustration.png)
 
 ## os requirement
 
